@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net11.0</TargetFramework>
+        <Nullable>enable</Nullable>
+        <IsAotCompatible>true</IsAotCompatible>
+        <RootNamespace>DotGame.Toolkit</RootNamespace>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="$(DotGameFrameworkDir)framework\DotGame.Framework.csproj" />
+    </ItemGroup>
+    <ItemGroup>
+        <PackageReference Include="DotGame.Imaging" Version="$(DotGameImagingVersion)" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <InternalsVisibleTo Include="DotGame.Toolkit.Tests" />
+        <InternalsVisibleTo Include="DotGame.Toolkit.ContentPipeline.Tests" />
+    </ItemGroup>
+
+    <Import Project="$(DotGameFrameworkDir)eng\DotGame.PublicApi.props" Condition="'$(DotGameFrameworkDir)' != ''" />
+</Project>

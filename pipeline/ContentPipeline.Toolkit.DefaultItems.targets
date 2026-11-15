@@ -1,0 +1,29 @@
+<Project>
+
+    <!--
+        The toolkit's default content items and LinkBase, as the framework's (its pipeline's
+        ContentPipeline.DefaultItems.targets). Default items: a font (.ttf, .otf) under the project's Content
+        folder is SpriteFontContent, unless a content item already includes it. Atlases and sound banks gather
+        several files under one name, so they're always declared.
+    -->
+    <ItemGroup Condition="'$(EnableDefaultContentItems)' == 'true'">
+        <_DotGameToolkitDeclaredContent Include="@(TextureContent);@(ShaderContent);@(SoundContent);@(MusicContent);@(DataContent);@(LaunchScreen);@(TextureAtlasContent);@(SoundBankContent);@(SpriteFontContent)" />
+        <SpriteFontContent Include="Content\**\*.ttf;Content\**\*.otf" Exclude="@(_DotGameToolkitDeclaredContent)" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <TextureAtlasContent Update="@(TextureAtlasContent)">
+            <LinkBase Condition="'%(LinkBase)' != ''">$([MSBuild]::EnsureTrailingSlash(%(LinkBase)))</LinkBase>
+            <Link Condition="'%(Link)' == '' and '%(LinkBase)' != ''">%(LinkBase)%(RecursiveDir)%(Filename)%(Extension)</Link>
+        </TextureAtlasContent>
+        <SoundBankContent Update="@(SoundBankContent)">
+            <LinkBase Condition="'%(LinkBase)' != ''">$([MSBuild]::EnsureTrailingSlash(%(LinkBase)))</LinkBase>
+            <Link Condition="'%(Link)' == '' and '%(LinkBase)' != ''">%(LinkBase)%(RecursiveDir)%(Filename)%(Extension)</Link>
+        </SoundBankContent>
+        <SpriteFontContent Update="@(SpriteFontContent)">
+            <LinkBase Condition="'%(LinkBase)' != ''">$([MSBuild]::EnsureTrailingSlash(%(LinkBase)))</LinkBase>
+            <Link Condition="'%(Link)' == '' and '%(LinkBase)' != ''">%(LinkBase)%(RecursiveDir)%(Filename)%(Extension)</Link>
+        </SpriteFontContent>
+    </ItemGroup>
+
+</Project>

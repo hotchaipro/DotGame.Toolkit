@@ -1,0 +1,24 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <MSBuildAllProjects>$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
+    <HasSharedItems>true</HasSharedItems>
+    <SharedGUID>700651d1-ede4-414f-ba00-9817b77a6452</SharedGUID>
+  </PropertyGroup>
+  <PropertyGroup Label="Configuration">
+    <Import_RootNamespace>Sample</Import_RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)Pages\AnimationPage.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Pages\AtlasPage.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Pages\CameraPage.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Pages\MotionPage.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Pages\RuntimeTexturesPage.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Pages\ShapesPage.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Pages\SoundPage.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Pages\TextLayoutPage.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Pages\TextPage.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)SamplePage.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ToolkitSample.cs" />
+  </ItemGroup>
+</Project>

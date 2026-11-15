@@ -1,0 +1,35 @@
+<Project>
+
+    <!--
+        Built for a game (DotGameBuildRoot, which DotGame.Framework.targets passes to a game's project
+        references): output in the game's folder, as in DotGame's Directory.Build.props, so games and
+        each game's platforms build their own copies at the same time. Imported by the repository's
+        Directory.Build.props and the samples'.
+    -->
+    <PropertyGroup Condition="'$(DotGameBuildRoot)' != ''">
+        <BaseIntermediateOutputPath>$(DotGameBuildRoot)$(MSBuildProjectName)\obj\</BaseIntermediateOutputPath>
+        <BaseOutputPath>$(DotGameBuildRoot)$(MSBuildProjectName)\bin\</BaseOutputPath>
+        <!--
+            NuGet's restore output stays in the project's own obj folder: restore evaluates each project
+            without the game's property, and its output is the same for every game.
+        -->
+        <MSBuildProjectExtensionsPath>$(MSBuildProjectDirectory)\obj\</MSBuildProjectExtensionsPath>
+        <!-- The project's own obj and bin folders aren't the build's any more, so they're not excluded by default -->
+        <DefaultItemExcludes>$(DefaultItemExcludes);obj\**;bin\**</DefaultItemExcludes>
+        <!--
+            A web game's publish asks its references for their static web assets with the properties
+            each reference declares here (the WebGL platform project runs its WebAssembly publish then),
+            not with the reference's own, so the property is declared for those calls too.
+        -->
+        <StaticWebAssetsAdditionalBuildProperties>$(StaticWebAssetsAdditionalBuildProperties);DotGameBuildRoot=$(DotGameBuildRoot)</StaticWebAssetsAdditionalBuildProperties>
+        <StaticWebAssetsAdditionalPublishProperties>$(StaticWebAssetsAdditionalPublishProperties);DotGameBuildRoot=$(DotGameBuildRoot)</StaticWebAssetsAdditionalPublishProperties>
+    </PropertyGroup>
+
+    <!-- Passed on to this project's own references, so everything it builds goes in the game's folder -->
+    <ItemDefinitionGroup Condition="'$(DotGameBuildRoot)' != ''">
+        <ProjectReference>
+            <AdditionalProperties>DotGameBuildRoot=$(DotGameBuildRoot)</AdditionalProperties>
+        </ProjectReference>
+    </ItemDefinitionGroup>
+
+</Project>

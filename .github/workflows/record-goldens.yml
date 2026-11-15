@@ -1,0 +1,82 @@
+name: Record toolkit goldens
+
+# Records the toolkit's content pipeline tests' golden hashes for the framework's pinned tools (its
+# packaging/tool-sources.json) on each of the five build machines, as the framework's record-goldens
+# workflow does for its own. Each machine's new lines are this run's artifacts: look at them, then
+# commit them. Run by hand only.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+  DOTGAME_UPDATE_GOLDENS: '1'
+
+jobs:
+  record:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: windows-latest, rid: win-x64, msvc: x64 }
+          - { os: windows-11-arm, rid: win-arm64, msvc: arm64 }
+          - { os: ubuntu-22.04, rid: linux-x64 }
+          - { os: ubuntu-22.04-arm, rid: linux-arm64 }
+          - { os: macos-latest, rid: osx-arm64 }
+    runs-on: ${{ matrix.os }}
+    name: record ${{ matrix.rid }}
+    steps:
+      - uses: actions/checkout@v7
+      - name: Check out the framework
+        uses: actions/checkout@v7
+        with:
+          repository: hotchaipro/DotGame.Framework
+          path: DotGame.Framework
+      - name: Find the framework
+        shell: bash
+        run: |
+          fw=$(cd DotGame.Framework && pwd); if command -v cygpath > /dev/null; then fw=$(cygpath -m "$fw"); fi
+          echo "DotGameFrameworkDir=$fw/" >> "$GITHUB_ENV"
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: '11.0.x'
+      - name: Set up MSVC
+        if: runner.os == 'Windows'
+        uses: ./.github/actions/msvc
+        with:
+          arch: ${{ matrix.msvc }}
+      - name: Fetch the pinned tools
+        shell: bash
+        run: python "${DotGameFrameworkDir}packaging/fetch-tools.py" ${{ matrix.rid }} "${DotGameFrameworkDir}artifacts/tools/${{ matrix.rid }}"
+      # Only the pinned tools: none from the runner's image or a Vulkan SDK
+      - name: Put the tools on PATH
+        shell: bash
+        run: |
+          echo "VULKAN_SDK=" >> "$GITHUB_ENV"
+          tools="${DotGameFrameworkDir}artifacts/tools/${{ matrix.rid }}/tools"
+          if [ "$RUNNER_OS" = Windows ]; then tools=$(cygpath -w "$tools"); fi
+          echo "$tools" >> "$GITHUB_PATH"
+      - name: Toolkit pipeline tests
+        continue-on-error: true
+        run: dotnet test --project test/DotGame.Toolkit.ContentPipeline.Tests
+      - name: New goldens
+        shell: bash
+        run: |
+          mkdir -p artifacts/goldens
+          dir=test/DotGame.Toolkit.ContentPipeline.Tests
+          name=$(basename "$dir")
+          git diff --no-color -U0 -- "$dir/Goldens/goldens.txt" | grep '^+[^+]' | cut -c2- | tr -d '\r' > "artifacts/goldens/$name.txt" || true
+          echo "== $name: $(wc -l < "artifacts/goldens/$name.txt") new"
+          cat "artifacts/goldens/$name.txt"
+          python -c "import json, sys; print(json.dumps(json.load(open(sys.argv[1])), indent=1))" "${DotGameFrameworkDir}artifacts/tools/${{ matrix.rid }}/versions.json" > artifacts/goldens/versions.json || true
+      - uses: actions/upload-artifact@v7
+        with:
+          name: goldens-${{ matrix.rid }}
+          path: artifacts/goldens/

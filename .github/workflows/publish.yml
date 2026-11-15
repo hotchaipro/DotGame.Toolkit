@@ -1,0 +1,228 @@
+name: Publish
+
+# Packs the toolkit's packages, DotGame.Toolkit and DotGame.Toolkit.Build, tests them, and publishes them to
+# nuget.org with trusted publishing: no API key is stored anywhere. nuget.org's trusted publishing policy
+# names this repository and this workflow, and the login step trades this run's GitHub identity for a key
+# that lasts an hour.
+#
+# Run by hand, with the version. Leave "Publish" unticked for a dry run: everything but the push, so the
+# packages (this run's artifacts) can be looked at first. A version on nuget.org can't be replaced or
+# deleted, only unlisted.
+#
+# Every DotGame package has the same version, and the toolkit's packages need the framework's at exactly
+# their own, so the framework is published first, at the same version:
+#
+#   - The packages, on the oldest supported Ubuntu (packaging/pack.sh), after checking that the version
+#     isn't on nuget.org already and that the framework's is. They're built on the framework's source at
+#     the tag of that version (vVERSION), the commit its packages came from, so the framework's content
+#     pipeline tool that DotGame.Toolkit.Build carries is the one DotGame.Framework.Build carries.
+#   - Each build machine builds the toolkit's samples from the packages, with the framework's from
+#     nuget.org and no tool installed (packaging/test-packages.sh).
+#   - Linux and Windows machines with only the .NET SDK follow the guide: the template's game with the
+#     toolkit added, a font, an atlas and a sound bank, built and published for the desktop, and built for
+#     the web and Android (packaging/test-clean.ps1).
+#   - Then, if "Publish" is ticked, the push, in the nuget environment, and a draft GitHub release for
+#     the version, tagged vVERSION at the commit it published, a prerelease if the version has a suffix.
+#     Write its notes and publish it by hand: the tag is made when the draft is published. If the push
+#     fails partway, re-run the failed job: packages already on nuget.org are skipped.
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: The packages' version, such as 0.1.0-preview.1, which the framework's must have
+        required: true
+      publish:
+        description: Publish to nuget.org (unticked, a dry run)
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+env:
+  VERSION: ${{ inputs.version }}
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+
+jobs:
+  packages:
+    runs-on: ubuntu-22.04
+    name: packages
+    steps:
+      - name: Check the version
+        shell: bash
+        run: |
+          [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]] || { echo "::error::Not a version: $VERSION"; exit 1; }
+          nuspec() { curl -s -o /dev/null -w '%{http_code}' "https://api.nuget.org/v3-flatcontainer/$1/$VERSION/$1.nuspec"; }
+          code=$(nuspec dotgame.toolkit)
+          [ "$code" = 404 ] || { echo "::error::DotGame.Toolkit $VERSION is on nuget.org already (HTTP $code)"; exit 1; }
+          code=$(nuspec dotgame.framework.build)
+          [ "$code" = 200 ] || { echo "::error::DotGame.Framework.Build $VERSION isn't on nuget.org (HTTP $code): publish the framework first"; exit 1; }
+      - uses: actions/checkout@v7
+      - name: Check out the framework at v${{ inputs.version }}
+        uses: actions/checkout@v7
+        with:
+          repository: hotchaipro/DotGame.Framework
+          ref: v${{ inputs.version }}
+          path: DotGame.Framework
+      - name: Find the framework
+        shell: bash
+        run: echo "DotGameFrameworkDir=$(cd DotGame.Framework && pwd)/" >> "$GITHUB_ENV"
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: '11.0.x'
+      - name: Pack
+        shell: bash
+        env:
+          OUT: ${{ runner.temp }}/packages
+        run: |
+          status=0
+          packaging/pack.sh > pack.log 2>&1 || status=$?
+          grep -E ": error |^== |packages checked|\.nupkg: " pack.log | sort -u | head -40
+          exit $status
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: pack-log
+          path: pack.log
+      - uses: actions/upload-artifact@v7
+        with:
+          name: packages
+          path: ${{ runner.temp }}/packages/*.nupkg
+          if-no-files-found: error
+
+  test:
+    needs: packages
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: windows-latest, rid: win-x64 }
+          - { os: windows-11-arm, rid: win-arm64 }
+          - { os: ubuntu-26.04, rid: linux-x64 }
+          - { os: ubuntu-26.04-arm, rid: linux-arm64 }
+          - { os: macos-latest, rid: osx-arm64 }
+    runs-on: ${{ matrix.os }}
+    name: test ${{ matrix.rid }}
+    steps:
+      - uses: actions/checkout@v7
+      - name: Check out the framework at v${{ inputs.version }}
+        uses: actions/checkout@v7
+        with:
+          repository: hotchaipro/DotGame.Framework
+          ref: v${{ inputs.version }}
+          path: DotGame.Framework
+      - name: Find the framework
+        shell: bash
+        run: |
+          fw=$(cd DotGame.Framework && pwd); if command -v cygpath > /dev/null; then fw=$(cygpath -m "$fw"); fi
+          echo "DotGameFrameworkDir=$fw/" >> "$GITHUB_ENV"
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: '11.0.x'
+      - name: Install the web workload
+        run: dotnet workload install wasm-tools
+      - uses: actions/download-artifact@v8
+        with:
+          name: packages
+          path: ${{ runner.temp }}/packages
+      # The toolkit's packages from this run, the framework's and the tools from nuget.org
+      - name: Build the samples from packages
+        shell: bash
+        run: |
+          feed=$RUNNER_TEMP/packages; if command -v cygpath > /dev/null; then feed=$(cygpath -m "$feed"); fi
+          FEEDS="$feed" packaging/test-packages.sh desktop webgl
+
+  # The guide's steps on machines with only the .NET SDK: Microsoft's SDK images, with no JDK, Android
+  # SDK, Python or compilers (packaging/test-clean.ps1). iOS needs a Mac with Xcode, which no container has.
+  clean-linux:
+    needs: packages
+    runs-on: ubuntu-26.04
+    name: clean linux-x64
+    container: mcr.microsoft.com/dotnet/sdk:11.0
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
+        with:
+          name: packages
+          path: feed
+      # The one thing the framework's guide asks Linux for besides the .NET SDK: Python 3, for the web's Emscripten
+      - name: Install Python 3, as the guide says
+        run: apt-get update -qq && apt-get install -y -qq python3 > /dev/null
+      - name: The guide's steps
+        run: pwsh packaging/test-clean.ps1 feed "$VERSION" webgl android
+
+  clean-windows:
+    needs: packages
+    runs-on: windows-2025
+    name: clean win-x64
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
+        with:
+          name: packages
+          path: feed
+      - name: The guide's steps
+        shell: pwsh
+        run: |
+          docker run --rm -v "${env:GITHUB_WORKSPACE}:C:\w" -e DOTGAME_CLEAN_WORK=C:\clean `
+            mcr.microsoft.com/dotnet/sdk:11.0-windowsservercore-ltsc2025 `
+            pwsh -File C:\w\packaging\test-clean.ps1 C:\w\feed $env:VERSION webgl android
+          exit $LASTEXITCODE
+
+  publish:
+    needs: [packages, test, clean-linux, clean-windows]
+    if: inputs.publish
+    runs-on: ubuntu-26.04
+    environment: nuget
+    permissions:
+      contents: write
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: packages
+          path: out
+      - name: Check the packages
+        shell: bash
+        run: |
+          ls out
+          n=$(ls out/*."$VERSION".nupkg | wc -l)
+          [ "$n" -eq 2 ] || { echo "::error::$n packages at $VERSION, not 2"; exit 1; }
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: '11.0.x'
+      - uses: NuGet/login@v1
+        id: login
+        with:
+          user: hotchai
+      - run: dotnet nuget push "out/*.nupkg" --source https://api.nuget.org/v3/index.json --api-key "${{ steps.login.outputs.NUGET_API_KEY }}" --skip-duplicate
+      - name: Draft the GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        shell: bash
+        run: |
+          TAG="v$VERSION"
+          if gh release view "$TAG" > /dev/null 2>&1; then echo "$TAG already has a release"; exit 0; fi
+          PRERELEASE=""
+          [[ "$VERSION" == *-* ]] && PRERELEASE="--prerelease"
+          cat > notes.md <<EOF
+          TODO: what changed, and any breaking changes.
+
+          \`\`\`xml
+          <PackageReference Include="DotGame.Toolkit" Version="$VERSION" />
+          \`\`\`
+
+          NuGet: https://www.nuget.org/packages/DotGame.Toolkit/$VERSION
+          EOF
+          gh release create "$TAG" --draft $PRERELEASE --target "$GITHUB_SHA" \
+            --title "DotGame.Toolkit $VERSION" --notes-file notes.md

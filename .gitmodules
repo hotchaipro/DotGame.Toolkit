@@ -1,0 +1,9 @@
+[submodule "native/glyphgen/src/clipper2"]
+	path = native/glyphgen/src/clipper2
+	url = https://github.com/AngusJohnson/Clipper2.git
+[submodule "native/glyphgen/src/freetype"]
+	path = native/glyphgen/src/freetype
+	url = https://github.com/freetype/freetype.git
+[submodule "native/glyphgen/src/msdfgen"]
+	path = native/glyphgen/src/msdfgen
+	url = https://github.com/Chlumsky/msdfgen.git

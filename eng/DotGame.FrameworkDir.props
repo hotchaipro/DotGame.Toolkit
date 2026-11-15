@@ -1,0 +1,23 @@
+<Project>
+
+    <!--
+        Where the framework's source is: DotGameFrameworkDir, a clone of DotGame.Framework anywhere, set as
+        an environment variable or an MSBuild property (-p:DotGameFrameworkDir=...). The toolkit builds on
+        the framework's source until the framework is on nuget.org, so it has no default. Imported by the
+        repository's Directory.Build.props and the toolkit's include (packaging\build\DotGame.Toolkit.targets).
+    -->
+    <PropertyGroup>
+        <_DotGameFrameworkDirImported>true</_DotGameFrameworkDirImported>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(DotGameFrameworkDir)' != ''">
+        <DotGameFrameworkDir>$([MSBuild]::NormalizeDirectory('$(DotGameFrameworkDir)'))</DotGameFrameworkDir>
+    </PropertyGroup>
+
+    <!-- Before anything that reads the framework's projects: restore, the design-time build and the build -->
+    <Target Name="_DotGameCheckFrameworkDir"
+            BeforeTargets="_LoadRestoreGraphEntryPoints;_GenerateRestoreGraphProjectEntry;CollectPackageReferences;ResolveProjectReferences;PrepareForBuild"
+            Condition="'$(DotGameFrameworkDir)' == '' or !Exists('$(DotGameFrameworkDir)framework\DotGame.Framework.csproj')">
+        <Error Text="The toolkit builds on the framework's source: set DotGameFrameworkDir to a clone of DotGame.Framework (https://github.com/hotchaipro/DotGame.Framework), as an environment variable or with -p:DotGameFrameworkDir=&lt;folder&gt;. It is '$(DotGameFrameworkDir)'." />
+    </Target>
+
+</Project>

@@ -1,0 +1,9 @@
+{
+  "solution": {
+    "path": "../DotGame.Toolkit.slnx",
+    "projects": [
+      "test/DotGame.Toolkit.ContentPipeline.Tests/DotGame.Toolkit.ContentPipeline.Tests.csproj",
+      "test/DotGame.Toolkit.Tests/DotGame.Toolkit.Tests.csproj"
+    ]
+  }
+}

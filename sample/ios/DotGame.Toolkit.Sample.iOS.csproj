@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <!-- iOS: Metal. Needs the ios workload, and a Mac with Xcode. -->
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>net11.0-ios</TargetFramework>
+        <SupportedOSPlatformVersion>16.0</SupportedOSPlatformVersion>
+        <RootNamespace>Sample</RootNamespace>
+        <ApplicationId>com.dotgame.toolkit.sample</ApplicationId>
+        <ApplicationTitle>DotGame Toolkit Sample</ApplicationTitle>
+        <ApplicationVersion>1</ApplicationVersion>
+        <ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
+    </PropertyGroup>
+
+    <!-- The game's code, shared by every platform: a shared project, compiled into each platform's -->
+    <Import Project="..\shared\DotGame.Toolkit.Sample.projitems" Label="Shared" />
+
+    <!-- The launch screen, which the content pipeline makes into this platform's form -->
+    <ItemGroup Label="Launch screen">
+        <LaunchScreen Include="..\Content\LaunchScreen\logo.png" Background="#1f0841" LogoSize="140" />
+    </ItemGroup>
+
+    <ItemGroup Label="Content">
+        <!-- PxRange: room in the distance field for the outlines, shadows and glows the sample draws (an effect reaches at most half of it) -->
+        <SpriteFontContent Include="..\Content\Fonts\*.ttf" PxRange="12">
+            <LinkBase>Content\Fonts</LinkBase>
+        </SpriteFontContent>
+        <TextureAtlasContent Include="..\Content\Sprites\*.png">
+            <LinkBase>Content\Sprites</LinkBase>
+        </TextureAtlasContent>
+        <SoundBankContent Include="..\Content\Sounds\*.wav">
+            <LinkBase>Content\Sounds</LinkBase>
+        </SoundBankContent>
+    </ItemGroup>
+
+</Project>

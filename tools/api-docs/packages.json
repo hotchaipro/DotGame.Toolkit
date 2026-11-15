@@ -1,0 +1,70 @@
+// What tools/api-docs/generate.cs documents in this repository: see the comment on ReadPackages there
+{
+  // The framework's docs/api/README.md indexes its packages (the toolkit isn't among them); this
+  // package's page is docs/api/README.md itself
+  "writeIndex": false,
+  "allPackages": "https://github.com/hotchaipro/DotGame.Framework/blob/main/docs/api/README.md",
+  "allPackagesText": "DotGame.Framework's packages",
+  "packages": [
+    // Read for links to their types, which go to their repositories' pages
+    {
+      "name": "Framework",
+      "description": "The core of every game: lifecycle, graphics, audio, input, content and time.",
+      "clone": "DotGameFrameworkDir",
+      "repository": "DotGame.Framework",
+      "roots": ["framework"],
+      "home": "https://github.com/hotchaipro/DotGame.Framework/blob/main/docs/api/Framework/README.md",
+      "pages": "https://github.com/hotchaipro/DotGame.Framework/blob/main/docs/api/Framework/"
+    },
+    {
+      "name": "Desktop",
+      "description": "Runs a game on Windows, macOS and Linux.",
+      "clone": "DotGameFrameworkDir",
+      "repository": "DotGame.Framework",
+      "roots": ["platform/desktop"],
+      "home": "https://github.com/hotchaipro/DotGame.Framework/blob/main/docs/api/Desktop/README.md",
+      "pages": "https://github.com/hotchaipro/DotGame.Framework/blob/main/docs/api/Desktop/"
+    },
+    {
+      "name": "Web",
+      "description": "Runs a game in a browser.",
+      "clone": "DotGameFrameworkDir",
+      "repository": "DotGame.Framework",
+      "roots": ["platform/webgl"],
+      "home": "https://github.com/hotchaipro/DotGame.Framework/blob/main/docs/api/Web/README.md",
+      "pages": "https://github.com/hotchaipro/DotGame.Framework/blob/main/docs/api/Web/"
+    },
+    {
+      "name": "Android",
+      "description": "Runs a game on Android.",
+      "clone": "DotGameFrameworkDir",
+      "repository": "DotGame.Framework",
+      "roots": ["platform/android"],
+      "home": "https://github.com/hotchaipro/DotGame.Framework/blob/main/docs/api/Android/README.md",
+      "pages": "https://github.com/hotchaipro/DotGame.Framework/blob/main/docs/api/Android/"
+    },
+    {
+      "name": "iOS",
+      "description": "Runs a game on iOS.",
+      "clone": "DotGameFrameworkDir",
+      "repository": "DotGame.Framework",
+      "roots": ["platform/ios"],
+      "home": "https://github.com/hotchaipro/DotGame.Framework/blob/main/docs/api/iOS/README.md",
+      "pages": "https://github.com/hotchaipro/DotGame.Framework/blob/main/docs/api/iOS/"
+    },
+    {
+      "name": "Toolkit",
+      "description": "Fonts, atlases, sprite animation, particles, sound banks, cameras, shapes and text layout.",
+      "roots": ["toolkit"]
+    },
+    {
+      "name": "Imaging",
+      "description": "PNG, JPEG and WebP image codecs, with no dependencies: a decoder and an encoder for each.",
+      "clone": "DotGameImagingDir",
+      "repository": "DotGame.Imaging",
+      "roots": ["src"],
+      "home": "https://github.com/hotchaipro/DotGame.Imaging/blob/main/docs/api/README.md",
+      "pages": "https://github.com/hotchaipro/DotGame.Imaging/blob/main/docs/api/"
+    }
+  ]
+}

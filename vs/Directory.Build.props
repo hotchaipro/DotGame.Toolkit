@@ -1,0 +1,18 @@
+<Project>
+    <!--
+        The Visual Studio extension and its tests. Not the repository's Directory.Build.props: the extension runs in
+        Visual Studio, on .NET Framework, and builds on neither the toolkit nor the framework's source.
+    -->
+    <Import Project="$(MSBuildThisFileDirectory)..\eng\Versions.props" />
+
+    <PropertyGroup>
+        <LangVersion>latest</LangVersion>
+        <Nullable>enable</Nullable>
+        <ImplicitUsings>disable</ImplicitUsings>
+        <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+        <GenerateDocumentationFile>true</GenerateDocumentationFile>
+        <NoWarn>$(NoWarn);CS1591;CS1573</NoWarn>
+        <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+        <AnalysisLevel>latest-recommended</AnalysisLevel>
+    </PropertyGroup>
+</Project>

@@ -1,0 +1,935 @@
+// Copyright (c) 2026 Hot Chai Games LLC. Licensed under the MIT License.
+
+using System;
+using System.Buffers;
+using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
+using System.Numerics;
+using System.Runtime.CompilerServices;
+using System.Text;
+using DotGame.Framework;
+using DotGame.Framework.Content;
+using DotGame.Framework.Graphics;
+
+namespace DotGame.Toolkit.Fonts;
+
+/// <summary>
+/// A font drawn with <see cref="SpriteBatch"/> from glyphs packed into one or more atlas pages,
+/// built from a TTF/OTF font (and optional fallback fonts) by the toolkit SpriteFontContent pipeline.
+/// </summary>
+/// <remarks>
+/// <para>
+/// All metrics are in pixels at <see cref="EmSize"/>, the size the glyphs were rendered at.
+/// Draw at another size by scaling: <c>scale = new Vector2(pixelSize / font.EmSize)</c>.
+/// Distance-field fonts (<see cref="GlyphFormat.Sdf"/>, <see cref="GlyphFormat.Msdf"/>,
+/// <see cref="GlyphFormat.Mtsdf"/>) stay sharp at any scale, and
+/// <see cref="GlyphFormat.Bitmap"/> fonts are pixel-exact at scale 1. Text draws with the font's
+/// <see cref="Shader"/>, in any batch, so there's nothing to set up to draw it.
+/// </para>
+/// <para>
+/// Text is laid out from the top-left corner of the first line: the baseline of each line is
+/// <see cref="Ascender"/> below its top, and lines are <see cref="LineHeight"/> apart.
+/// </para>
+/// <para>
+/// There is no text shaping: each code point draws its own glyph, left to right. No ligatures,
+/// bidirectional reordering or contextual forms are applied, so Arabic, Hebrew and Indic scripts
+/// don't draw correctly, and an emoji sequence draws as its separate code points.
+/// </para>
+/// </remarks>
+public sealed class SpriteFont : IContent
+{
+    private const int AsciiGlyphCount = 128;
+
+    private readonly List<Texture> _textures;
+    private readonly Dictionary<int, SpriteFontGlyph> _glyphs;
+    private readonly SpriteFontGlyph?[] _asciiGlyphs = new SpriteFontGlyph?[AsciiGlyphCount];
+    private readonly ulong[] _kerningKeys;
+    private readonly float[] _kerningValues;
+    private SpriteFontGlyph? _defaultGlyph;
+    private int? _defaultCharacter;
+    private readonly ContentService? _content;
+    private Shader _shader;
+
+    private bool _isDisposed;
+
+    // The face of text drawn without effects, the common case, set up once
+    private readonly TextLayer _plainFace;
+
+    // The Debug-build checks that report a font's limits once each
+    private bool _reportedClamp;
+    private bool _reportedBitmapEffects;
+
+    internal SpriteFont(
+        SpriteFontData data,
+        List<Texture> textures,
+        Shader shader,
+        ContentService? content = null)
+    {
+        ArgumentNullException.ThrowIfNull(data);
+        ArgumentNullException.ThrowIfNull(textures);
+        ArgumentNullException.ThrowIfNull(shader);
+
+        this._textures = textures;
+        this._shader = shader;
+        this._content = content;
+        this.GlyphFormat = data.GlyphFormat;
+        this.EmSize = data.EmSize;
+        this.DistanceRange = data.GlyphFormat == GlyphFormat.Bitmap ? null : data.DistanceRange;
+        this.DistanceRangeMiddle = data.GlyphFormat == GlyphFormat.Bitmap ? 0 : data.DistanceRangeMiddle;
+        this.LineHeight = data.LineHeight;
+        this.Ascender = data.Ascender;
+        this.Descender = data.Descender;
+        this.UnderlinePosition = data.UnderlinePosition;
+        this.UnderlineThickness = data.UnderlineThickness;
+        this.CapHeight = data.CapHeight;
+        this.TextureSize = new Vector2(data.Pages[0].Width, data.Pages[0].Height);
+
+        var glyphRecords = data.Glyphs.Span;
+        this._glyphs = new Dictionary<int, SpriteFontGlyph>(data.GlyphCount);
+        for (int i = 0; i < data.GlyphCount; i++)
+        {
+            SpriteFontReader.ReadGlyph(glyphRecords, i, out var codePoint, out var page, out var x, out var y, out var width, out var height,
+                out var advance, out var left, out var top, out var right, out var bottom);
+
+            if ((uint)page >= (uint)textures.Count)
+            {
+                throw new System.IO.InvalidDataException($"Glyph U+{codePoint:X4} refers to missing atlas page {page}.");
+            }
+
+            var glyph = new SpriteFontGlyph(textures[page], page, new RectangleInt(x, y, width, height), codePoint, advance, left, top, right, bottom);
+            this._glyphs[codePoint] = glyph;
+            if ((uint)codePoint < AsciiGlyphCount)
+            {
+                this._asciiGlyphs[codePoint] = glyph;
+            }
+        }
+
+        var kerningRecords = data.Kerning.Span;
+        var kerningCount = kerningRecords.Length / SpriteFontReader.KerningRecordSize;
+        this._kerningKeys = new ulong[kerningCount];
+        this._kerningValues = new float[kerningCount];
+        for (int i = 0; i < kerningCount; i++)
+        {
+            SpriteFontReader.ReadKerning(kerningRecords, i, out var first, out var second, out var adjustment);
+            this._kerningKeys[i] = KerningKey(first, second);
+            this._kerningValues[i] = adjustment;
+        }
+
+        // The pipeline writes the pairs sorted, but sorting here keeps the lookup correct
+        // regardless of the writer.
+        Array.Sort(this._kerningKeys, this._kerningValues);
+
+        if (this._glyphs.ContainsKey(0xFFFD))
+        {
+            this.DefaultCharacter = 0xFFFD;
+        }
+        else if (this._glyphs.ContainsKey('?'))
+        {
+            this.DefaultCharacter = '?';
+        }
+
+        this._plainFace = new TextLayer(isFace: true, default, Vector2.Zero, this.GetLayerData(0, 0, FaceMiterLimit));
+    }
+
+    /// <summary>Whether it has been released.</summary>
+    public bool IsDisposed => this._isDisposed;
+
+    /// <summary>
+    /// Gets or sets the shader this font's text draws with, whichever the sprite batch is using, which
+    /// it goes back to after the text. It starts as the toolkit's text shader, one shared by every
+    /// font, which draws every glyph format and every <see cref="TextEffects"/>.
+    /// </summary>
+    /// <remarks>
+    /// The text shader has no parameters: each font's and effect's settings travel with each glyph, so
+    /// text in many fonts and effects draws together, split only where the atlas page changes. A custom
+    /// shader can read the same settings, as <c>TEXCOORD1</c>; the toolkit's <c>spritefont.slang</c>
+    /// describes them. It stays yours to release.
+    /// </remarks>
+    public Shader Shader
+    {
+        get => this._shader;
+        set
+        {
+            ArgumentNullException.ThrowIfNull(value);
+
+            this._shader = value;
+        }
+    }
+
+    /// <summary>
+    /// Gets how the glyphs are stored in the atlas pages, which decides how the font is drawn.
+    /// </summary>
+    internal GlyphFormat GlyphFormat
+    {
+        get;
+    }
+
+    /// <summary>
+    /// Gets the size, in pixels per em, that the glyphs were rendered at. Every other metric of
+    /// the font is in pixels at this size.
+    /// </summary>
+    public float EmSize
+    {
+        get;
+    }
+
+    /// <summary>
+    /// Gets the distance between the baselines of consecutive lines.
+    /// </summary>
+    public float LineHeight
+    {
+        get;
+    }
+
+    /// <summary>
+    /// Gets the height of the font's ascender above the baseline, which is the distance from the
+    /// top of a line to its baseline.
+    /// </summary>
+    public float Ascender
+    {
+        get;
+    }
+
+    /// <summary>
+    /// Gets the height of the font's capital letters above the baseline, from the font's OS/2
+    /// table or its "H", or zero if the font doesn't give it.
+    /// </summary>
+    public float CapHeight
+    {
+        get;
+    }
+
+    /// <summary>
+    /// Gets the font's descender relative to the baseline; negative values lie below it.
+    /// </summary>
+    public float Descender
+    {
+        get;
+    }
+
+    /// <summary>
+    /// Gets the position of the center of the underline below the baseline.
+    /// </summary>
+    public float UnderlinePosition
+    {
+        get;
+    }
+
+    /// <summary>
+    /// Gets the thickness of the underline.
+    /// </summary>
+    public float UnderlineThickness
+    {
+        get;
+    }
+
+    /// <summary>
+    /// Gets the size of each of the font's atlas pages, in texels.
+    /// </summary>
+    public Vector2 TextureSize
+    {
+        get;
+    }
+
+    /// <summary>
+    /// Gets the font's atlas pages.
+    /// </summary>
+    public IReadOnlyList<Texture> Pages => this._textures;
+
+    /// <summary>
+    /// Gets the width of the range of distances encoded in the distance field, in atlas texels, or
+    /// <c>null</c> for <see cref="GlyphFormat.Bitmap"/> fonts.
+    /// </summary>
+    internal float? DistanceRange
+    {
+        get;
+    }
+
+    /// <summary>
+    /// Gets the signed distance, in atlas texels, encoded at the middle of the distance range,
+    /// with positive distances inside the glyphs. It is nonzero only for fonts built with a
+    /// <c>PxRangeOffset</c>.
+    /// </summary>
+    internal float DistanceRangeMiddle
+    {
+        get;
+    }
+
+    /// <summary>
+    /// Gets whether the font has kerning pairs (SpriteFontContent <c>Kerning="true"</c>).
+    /// </summary>
+    internal bool HasKerning => this._kerningKeys.Length != 0;
+
+    /// <summary>
+    /// Gets the code points that the font has glyphs for.
+    /// </summary>
+    public IReadOnlyCollection<int> Characters => this._glyphs.Keys;
+
+    /// <summary>
+    /// Gets or sets the character drawn in place of characters that the font has no glyph for, or
+    /// <c>null</c> to draw nothing for them. Defaults to U+FFFD (replacement character) or '?'
+    /// when the font has one of them. Control characters and invisible formatting characters
+    /// (such as the variation selector U+FE0F and zero-width joiners) draw nothing instead.
+    /// </summary>
+    internal int? DefaultCharacter
+    {
+        get => this._defaultCharacter;
+        set
+        {
+            SpriteFontGlyph? glyph = null;
+            if (value is int codePoint && !this._glyphs.TryGetValue(codePoint, out glyph))
+            {
+                throw new ArgumentException($"The font has no glyph for U+{codePoint:X4}.", nameof(value));
+            }
+
+            this._defaultCharacter = value;
+            this._defaultGlyph = glyph;
+        }
+    }
+
+    /// <summary>
+    /// Gets the glyph for the specified code point, if the font has one.
+    /// </summary>
+    internal bool TryGetGlyph(
+        int codePoint,
+        [NotNullWhen(true)] out SpriteFontGlyph? glyph)
+    {
+        return this._glyphs.TryGetValue(codePoint, out glyph);
+    }
+
+    /// <summary>
+    /// Gets the kerning adjustment added to the advance of <paramref name="first"/> when it is
+    /// followed by <paramref name="second"/>, or zero when the pair has none.
+    /// </summary>
+    internal float GetKerning(
+        int first,
+        int second)
+    {
+        if (this._kerningKeys.Length == 0)
+        {
+            return 0;
+        }
+
+        var index = Array.BinarySearch(this._kerningKeys, KerningKey(first, second));
+        return index >= 0 ? this._kerningValues[index] : 0;
+    }
+
+    /// <summary>
+    /// Measures the advance width and line height of a single code point.
+    /// </summary>
+    /// <param name="tracking">
+    /// The additional spacing applied after each character, in unscaled font units. Zero
+    /// uses the spacing defined by the font; positive values loosen it and negative values
+    /// tighten it. This is uniform spacing, unlike the pair-specific adjustment of kerning.
+    /// </param>
+    /// <param name="codePoint">The character.</param>
+    public Vector2 MeasureString(
+        int codePoint,
+        float tracking = 0)
+    {
+        if (this.TryGetDrawnGlyph(codePoint, out var glyph))
+        {
+            return new Vector2(glyph.Advance + tracking, this.LineHeight);
+        }
+
+        return new Vector2(0, this.LineHeight);
+    }
+
+    /// <summary>
+    /// Measures the width of the widest line of the specified text and the total height of
+    /// its lines, which are separated by line feed characters.
+    /// </summary>
+    /// <param name="tracking">
+    /// The additional spacing applied after each character, in unscaled font units. Zero
+    /// uses the spacing defined by the font; positive values loosen it and negative values
+    /// tighten it. This is uniform spacing, unlike the pair-specific adjustment of kerning.
+    /// </param>
+    /// <param name="text">The text.</param>
+    public Vector2 MeasureString(
+        ReadOnlySpan<char> text,
+        float tracking = 0)
+    {
+        var state = default(MeasureState);
+        this.MeasureSpan(text, tracking, ref state);
+        return state.GetSize(this.LineHeight);
+    }
+
+    /// <inheritdoc cref="MeasureString(ReadOnlySpan{char}, float)"/>
+    public Vector2 MeasureString(
+        StringBuilder text,
+        float tracking = 0)
+    {
+        ArgumentNullException.ThrowIfNull(text);
+
+        int length = text.Length;
+        char[]? rented = null;
+        Span<char> copy = (length <= MaxStackTextLength) ? stackalloc char[MaxStackTextLength] : (rented = ArrayPool<char>.Shared.Rent(length));
+        copy = copy[..length];
+        text.CopyTo(0, copy, length);
+
+        var size = this.MeasureString((ReadOnlySpan<char>)copy, tracking);
+
+        if (rented is not null)
+        {
+            ArrayPool<char>.Shared.Return(rented);
+        }
+
+        return size;
+    }
+
+    // The longest StringBuilder that's copied to the stack to measure or draw it
+    private const int MaxStackTextLength = 256;
+
+    private struct MeasureState
+    {
+        public float LineWidth;
+        public float MaxWidth;
+        public int LineCount;
+        public int Previous;
+
+        public readonly Vector2 GetSize(
+            float lineHeight)
+        {
+            return new Vector2(MathF.Max(this.LineWidth, this.MaxWidth), lineHeight * (this.LineCount + 1));
+        }
+    }
+
+    private void MeasureSpan(
+        ReadOnlySpan<char> text,
+        float tracking,
+        ref MeasureState state)
+    {
+        foreach (var codePoint in text.EnumerateCodePoints())
+        {
+            if (codePoint == '\n')
+            {
+                state.MaxWidth = MathF.Max(state.MaxWidth, state.LineWidth);
+                state.LineWidth = 0;
+                state.LineCount++;
+                state.Previous = 0;
+                continue;
+            }
+
+            state.LineWidth += this.MeasureNext(codePoint, tracking, ref state.Previous);
+        }
+    }
+
+    /// <summary>
+    /// How much wider a code point makes text whose last glyph is <paramref name="previous"/>, for measuring
+    /// text as it goes, without measuring what's before it again.
+    /// </summary>
+    internal float MeasureNext(
+        int codePoint,
+        float tracking,
+        ref int previous)
+    {
+        if (!this.TryGetDrawnGlyph(codePoint, out var glyph))
+        {
+            return 0f;
+        }
+
+        float kerning = (previous != 0) ? this.GetKerning(previous, glyph.CodePoint) : 0f;
+        previous = glyph.CodePoint;
+        return kerning + glyph.Advance + tracking;
+    }
+
+    /// <summary>
+    /// Draws the specified text in a single color.
+    /// </summary>
+    /// <param name="spriteBatch">
+    /// The batch to draw into.
+    /// </param>
+    /// <param name="position">The position of <paramref name="origin"/> on the screen.</param>
+    /// <param name="color">The color of the text's face.</param>
+    /// <param name="opacity">
+    /// The amount by which to fade the text and its effects, where 1.0 draws them in their own
+    /// colors. This is kept separate from <paramref name="color"/> so that a color that is already
+    /// semi-transparent can be faded without the caller combining the two.
+    /// </param>
+    /// <param name="rotation">The rotation of the text around <paramref name="origin"/>.</param>
+    /// <param name="origin">
+    /// The point of the text, in unscaled font units from the top-left corner of the first line,
+    /// that is drawn at <paramref name="position"/> and that the text rotates and scales around.
+    /// </param>
+    /// <param name="scale">
+    /// The scale of the text, or <c>null</c> for none; <c>pixelSize / EmSize</c> draws the text
+    /// at <c>pixelSize</c> pixels per em.
+    /// </param>
+    /// <param name="tracking">
+    /// The additional spacing applied after each character, in unscaled font units. Zero
+    /// uses the spacing defined by the font; positive values loosen it and negative values
+    /// tighten it. It is added to each character's advance before <paramref name="scale"/>
+    /// is applied, so the spacing scales along with the glyphs. This is uniform spacing,
+    /// unlike the pair-specific adjustment of kerning.
+    /// </param>
+    /// <param name="effects">
+    /// The text's effects, or <c>null</c> for none. Every glyph's shadow is drawn first, then
+    /// every glyph's glow, outline and face, so no glyph's effects cover another's face.
+    /// </param>
+    /// <param name="layers">
+    /// Which layers to draw: all of them by default. Text drawn in several calls (lines, or
+    /// runs) keeps its effects behind every face by drawing each call's
+    /// <see cref="TextLayers.Effects"/>, then each call's <see cref="TextLayers.Face"/>.
+    /// </param>
+    /// <param name="text">The text.</param>
+    internal void DrawString(
+        SpriteBatch spriteBatch,
+        ReadOnlySpan<char> text,
+        Vector2 position,
+        Color color,
+        float opacity = 1,
+        Angle rotation = default,
+        Vector2 origin = default,
+        Vector2? scale = null,
+        float tracking = 0,
+        TextEffects? effects = null,
+        TextLayers layers = TextLayers.All)
+    {
+        var args = CreateDrawArgs(position, color, opacity, rotation, origin, scale, tracking, effects, layers);
+        this.DrawString(spriteBatch, text, default(DefaultCharacterAttributes), CharacterCursor.Start, in args);
+    }
+
+    /// <inheritdoc cref="DrawString(SpriteBatch, ReadOnlySpan{char}, Vector2, Color, float, Angle, Vector2, Nullable{Vector2}, float, TextEffects?, TextLayers)"/>
+    internal void DrawString(
+        SpriteBatch spriteBatch,
+        StringBuilder text,
+        Vector2 position,
+        Color color,
+        float opacity = 1,
+        Angle rotation = default,
+        Vector2 origin = default,
+        Vector2? scale = null,
+        float tracking = 0,
+        TextEffects? effects = null,
+        TextLayers layers = TextLayers.All)
+    {
+        var args = CreateDrawArgs(position, color, opacity, rotation, origin, scale, tracking, effects, layers);
+        this.DrawString(spriteBatch, text, default(DefaultCharacterAttributes), CharacterCursor.Start, in args);
+    }
+
+    // Gathers the arguments of a DrawString call for the methods that draw it, which take them
+    // by reference (see TextDrawArgs). The generic DrawString methods outside this class build
+    // theirs in place, so that no call from a generic instance passes these as parameters.
+    private static TextDrawArgs CreateDrawArgs(
+        Vector2 position,
+        Color color,
+        float opacity,
+        Angle rotation,
+        Vector2 origin,
+        Vector2? scale,
+        float tracking,
+        TextEffects? effects,
+        TextLayers layers)
+    {
+        return new TextDrawArgs
+        {
+            Position = position,
+            Color = color,
+            Opacity = opacity,
+            Rotation = rotation,
+            Origin = origin,
+            Scale = scale ?? Vector2.One,
+            Tracking = tracking,
+            Effects = effects,
+            Layers = layers,
+        };
+    }
+
+    /// <summary>
+    /// Draws the specified text, letting the attributes of individual characters override
+    /// the specified color.
+    /// </summary>
+    /// <param name="spriteBatch">
+    /// The batch to draw into.
+    /// </param>
+    /// <param name="characterAttributes">
+    /// The attributes of the individual characters. An attribute that the implementation
+    /// does not describe keeps the value passed to this method, so attributes that describe
+    /// only (for example) a per-glyph translation still draw the text in
+    /// <see cref="TextDrawArgs.Color"/>. Colors apply to the face; each effect keeps its own color.
+    /// </param>
+    /// <param name="cursorOffset">
+    /// The position of the first character of <paramref name="text"/> within the text that
+    /// <paramref name="characterAttributes"/> describes, or <see cref="CharacterCursor.Start"/>
+    /// if they describe exactly the text being drawn. This is what lets a longer text be
+    /// drawn in pieces, one wrapped line at a time, while a single set of attributes
+    /// describes the whole of it.
+    /// </param>
+    /// <param name="args">
+    /// How to draw it: the position, color, opacity, rotation, origin, scale, tracking, effects
+    /// and layers that the public <c>DrawString</c> methods take, as the overload without
+    /// attributes describes them. A color that the attributes give a character replaces
+    /// <see cref="TextDrawArgs.Color"/>; the opacity still applies to it.
+    /// </param>
+    /// <param name="text">The text.</param>
+    internal void DrawString<TCharacterAttributes>(
+        SpriteBatch spriteBatch,
+        StringBuilder text,
+        TCharacterAttributes characterAttributes,
+        in CharacterCursor cursorOffset,
+        in TextDrawArgs args)
+        where TCharacterAttributes : ICharacterAttributes
+    {
+        ArgumentNullException.ThrowIfNull(spriteBatch);
+
+        if ((text is null) || (text.Length == 0))
+        {
+            return;
+        }
+
+        int length = text.Length;
+        char[]? rented = null;
+        Span<char> copy = (length <= MaxStackTextLength) ? stackalloc char[MaxStackTextLength] : (rented = ArrayPool<char>.Shared.Rent(length));
+        copy = copy[..length];
+        text.CopyTo(0, copy, length);
+
+        this.DrawString(spriteBatch, (ReadOnlySpan<char>)copy, characterAttributes, in cursorOffset, in args);
+
+        if (rented is not null)
+        {
+            ArrayPool<char>.Shared.Return(rented);
+        }
+    }
+
+    /// <inheritdoc cref="DrawString{TCharacterAttributes}(SpriteBatch, StringBuilder, TCharacterAttributes, in CharacterCursor, in TextDrawArgs)"/>
+    internal void DrawString<TCharacterAttributes>(
+        SpriteBatch spriteBatch,
+        ReadOnlySpan<char> text,
+        TCharacterAttributes characterAttributes,
+        in CharacterCursor cursorOffset,
+        in TextDrawArgs args)
+        where TCharacterAttributes : ICharacterAttributes
+    {
+        ArgumentNullException.ThrowIfNull(spriteBatch);
+
+        if (text.Length == 0)
+        {
+            return;
+        }
+
+        // NOTE: Once per call, never per glyph. Nothing draws until a sprite needs the change
+        using var shader = spriteBatch.UseShader(this._shader);
+
+        Span<TextLayer> drawn = stackalloc TextLayer[TextLayer.MaxCount];
+        var layerCount = this.GetLayers(args.Effects, drawn, args.Layers);
+        for (int i = 0; i < layerCount; i++)
+        {
+            var state = new DrawState(cursorOffset);
+            this.DrawSpan(spriteBatch, text, ref characterAttributes, ref state, in drawn[i], in args);
+        }
+    }
+
+    // The miter limit of the face and the shadow, which follow the glyphs' corners as an
+    // outline's default does
+    private const float FaceMiterLimit = 4;
+
+    // A miter limit the shader treats as unlimited, kept within half-float range
+    private const float UnlimitedMiterLimit = 1024;
+
+    /// <summary>
+    /// Fills <paramref name="layers"/> with the passes that draw text with the specified effects,
+    /// in drawing order, and returns how many there are.
+    /// </summary>
+    /// <param name="include">The layers to draw; the others are left out.</param>
+    /// <param name="effects">The effects, or <c>null</c> for none.</param>
+    /// <param name="layers">Where the passes go.</param>
+    internal int GetLayers(
+        TextEffects? effects,
+        Span<TextLayer> layers,
+        TextLayers include = TextLayers.All)
+    {
+        bool drawFace = (include & TextLayers.Face) != 0;
+        if ((effects is null) || ReferenceEquals(effects, TextEffects.None))
+        {
+            if (!drawFace)
+            {
+                return 0;
+            }
+
+            layers[0] = this._plainFace;
+            return 1;
+        }
+
+        if (this.GlyphFormat == GlyphFormat.Bitmap)
+        {
+            if ((effects.Shadow is not null) || (effects.Glow is not null) || (effects.Outline is not null)
+                || (effects.Embolden != 0) || (effects.Softness != 0))
+            {
+                ReportOnce(ref this._reportedBitmapEffects, 0x6e2b91d4,
+                    "Effects aren't drawn for bitmap fonts; only the face is.");
+            }
+
+            if (!drawFace)
+            {
+                return 0;
+            }
+
+            layers[0] = this._plainFace;
+            return 1;
+        }
+
+        int count = 0;
+        var embolden = effects.Embolden;
+
+        if ((effects.Shadow is { } shadow) && ((include & TextLayers.Shadow) != 0))
+        {
+            layers[count++] = new TextLayer(isFace: false, shadow.Color, shadow.Offset,
+                this.GetLayerData(embolden + shadow.Spread, shadow.Softness, FaceMiterLimit));
+        }
+
+        if ((effects.Glow is { } glow) && ((include & TextLayers.Glow) != 0))
+        {
+            layers[count++] = new TextLayer(isFace: false, glow.Color, Vector2.Zero,
+                this.GetLayerData(embolden + glow.Width, glow.Softness, 1));
+        }
+
+        if ((effects.Outline is { } outline) && ((include & TextLayers.Outline) != 0))
+        {
+            var miterLimit = (outline.Corners == TextCorners.Round) ? 1 : outline.MiterLimit;
+            layers[count++] = new TextLayer(isFace: false, outline.Color, Vector2.Zero,
+                this.GetLayerData(embolden + outline.Width, outline.Softness, miterLimit));
+        }
+
+        if (drawFace)
+        {
+            layers[count++] = new TextLayer(isFace: true, default, Vector2.Zero,
+                this.GetLayerData(embolden, effects.Softness, FaceMiterLimit));
+        }
+
+        return count;
+    }
+
+    /// <summary>
+    /// Gets the settings each quad of a layer carries to the text shader (see
+    /// <c>spritefont.slang</c>), keeping the layer inside the distances the atlas encodes.
+    /// </summary>
+    /// <param name="embolden">How far the layer's edges move outward from the glyphs', in pixels of the font's native size.</param>
+    /// <param name="softness">How much wider than a screen pixel the layer's edge fades.</param>
+    /// <param name="miterLimit">How many times the emboldening a corner may extend; 1 is round.</param>
+    internal ShaderCustomData GetLayerData(
+        float embolden,
+        float softness,
+        float miterLimit)
+    {
+        if (this.DistanceRange is not float distanceRange)
+        {
+            // A bitmap font: the shader uses the texture's alpha
+            return default;
+        }
+
+        var middle = this.DistanceRangeMiddle;
+
+        // The edge, and the pixel of anti-aliasing around it, has to stay inside the encoded
+        // range, but the true outline is never limited. The atlas is rendered at the font's em
+        // size, so a font pixel is an atlas texel.
+        var limit = MathF.Max((distanceRange / 2) - 1, MathF.Abs(middle));
+        var clampedSoftness = Math.Clamp(softness, 0, 2 * limit);
+        var reach = MathF.Max(limit - (clampedSoftness / 2), MathF.Abs(middle));
+
+        // The middle of the range recenters an asymmetric range on the true outline, and the
+        // emboldening moves the edges from there
+        var distanceOffset = Math.Clamp(middle + embolden, -reach, reach);
+
+        if ((distanceOffset != middle + embolden) || (clampedSoftness != softness))
+        {
+            ReportOnce(ref this._reportedClamp, 0x3fa7c260,
+                $"An effect reaches beyond the distances the atlas encodes (distance range {distanceRange}); it's drawn as far as they go. Build the font with a distance range of at least twice the widest effect.");
+        }
+
+        var signedRange = (this.GlyphFormat == GlyphFormat.Mtsdf) ? -distanceRange : distanceRange;
+
+        return new ShaderCustomData(
+            distanceOffset,
+            clampedSoftness,
+            Math.Clamp(float.IsNaN(miterLimit) ? 1 : miterLimit, 1, UnlimitedMiterLimit),
+            signedRange);
+    }
+
+    private static void ReportOnce(
+        ref bool reported,
+        uint tag,
+        string message)
+    {
+        if (!reported)
+        {
+            reported = true;
+            DotGame.Framework.Diagnostics.Trace.WriteDebug(tag, message);
+        }
+    }
+
+    private struct DrawState
+    {
+        public float PenX;
+        public float LineTop;
+        public int Previous;
+
+        // Counting from the offset rather than from zero is what positions the attributes
+        // within the whole text, and it costs nothing for each glyph.
+        public int CharIndex;
+        public int GlyphIndex;
+
+        public DrawState(
+            in CharacterCursor cursorOffset)
+        {
+            this.CharIndex = cursorOffset.CharIndex;
+            this.GlyphIndex = cursorOffset.GlyphIndex;
+        }
+    }
+
+    private void DrawSpan<TCharacterAttributes>(
+        SpriteBatch spriteBatch,
+        ReadOnlySpan<char> text,
+        ref TCharacterAttributes characterAttributes,
+        ref DrawState state,
+        in TextLayer layer,
+        in TextDrawArgs args)
+        where TCharacterAttributes : ICharacterAttributes
+    {
+        var position = args.Position;
+        var color = args.Color;
+        var opacity = args.Opacity;
+        var rotation = args.Rotation;
+        var origin = args.Origin;
+        var scale = args.Scale;
+        var tracking = args.Tracking;
+        var baseline = this.Ascender;
+        var layerOrigin = origin - layer.Offset;
+        var layerData = layer.Data;
+        var effectColor = layer.Color * opacity;
+
+        foreach (var codePoint in text.EnumerateCodePoints())
+        {
+            if (codePoint == '\n')
+            {
+                state.LineTop += this.LineHeight;
+                state.PenX = 0;
+                state.Previous = 0;
+            }
+            else if (this.TryGetDrawnGlyph(codePoint, out var glyph))
+            {
+                if (state.Previous != 0)
+                {
+                    state.PenX += this.GetKerning(state.Previous, glyph.CodePoint);
+                }
+
+                if (glyph.SourceRectangle.Width > 0)
+                {
+                    // NOTE: The cursor is absolute, so characters that draw nothing can be
+                    // skipped without the attributes losing track of their position.
+                    characterAttributes.MoveTo(new CharacterCursor(state.CharIndex, state.GlyphIndex));
+
+                    // The face's color belongs to the caller unless the attributes override it,
+                    // so attributes that describe something else leave the text as it was drawn.
+                    // An effect keeps its own color, so a highlighted word keeps its outline.
+                    var glyphColor = layer.IsFace ? (characterAttributes.Color ?? color) * opacity : effectColor;
+
+                    // Each glyph is drawn at the text's position with the text's origin moved
+                    // to the glyph, so SpriteBatch rotates and scales the whole text as one.
+                    var glyphOffset = new Vector2(state.PenX + glyph.Left, state.LineTop + baseline + glyph.Top);
+
+                    spriteBatch.Draw(glyph.Texture,
+                    position,
+                    glyphColor,
+                    rotation,
+                    layerOrigin - glyphOffset,
+                    scale,
+                    glyph.SourceRectangle,
+                    customData: in layerData);
+                }
+
+                state.PenX += glyph.Advance + tracking;
+                state.Previous = glyph.CodePoint;
+            }
+
+            state.CharIndex += codePoint.Utf16SequenceLength();
+            state.GlyphIndex++;
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private bool TryGetDrawnGlyph(
+        int codePoint,
+        out SpriteFontGlyph glyph)
+    {
+        SpriteFontGlyph? found;
+        if ((uint)codePoint < AsciiGlyphCount)
+        {
+            found = this._asciiGlyphs[codePoint];
+        }
+        else
+        {
+            this._glyphs.TryGetValue(codePoint, out found);
+        }
+
+        // Control characters such as carriage return and tab, and invisible formatting
+        // characters such as the emoji variation selector in "©️", draw nothing rather than
+        // the default character.
+        found ??= ((codePoint >= 0x20) && !((codePoint >= 0x7F) && (codePoint <= 0x9F)) && !IsDefaultIgnorable(codePoint)) ? this._defaultGlyph : null;
+
+        glyph = found!;
+        return found is not null;
+    }
+
+    /// <summary>
+    /// Whether a code point is one that Unicode says to draw as nothing when a font has no
+    /// glyph for it (Default_Ignorable_Code_Point): variation selectors, zero-width joiners
+    /// and spaces, bidirectional marks, the soft hyphen, and the like.
+    /// </summary>
+    private static bool IsDefaultIgnorable(
+        int codePoint)
+    {
+        return codePoint switch
+        {
+            0x00AD => true, // Soft hyphen
+            0x034F => true, // Combining grapheme joiner
+            0x061C => true, // Arabic letter mark
+            0x115F or 0x1160 => true, // Hangul fillers
+            0x17B4 or 0x17B5 => true, // Khmer inherent vowels
+            >= 0x180B and <= 0x180F => true, // Mongolian variation selectors and vowel separator
+            >= 0x200B and <= 0x200F => true, // Zero-width space, joiners, and directional marks
+            >= 0x202A and <= 0x202E => true, // Bidirectional embeddings and overrides
+            >= 0x2060 and <= 0x206F => true, // Word joiner, invisible operators, and isolates
+            0x3164 => true, // Hangul filler
+            >= 0xFE00 and <= 0xFE0F => true, // Variation selectors
+            0xFEFF => true, // Zero-width no-break space (byte order mark)
+            0xFFA0 => true, // Halfwidth Hangul filler
+            >= 0xFFF0 and <= 0xFFF8 => true, // Unassigned specials
+            >= 0x1BCA0 and <= 0x1BCA3 => true, // Shorthand format controls
+            >= 0x1D173 and <= 0x1D17A => true, // Musical symbol formatting
+            >= 0xE0000 and <= 0xE0FFF => true, // Tags and variation selectors supplement
+            _ => false,
+        };
+    }
+
+    private static ulong KerningKey(
+        int first,
+        int second)
+    {
+        return ((ulong)(uint)first << 32) | (uint)second;
+    }
+
+    void IDisposable.Dispose()
+    {
+        if (this._isDisposed)
+        {
+            return;
+        }
+
+        this._isDisposed = true;
+
+        // NOTE: Its shader stays loaded, as other fonts share it
+
+        foreach (var texture in this._textures)
+        {
+            // NOTE: Its pages were loaded by key, so they're the content service's to release
+            if (this._content is not null)
+            {
+                _ = this._content.UnloadAsync(texture);
+            }
+            else
+            {
+                texture.Dispose();
+            }
+        }
+    }
+}

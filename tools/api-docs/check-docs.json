@@ -1,0 +1,40 @@
+// What tools/api-docs/check-docs.cs checks in this repository: see the comment on Config there
+{
+  "links": ["README.md", "CONTRIBUTING.md", "docs/**/*.md"],
+  "samples": ["docs/guide/*.md"],
+  "workFolder": "dotgame-toolkit-guide-samples",
+  "usings": [
+    "System",
+    "System.Buffers",
+    "System.Collections.Generic",
+    "System.IO",
+    "System.Numerics",
+    "System.Runtime.InteropServices",
+    "System.Threading",
+    "System.Threading.Tasks",
+    "DotGame.Framework",
+    "DotGame.Framework.Audio",
+    "DotGame.Framework.Content",
+    "DotGame.Framework.Desktop",
+    "DotGame.Framework.Diagnostics",
+    "DotGame.Framework.Graphics",
+    "DotGame.Framework.Input",
+    "DotGame.Framework.Threading",
+    "DotGame.Framework.Time",
+    "DotGame.Imaging",
+    "DotGame.Imaging.Jpeg",
+    "DotGame.Imaging.Png",
+    "DotGame.Imaging.WebP",
+    "DotGame.Toolkit",
+    "DotGame.Toolkit.Animation",
+    "DotGame.Toolkit.Audio",
+    "DotGame.Toolkit.Fonts",
+    "DotGame.Toolkit.Graphics",
+    "DotGame.Toolkit.Particles",
+    "Trace = DotGame.Framework.Diagnostics.Trace"
+  ],
+  "prelude": "check-docs.prelude.cs",
+  // The include brings the framework and the content pipelines; the toolkit is the game's own reference
+  "imports": ["packaging/build/DotGame.Toolkit.targets"],
+  "references": ["toolkit/DotGame.Toolkit.csproj"]
+}

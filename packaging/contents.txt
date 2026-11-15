@@ -1,0 +1,23 @@
+# What each of the toolkit's packages may contain, as the framework's packaging/contents.txt describes:
+# a section per package id, and a line per path. The [*] lines are the framework's.
+
+[DotGame.Toolkit]
+lib/net11.0/DotGame.Toolkit.{dll,xml}
+
+[DotGame.Toolkit.Build]
+pipeline/tool/ContentVersions.props
+pipeline/tool/DotGame.Toolkit.ContentPipeline.BuildTool.{dll,deps.json,runtimeconfig.json}
+pipeline/tool/DotGame.Framework.ContentPipeline.BuildTool.dll
+pipeline/tool/DotGame.Imaging.dll
+pipeline/tool/DotGame.AudioCodecs.dll
+buildTransitive/DotGame.Toolkit.Build.{props,targets}
+native/glyphgen/{osx-arm64,linux-x64,linux-arm64}/glyphgen
+native/glyphgen/{win-x64,win-arm64}/glyphgen.exe
+pipeline/ContentPipeline.Toolkit.targets
+pipeline/ContentPipeline.Toolkit.DefaultItems.targets
+pipeline/*.BrowseObject.xaml
+pipeline/ContentPipeline.Toolkit.ProjectItemsSchema.xaml
+pipeline/Shaders/*.slang
+pipeline/Shaders/precompiled/spritefont.{frag,vert}.{spv,msl,dxil}
+pipeline/Shaders/precompiled/spritefont.glsl
+pipeline/tasks/DotGame.Toolkit.ContentPipeline.Tasks.dll

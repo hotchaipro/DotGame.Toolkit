@@ -1,0 +1,851 @@
+#nullable enable
+abstract DotGame.Toolkit.Particles.ParticleRenderer.<Clone>$() -> DotGame.Toolkit.Particles.ParticleRenderer!
+abstract DotGame.Toolkit.Particles.ParticleRenderer.Draw(DotGame.Framework.Graphics.SpriteBatch! spriteBatch, System.ReadOnlySpan<DotGame.Toolkit.Particles.ParticleDrawState> particles) -> void
+const DotGame.Toolkit.Audio.SoundPool.DefaultVoiceLimit = 8 -> int
+DotGame.Toolkit.Animation.Easing
+DotGame.Toolkit.Animation.Easing.Evaluate(float normalizedTime) -> float
+DotGame.Toolkit.Animation.Easing.Reversed() -> DotGame.Toolkit.Animation.Easing!
+DotGame.Toolkit.Animation.EasingMode
+DotGame.Toolkit.Animation.EasingMode.In = 0 -> DotGame.Toolkit.Animation.EasingMode
+DotGame.Toolkit.Animation.EasingMode.InOut = 2 -> DotGame.Toolkit.Animation.EasingMode
+DotGame.Toolkit.Animation.EasingMode.Out = 1 -> DotGame.Toolkit.Animation.EasingMode
+DotGame.Toolkit.Animation.EasingMode.OutIn = 3 -> DotGame.Toolkit.Animation.EasingMode
+DotGame.Toolkit.Animation.PlaybackMode
+DotGame.Toolkit.Animation.PlaybackMode.Loop = 0 -> DotGame.Toolkit.Animation.PlaybackMode
+DotGame.Toolkit.Animation.PlaybackMode.Once = 1 -> DotGame.Toolkit.Animation.PlaybackMode
+DotGame.Toolkit.Animation.PlaybackMode.PingPong = 2 -> DotGame.Toolkit.Animation.PlaybackMode
+DotGame.Toolkit.Animation.SpriteAnimation
+DotGame.Toolkit.Animation.SpriteAnimation.Duration.get -> System.TimeSpan
+DotGame.Toolkit.Animation.SpriteAnimation.Frames.get -> System.Collections.Generic.IReadOnlyList<DotGame.Toolkit.Animation.SpriteAnimationFrame>!
+DotGame.Toolkit.Animation.SpriteAnimation.FramesPerSecond.get -> float
+DotGame.Toolkit.Animation.SpriteAnimation.GetFrame(System.TimeSpan time) -> DotGame.Toolkit.Graphics.TextureRegion!
+DotGame.Toolkit.Animation.SpriteAnimation.GetFrameDuration(int index) -> System.TimeSpan
+DotGame.Toolkit.Animation.SpriteAnimation.GetFrameIndex(System.TimeSpan time) -> int
+DotGame.Toolkit.Animation.SpriteAnimation.Playback.get -> DotGame.Toolkit.Animation.PlaybackMode
+DotGame.Toolkit.Animation.SpriteAnimation.Size.get -> DotGame.Framework.Vector2Int
+DotGame.Toolkit.Animation.SpriteAnimation.SpriteAnimation(System.Collections.Generic.IReadOnlyList<DotGame.Toolkit.Animation.SpriteAnimationFrame>! frames, float framesPerSecond, DotGame.Toolkit.Animation.PlaybackMode playback = DotGame.Toolkit.Animation.PlaybackMode.Loop) -> void
+DotGame.Toolkit.Animation.SpriteAnimation.SpriteAnimation(System.Collections.Generic.IReadOnlyList<DotGame.Toolkit.Graphics.TextureRegion!>! frames, float framesPerSecond, DotGame.Toolkit.Animation.PlaybackMode playback = DotGame.Toolkit.Animation.PlaybackMode.Loop) -> void
+DotGame.Toolkit.Animation.SpriteAnimationExtensions
+DotGame.Toolkit.Animation.SpriteAnimationFrame
+DotGame.Toolkit.Animation.SpriteAnimationFrame.Deconstruct(out DotGame.Toolkit.Graphics.TextureRegion! Region, out float Hold) -> void
+DotGame.Toolkit.Animation.SpriteAnimationFrame.Equals(DotGame.Toolkit.Animation.SpriteAnimationFrame other) -> bool
+DotGame.Toolkit.Animation.SpriteAnimationFrame.Hold.get -> float
+DotGame.Toolkit.Animation.SpriteAnimationFrame.Hold.init -> void
+DotGame.Toolkit.Animation.SpriteAnimationFrame.Region.get -> DotGame.Toolkit.Graphics.TextureRegion!
+DotGame.Toolkit.Animation.SpriteAnimationFrame.Region.init -> void
+DotGame.Toolkit.Animation.SpriteAnimationFrame.SpriteAnimationFrame() -> void
+DotGame.Toolkit.Animation.SpriteAnimationFrame.SpriteAnimationFrame(DotGame.Toolkit.Graphics.TextureRegion! Region, float Hold = 1) -> void
+DotGame.Toolkit.Animation.SpriteAnimationHandle
+DotGame.Toolkit.Animation.SpriteAnimationHandle.IsNewPlay.get -> bool
+DotGame.Toolkit.Animation.SpriteAnimationHandle.SpriteAnimationHandle() -> void
+DotGame.Toolkit.Animation.SpriteAnimationHandle.Then(System.Action! action) -> void
+DotGame.Toolkit.Animation.SpriteAnimationHandle.When(int frameIndex, System.Action! action) -> DotGame.Toolkit.Animation.SpriteAnimationHandle
+DotGame.Toolkit.Animation.SpriteAnimationPlayer
+DotGame.Toolkit.Animation.SpriteAnimationPlayer.Animation.get -> DotGame.Toolkit.Animation.SpriteAnimation?
+DotGame.Toolkit.Animation.SpriteAnimationPlayer.Frame.get -> DotGame.Toolkit.Graphics.TextureRegion?
+DotGame.Toolkit.Animation.SpriteAnimationPlayer.FrameIndex.get -> int
+DotGame.Toolkit.Animation.SpriteAnimationPlayer.IsFinished.get -> bool
+DotGame.Toolkit.Animation.SpriteAnimationPlayer.IsPlaying.get -> bool
+DotGame.Toolkit.Animation.SpriteAnimationPlayer.Pause() -> void
+DotGame.Toolkit.Animation.SpriteAnimationPlayer.Play(DotGame.Toolkit.Animation.SpriteAnimation! animation, bool restart = false) -> DotGame.Toolkit.Animation.SpriteAnimationHandle
+DotGame.Toolkit.Animation.SpriteAnimationPlayer.Resume() -> void
+DotGame.Toolkit.Animation.SpriteAnimationPlayer.Speed.get -> float
+DotGame.Toolkit.Animation.SpriteAnimationPlayer.Speed.set -> void
+DotGame.Toolkit.Animation.SpriteAnimationPlayer.SpriteAnimationPlayer(DotGame.Toolkit.Animation.SpriteAnimation? animation = null) -> void
+DotGame.Toolkit.Animation.SpriteAnimationPlayer.Stop() -> void
+DotGame.Toolkit.Animation.SpriteAnimationPlayer.Time.get -> System.TimeSpan
+DotGame.Toolkit.Animation.SpriteAnimationPlayer.Time.set -> void
+DotGame.Toolkit.Animation.SpriteAnimationPlayer.Update(System.TimeSpan elapsed) -> void
+DotGame.Toolkit.Animation.Tween
+DotGame.Toolkit.Animation.Tween<T>
+DotGame.Toolkit.Animation.Tween<T>.Delay.get -> System.TimeSpan
+DotGame.Toolkit.Animation.Tween<T>.Duration.get -> System.TimeSpan
+DotGame.Toolkit.Animation.Tween<T>.Finish() -> void
+DotGame.Toolkit.Animation.Tween<T>.IsFinished.get -> bool
+DotGame.Toolkit.Animation.Tween<T>.Playback.get -> DotGame.Toolkit.Animation.PlaybackMode
+DotGame.Toolkit.Animation.Tween<T>.Progress.get -> float
+DotGame.Toolkit.Animation.Tween<T>.Restart() -> void
+DotGame.Toolkit.Animation.Tween<T>.Restart(T from, T to) -> void
+DotGame.Toolkit.Animation.Tween<T>.Update(System.TimeSpan elapsed) -> void
+DotGame.Toolkit.Animation.Tween<T>.Value.get -> T
+DotGame.Toolkit.Animation.Tween<T>.WhenFinishedAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+DotGame.Toolkit.Audio.AudioServiceExtensions
+DotGame.Toolkit.Audio.SoundBank
+DotGame.Toolkit.Audio.SoundBank.GetSegment(string! name) -> DotGame.Toolkit.Audio.SoundSegment
+DotGame.Toolkit.Audio.SoundBank.IsDisposed.get -> bool
+DotGame.Toolkit.Audio.SoundBank.SegmentNames.get -> System.Collections.Generic.IReadOnlyCollection<string!>!
+DotGame.Toolkit.Audio.SoundBank.TryGetSegment(string! name, out DotGame.Toolkit.Audio.SoundSegment segment) -> bool
+DotGame.Toolkit.Audio.SoundBankLoader
+DotGame.Toolkit.Audio.SoundBankLoader.LoadAsync(string! contentKey) -> System.Threading.Tasks.Task<DotGame.Toolkit.Audio.SoundBank!>!
+DotGame.Toolkit.Audio.SoundBankLoader.SoundBankLoader(DotGame.Framework.Content.ContentService! contentService) -> void
+DotGame.Toolkit.Audio.SoundExtensions
+DotGame.Toolkit.Audio.SoundPool
+DotGame.Toolkit.Audio.SoundPool.Dispose() -> void
+DotGame.Toolkit.Audio.SoundPool.FadeOutAll(System.TimeSpan duration, DotGame.Framework.Time.TimeService! time) -> void
+DotGame.Toolkit.Audio.SoundPool.IsPlaying.get -> bool
+DotGame.Toolkit.Audio.SoundPool.Play(float volume = 1) -> void
+DotGame.Toolkit.Audio.SoundPool.Prepare(int voices) -> void
+DotGame.Toolkit.Audio.SoundPool.Segment.get -> DotGame.Toolkit.Audio.SoundSegment
+DotGame.Toolkit.Audio.SoundPool.SoundPool(DotGame.Framework.Audio.AudioService! audioService, DotGame.Framework.Audio.Sound! sound, int voiceLimit = 8, DotGame.Framework.Audio.VolumeControl? volumeControl = null) -> void
+DotGame.Toolkit.Audio.SoundPool.SoundPool(DotGame.Framework.Audio.AudioService! audioService, DotGame.Toolkit.Audio.SoundSegment segment, int voiceLimit = 8, DotGame.Framework.Audio.VolumeControl? volumeControl = null) -> void
+DotGame.Toolkit.Audio.SoundPool.StopAll() -> void
+DotGame.Toolkit.Audio.SoundPool.VoiceLimit.get -> int
+DotGame.Toolkit.Audio.SoundPool.VolumeControl.get -> DotGame.Framework.Audio.VolumeControl?
+DotGame.Toolkit.Audio.SoundSegment
+DotGame.Toolkit.Audio.SoundSegment.Duration.get -> System.TimeSpan
+DotGame.Toolkit.Audio.SoundSegment.Equals(DotGame.Toolkit.Audio.SoundSegment other) -> bool
+DotGame.Toolkit.Audio.SoundSegment.Offset.get -> System.TimeSpan
+DotGame.Toolkit.Audio.SoundSegment.Sound.get -> DotGame.Framework.Audio.Sound!
+DotGame.Toolkit.Audio.SoundSegment.SoundSegment() -> void
+DotGame.Toolkit.Audio.SoundSegment.SoundSegment(DotGame.Framework.Audio.Sound! sound) -> void
+DotGame.Toolkit.Audio.SoundSegment.SoundSegment(DotGame.Framework.Audio.Sound! sound, System.TimeSpan offset, System.TimeSpan duration) -> void
+DotGame.Toolkit.Fonts.CharacterCursor
+DotGame.Toolkit.Fonts.CharacterCursor.CharacterCursor() -> void
+DotGame.Toolkit.Fonts.CharacterCursor.CharacterCursor(int charIndex, int glyphIndex) -> void
+DotGame.Toolkit.Fonts.CharacterCursor.CharIndex.get -> int
+DotGame.Toolkit.Fonts.CharacterCursor.Equals(DotGame.Toolkit.Fonts.CharacterCursor other) -> bool
+DotGame.Toolkit.Fonts.CharacterCursor.GlyphIndex.get -> int
+DotGame.Toolkit.Fonts.ICharacterAttributes
+DotGame.Toolkit.Fonts.ICharacterAttributes.Color.get -> DotGame.Framework.Color?
+DotGame.Toolkit.Fonts.ICharacterAttributes.MoveTo(in DotGame.Toolkit.Fonts.CharacterCursor cursor) -> void
+DotGame.Toolkit.Fonts.SpriteBatchTextExtensions
+DotGame.Toolkit.Fonts.SpriteFont
+DotGame.Toolkit.Fonts.SpriteFont.Ascender.get -> float
+DotGame.Toolkit.Fonts.SpriteFont.CapHeight.get -> float
+DotGame.Toolkit.Fonts.SpriteFont.Characters.get -> System.Collections.Generic.IReadOnlyCollection<int>!
+DotGame.Toolkit.Fonts.SpriteFont.Descender.get -> float
+DotGame.Toolkit.Fonts.SpriteFont.EmSize.get -> float
+DotGame.Toolkit.Fonts.SpriteFont.IsDisposed.get -> bool
+DotGame.Toolkit.Fonts.SpriteFont.LineHeight.get -> float
+DotGame.Toolkit.Fonts.SpriteFont.MeasureString(int codePoint, float tracking = 0) -> System.Numerics.Vector2
+DotGame.Toolkit.Fonts.SpriteFont.MeasureString(System.ReadOnlySpan<char> text, float tracking = 0) -> System.Numerics.Vector2
+DotGame.Toolkit.Fonts.SpriteFont.MeasureString(System.Text.StringBuilder! text, float tracking = 0) -> System.Numerics.Vector2
+DotGame.Toolkit.Fonts.SpriteFont.Pages.get -> System.Collections.Generic.IReadOnlyList<DotGame.Framework.Graphics.Texture!>!
+DotGame.Toolkit.Fonts.SpriteFont.Shader.get -> DotGame.Framework.Graphics.Shader!
+DotGame.Toolkit.Fonts.SpriteFont.Shader.set -> void
+DotGame.Toolkit.Fonts.SpriteFont.TextureSize.get -> System.Numerics.Vector2
+DotGame.Toolkit.Fonts.SpriteFont.UnderlinePosition.get -> float
+DotGame.Toolkit.Fonts.SpriteFont.UnderlineThickness.get -> float
+DotGame.Toolkit.Fonts.SpriteFontLoader
+DotGame.Toolkit.Fonts.SpriteFontLoader.LoadAsync(string! contentKey) -> System.Threading.Tasks.Task<DotGame.Toolkit.Fonts.SpriteFont!>!
+DotGame.Toolkit.Fonts.SpriteFontLoader.SpriteFontLoader(DotGame.Framework.Content.ContentService! contentService) -> void
+DotGame.Toolkit.Fonts.TextAlignment
+DotGame.Toolkit.Fonts.TextAlignment.Center = 1 -> DotGame.Toolkit.Fonts.TextAlignment
+DotGame.Toolkit.Fonts.TextAlignment.Left = 0 -> DotGame.Toolkit.Fonts.TextAlignment
+DotGame.Toolkit.Fonts.TextAlignment.Right = 2 -> DotGame.Toolkit.Fonts.TextAlignment
+DotGame.Toolkit.Fonts.TextCorners
+DotGame.Toolkit.Fonts.TextCorners.Round = 1 -> DotGame.Toolkit.Fonts.TextCorners
+DotGame.Toolkit.Fonts.TextCorners.Sharp = 0 -> DotGame.Toolkit.Fonts.TextCorners
+DotGame.Toolkit.Fonts.TextEffects
+DotGame.Toolkit.Fonts.TextEffects.<Clone>$() -> DotGame.Toolkit.Fonts.TextEffects!
+DotGame.Toolkit.Fonts.TextEffects.Embolden.get -> float
+DotGame.Toolkit.Fonts.TextEffects.Embolden.init -> void
+DotGame.Toolkit.Fonts.TextEffects.Equals(DotGame.Toolkit.Fonts.TextEffects? other) -> bool
+DotGame.Toolkit.Fonts.TextEffects.GetExtent() -> DotGame.Toolkit.Thickness
+DotGame.Toolkit.Fonts.TextEffects.Glow.get -> DotGame.Toolkit.Fonts.TextGlow?
+DotGame.Toolkit.Fonts.TextEffects.Glow.init -> void
+DotGame.Toolkit.Fonts.TextEffects.HasBackgroundEffects.get -> bool
+DotGame.Toolkit.Fonts.TextEffects.Outline.get -> DotGame.Toolkit.Fonts.TextOutline?
+DotGame.Toolkit.Fonts.TextEffects.Outline.init -> void
+DotGame.Toolkit.Fonts.TextEffects.Shadow.get -> DotGame.Toolkit.Fonts.TextShadow?
+DotGame.Toolkit.Fonts.TextEffects.Shadow.init -> void
+DotGame.Toolkit.Fonts.TextEffects.Softness.get -> float
+DotGame.Toolkit.Fonts.TextEffects.Softness.init -> void
+DotGame.Toolkit.Fonts.TextEffects.TextEffects() -> void
+DotGame.Toolkit.Fonts.TextGlow
+DotGame.Toolkit.Fonts.TextGlow.Color.get -> DotGame.Framework.Color
+DotGame.Toolkit.Fonts.TextGlow.Color.init -> void
+DotGame.Toolkit.Fonts.TextGlow.Deconstruct(out DotGame.Framework.Color Color, out float Width, out float Softness) -> void
+DotGame.Toolkit.Fonts.TextGlow.Equals(DotGame.Toolkit.Fonts.TextGlow other) -> bool
+DotGame.Toolkit.Fonts.TextGlow.Softness.get -> float
+DotGame.Toolkit.Fonts.TextGlow.Softness.init -> void
+DotGame.Toolkit.Fonts.TextGlow.TextGlow() -> void
+DotGame.Toolkit.Fonts.TextGlow.TextGlow(DotGame.Framework.Color Color, float Width, float Softness) -> void
+DotGame.Toolkit.Fonts.TextGlow.Width.get -> float
+DotGame.Toolkit.Fonts.TextGlow.Width.init -> void
+DotGame.Toolkit.Fonts.TextLayers
+DotGame.Toolkit.Fonts.TextLayers.All = DotGame.Toolkit.Fonts.TextLayers.Effects | DotGame.Toolkit.Fonts.TextLayers.Face -> DotGame.Toolkit.Fonts.TextLayers
+DotGame.Toolkit.Fonts.TextLayers.Effects = DotGame.Toolkit.Fonts.TextLayers.Shadow | DotGame.Toolkit.Fonts.TextLayers.Glow | DotGame.Toolkit.Fonts.TextLayers.Outline -> DotGame.Toolkit.Fonts.TextLayers
+DotGame.Toolkit.Fonts.TextLayers.Face = 8 -> DotGame.Toolkit.Fonts.TextLayers
+DotGame.Toolkit.Fonts.TextLayers.Glow = 2 -> DotGame.Toolkit.Fonts.TextLayers
+DotGame.Toolkit.Fonts.TextLayers.None = 0 -> DotGame.Toolkit.Fonts.TextLayers
+DotGame.Toolkit.Fonts.TextLayers.Outline = 4 -> DotGame.Toolkit.Fonts.TextLayers
+DotGame.Toolkit.Fonts.TextLayers.Shadow = 1 -> DotGame.Toolkit.Fonts.TextLayers
+DotGame.Toolkit.Fonts.TextLayout
+DotGame.Toolkit.Fonts.TextLayout.Alignment.get -> DotGame.Toolkit.Fonts.TextAlignment
+DotGame.Toolkit.Fonts.TextLayout.Alignment.set -> void
+DotGame.Toolkit.Fonts.TextLayout.Draw(DotGame.Framework.Graphics.SpriteBatch! spriteBatch, System.Numerics.Vector2 position, DotGame.Framework.Color color, float opacity = 1, DotGame.Toolkit.Fonts.TextEffects? effects = null) -> void
+DotGame.Toolkit.Fonts.TextLayout.Ellipsis.get -> string!
+DotGame.Toolkit.Fonts.TextLayout.Ellipsis.set -> void
+DotGame.Toolkit.Fonts.TextLayout.Lines.get -> System.Collections.Generic.IReadOnlyList<DotGame.Toolkit.Fonts.TextLayoutLine>!
+DotGame.Toolkit.Fonts.TextLayout.LineSpacing.get -> float
+DotGame.Toolkit.Fonts.TextLayout.LineSpacing.set -> void
+DotGame.Toolkit.Fonts.TextLayout.MaxLines.get -> int?
+DotGame.Toolkit.Fonts.TextLayout.MaxLines.set -> void
+DotGame.Toolkit.Fonts.TextLayout.MaxWidth.get -> float?
+DotGame.Toolkit.Fonts.TextLayout.MaxWidth.set -> void
+DotGame.Toolkit.Fonts.TextLayout.Scale.get -> float
+DotGame.Toolkit.Fonts.TextLayout.Scale.set -> void
+DotGame.Toolkit.Fonts.TextLayout.Size.get -> System.Numerics.Vector2
+DotGame.Toolkit.Fonts.TextLayout.Text.get -> string!
+DotGame.Toolkit.Fonts.TextLayout.Text.set -> void
+DotGame.Toolkit.Fonts.TextLayout.TextLayout(DotGame.Toolkit.Fonts.SpriteFont! font) -> void
+DotGame.Toolkit.Fonts.TextLayout.Tracking.get -> float
+DotGame.Toolkit.Fonts.TextLayout.Tracking.set -> void
+DotGame.Toolkit.Fonts.TextLayoutLine
+DotGame.Toolkit.Fonts.TextLayoutLine.Deconstruct(out int Start, out int Length, out float Width, out bool HasEllipsis) -> void
+DotGame.Toolkit.Fonts.TextLayoutLine.Equals(DotGame.Toolkit.Fonts.TextLayoutLine other) -> bool
+DotGame.Toolkit.Fonts.TextLayoutLine.HasEllipsis.get -> bool
+DotGame.Toolkit.Fonts.TextLayoutLine.HasEllipsis.init -> void
+DotGame.Toolkit.Fonts.TextLayoutLine.Length.get -> int
+DotGame.Toolkit.Fonts.TextLayoutLine.Length.init -> void
+DotGame.Toolkit.Fonts.TextLayoutLine.Start.get -> int
+DotGame.Toolkit.Fonts.TextLayoutLine.Start.init -> void
+DotGame.Toolkit.Fonts.TextLayoutLine.TextLayoutLine() -> void
+DotGame.Toolkit.Fonts.TextLayoutLine.TextLayoutLine(int Start, int Length, float Width, bool HasEllipsis) -> void
+DotGame.Toolkit.Fonts.TextLayoutLine.Width.get -> float
+DotGame.Toolkit.Fonts.TextLayoutLine.Width.init -> void
+DotGame.Toolkit.Fonts.TextOutline
+DotGame.Toolkit.Fonts.TextOutline.Color.get -> DotGame.Framework.Color
+DotGame.Toolkit.Fonts.TextOutline.Color.init -> void
+DotGame.Toolkit.Fonts.TextOutline.Corners.get -> DotGame.Toolkit.Fonts.TextCorners
+DotGame.Toolkit.Fonts.TextOutline.Corners.init -> void
+DotGame.Toolkit.Fonts.TextOutline.Deconstruct(out DotGame.Framework.Color Color, out float Width, out DotGame.Toolkit.Fonts.TextCorners Corners, out float MiterLimit, out float Softness) -> void
+DotGame.Toolkit.Fonts.TextOutline.Equals(DotGame.Toolkit.Fonts.TextOutline other) -> bool
+DotGame.Toolkit.Fonts.TextOutline.MiterLimit.get -> float
+DotGame.Toolkit.Fonts.TextOutline.MiterLimit.init -> void
+DotGame.Toolkit.Fonts.TextOutline.Softness.get -> float
+DotGame.Toolkit.Fonts.TextOutline.Softness.init -> void
+DotGame.Toolkit.Fonts.TextOutline.TextOutline() -> void
+DotGame.Toolkit.Fonts.TextOutline.TextOutline(DotGame.Framework.Color Color, float Width, DotGame.Toolkit.Fonts.TextCorners Corners = DotGame.Toolkit.Fonts.TextCorners.Sharp, float MiterLimit = 4, float Softness = 0) -> void
+DotGame.Toolkit.Fonts.TextOutline.Width.get -> float
+DotGame.Toolkit.Fonts.TextOutline.Width.init -> void
+DotGame.Toolkit.Fonts.TextShadow
+DotGame.Toolkit.Fonts.TextShadow.Color.get -> DotGame.Framework.Color
+DotGame.Toolkit.Fonts.TextShadow.Color.init -> void
+DotGame.Toolkit.Fonts.TextShadow.Deconstruct(out DotGame.Framework.Color Color, out System.Numerics.Vector2 Offset, out float Spread, out float Softness) -> void
+DotGame.Toolkit.Fonts.TextShadow.Equals(DotGame.Toolkit.Fonts.TextShadow other) -> bool
+DotGame.Toolkit.Fonts.TextShadow.Offset.get -> System.Numerics.Vector2
+DotGame.Toolkit.Fonts.TextShadow.Offset.init -> void
+DotGame.Toolkit.Fonts.TextShadow.Softness.get -> float
+DotGame.Toolkit.Fonts.TextShadow.Softness.init -> void
+DotGame.Toolkit.Fonts.TextShadow.Spread.get -> float
+DotGame.Toolkit.Fonts.TextShadow.Spread.init -> void
+DotGame.Toolkit.Fonts.TextShadow.TextShadow() -> void
+DotGame.Toolkit.Fonts.TextShadow.TextShadow(DotGame.Framework.Color Color, System.Numerics.Vector2 Offset, float Spread = 0, float Softness = 0) -> void
+DotGame.Toolkit.GameExtensions
+DotGame.Toolkit.Graphics.Camera
+DotGame.Toolkit.Graphics.Camera.Camera() -> void
+DotGame.Toolkit.Graphics.Camera.Origin.get -> System.Numerics.Vector2
+DotGame.Toolkit.Graphics.Camera.Origin.set -> void
+DotGame.Toolkit.Graphics.Camera.Position.get -> System.Numerics.Vector2
+DotGame.Toolkit.Graphics.Camera.Position.set -> void
+DotGame.Toolkit.Graphics.Camera.Rotation.get -> DotGame.Framework.Angle
+DotGame.Toolkit.Graphics.Camera.Rotation.set -> void
+DotGame.Toolkit.Graphics.Camera.ScreenToWorld(System.Numerics.Vector2 screen) -> System.Numerics.Vector2
+DotGame.Toolkit.Graphics.Camera.Transform.get -> System.Numerics.Matrix3x2
+DotGame.Toolkit.Graphics.Camera.WorldToScreen(System.Numerics.Vector2 world) -> System.Numerics.Vector2
+DotGame.Toolkit.Graphics.Camera.Zoom.get -> float
+DotGame.Toolkit.Graphics.Camera.Zoom.set -> void
+DotGame.Toolkit.Graphics.GraphicsServiceExtensions
+DotGame.Toolkit.Graphics.HsvColor
+DotGame.Toolkit.Graphics.HsvColor.A.get -> float
+DotGame.Toolkit.Graphics.HsvColor.A.init -> void
+DotGame.Toolkit.Graphics.HsvColor.Deconstruct(out float H, out float S, out float V, out float A) -> void
+DotGame.Toolkit.Graphics.HsvColor.Equals(DotGame.Toolkit.Graphics.HsvColor other) -> bool
+DotGame.Toolkit.Graphics.HsvColor.H.get -> float
+DotGame.Toolkit.Graphics.HsvColor.H.init -> void
+DotGame.Toolkit.Graphics.HsvColor.HsvColor() -> void
+DotGame.Toolkit.Graphics.HsvColor.HsvColor(float H, float S, float V, float A = 1) -> void
+DotGame.Toolkit.Graphics.HsvColor.S.get -> float
+DotGame.Toolkit.Graphics.HsvColor.S.init -> void
+DotGame.Toolkit.Graphics.HsvColor.ToColor() -> DotGame.Framework.Color
+DotGame.Toolkit.Graphics.HsvColor.V.get -> float
+DotGame.Toolkit.Graphics.HsvColor.V.init -> void
+DotGame.Toolkit.Graphics.ITextureSource
+DotGame.Toolkit.Graphics.ITextureSource.Bounds.get -> DotGame.Framework.RectangleInt
+DotGame.Toolkit.Graphics.ITextureSource.PackedFrame.get -> DotGame.Framework.RectangleInt
+DotGame.Toolkit.Graphics.ITextureSource.Texture.get -> DotGame.Framework.Graphics.Texture!
+DotGame.Toolkit.Graphics.NinePatch
+DotGame.Toolkit.Graphics.NinePatch.Draw(DotGame.Framework.Graphics.SpriteBatch! spriteBatch, DotGame.Framework.Rectangle bounds, DotGame.Framework.Color color, float capScale) -> void
+DotGame.Toolkit.Graphics.NinePatch.Draw(DotGame.Framework.Graphics.SpriteBatch! spriteBatch, DotGame.Framework.RectangleInt bounds) -> void
+DotGame.Toolkit.Graphics.NinePatch.Draw(DotGame.Framework.Graphics.SpriteBatch! spriteBatch, DotGame.Framework.RectangleInt bounds, DotGame.Framework.Color color) -> void
+DotGame.Toolkit.Graphics.NinePatch.NinePatch(DotGame.Toolkit.Graphics.ITextureSource! source, DotGame.Toolkit.ThicknessInt caps) -> void
+DotGame.Toolkit.Graphics.NinePatch.NinePatch(DotGame.Toolkit.Graphics.ITextureSource! source, DotGame.Toolkit.ThicknessInt caps, DotGame.Toolkit.ThicknessInt outset) -> void
+DotGame.Toolkit.Graphics.NinePatch.Outset.get -> DotGame.Toolkit.ThicknessInt
+DotGame.Toolkit.Graphics.NinePatch.Source.get -> DotGame.Toolkit.Graphics.ITextureSource!
+DotGame.Toolkit.Graphics.SpriteBatchExtensions
+DotGame.Toolkit.Graphics.SpriteBatchShapeExtensions
+DotGame.Toolkit.Graphics.TextureAtlas
+DotGame.Toolkit.Graphics.TextureAtlas.GetRegion(string! name) -> DotGame.Toolkit.Graphics.TextureRegion!
+DotGame.Toolkit.Graphics.TextureAtlas.IsDisposed.get -> bool
+DotGame.Toolkit.Graphics.TextureAtlas.RegionNames.get -> System.Collections.Generic.IReadOnlyCollection<string!>!
+DotGame.Toolkit.Graphics.TextureAtlas.TryGetRegion(string! name, out DotGame.Toolkit.Graphics.TextureRegion? region) -> bool
+DotGame.Toolkit.Graphics.TextureAtlasLoader
+DotGame.Toolkit.Graphics.TextureAtlasLoader.LoadAsync(string! contentKey) -> System.Threading.Tasks.Task<DotGame.Toolkit.Graphics.TextureAtlas!>!
+DotGame.Toolkit.Graphics.TextureAtlasLoader.TextureAtlasLoader(DotGame.Framework.Content.ContentService! contentService) -> void
+DotGame.Toolkit.Graphics.TextureRegion
+DotGame.Toolkit.Graphics.TextureRegion.Bounds.get -> DotGame.Framework.RectangleInt
+DotGame.Toolkit.Graphics.TextureRegion.Caps.get -> DotGame.Toolkit.ThicknessInt?
+DotGame.Toolkit.Graphics.TextureRegion.Outset.get -> DotGame.Toolkit.ThicknessInt?
+DotGame.Toolkit.Graphics.TextureRegion.PackedFrame.get -> DotGame.Framework.RectangleInt
+DotGame.Toolkit.Graphics.TextureRegion.Size.get -> DotGame.Framework.Vector2Int
+DotGame.Toolkit.Graphics.TextureRegion.Texture.get -> DotGame.Framework.Graphics.Texture!
+DotGame.Toolkit.Graphics.TextureRegion.TextureRegion(DotGame.Toolkit.Graphics.ITextureSource! source, DotGame.Framework.RectangleInt bounds, DotGame.Framework.RectangleInt? frame = null, DotGame.Toolkit.ThicknessInt? caps = null, DotGame.Toolkit.ThicknessInt? outset = null) -> void
+DotGame.Toolkit.Graphics.TextureRegion.WithOutset(DotGame.Toolkit.ThicknessInt outset) -> DotGame.Toolkit.Graphics.TextureRegion!
+DotGame.Toolkit.Graphics.ViewportScaleMode
+DotGame.Toolkit.Graphics.ViewportScaleMode.Expand = 4 -> DotGame.Toolkit.Graphics.ViewportScaleMode
+DotGame.Toolkit.Graphics.ViewportScaleMode.ExpandHorizontal = 6 -> DotGame.Toolkit.Graphics.ViewportScaleMode
+DotGame.Toolkit.Graphics.ViewportScaleMode.ExpandVertical = 5 -> DotGame.Toolkit.Graphics.ViewportScaleMode
+DotGame.Toolkit.Graphics.ViewportScaleMode.Fill = 1 -> DotGame.Toolkit.Graphics.ViewportScaleMode
+DotGame.Toolkit.Graphics.ViewportScaleMode.Fit = 0 -> DotGame.Toolkit.Graphics.ViewportScaleMode
+DotGame.Toolkit.Graphics.ViewportScaleMode.IntegerFit = 3 -> DotGame.Toolkit.Graphics.ViewportScaleMode
+DotGame.Toolkit.Graphics.ViewportScaleMode.Stretch = 2 -> DotGame.Toolkit.Graphics.ViewportScaleMode
+DotGame.Toolkit.Graphics.ViewportScaler
+DotGame.Toolkit.Graphics.ViewportScaler.DesignSize.get -> DotGame.Framework.Vector2Int
+DotGame.Toolkit.Graphics.ViewportScaler.DesignToScreen(System.Numerics.Vector2 design) -> System.Numerics.Vector2
+DotGame.Toolkit.Graphics.ViewportScaler.Mode.get -> DotGame.Toolkit.Graphics.ViewportScaleMode
+DotGame.Toolkit.Graphics.ViewportScaler.Mode.set -> void
+DotGame.Toolkit.Graphics.ViewportScaler.Scale.get -> System.Numerics.Vector2
+DotGame.Toolkit.Graphics.ViewportScaler.ScreenToDesign(System.Numerics.Vector2 screen) -> System.Numerics.Vector2
+DotGame.Toolkit.Graphics.ViewportScaler.Transform.get -> System.Numerics.Matrix3x2
+DotGame.Toolkit.Graphics.ViewportScaler.Update(DotGame.Framework.RectangleInt screen) -> void
+DotGame.Toolkit.Graphics.ViewportScaler.Viewport.get -> DotGame.Framework.RectangleInt
+DotGame.Toolkit.Graphics.ViewportScaler.ViewportScaler(DotGame.Framework.Vector2Int designSize, DotGame.Toolkit.Graphics.ViewportScaleMode mode = DotGame.Toolkit.Graphics.ViewportScaleMode.Fit) -> void
+DotGame.Toolkit.Graphics.ViewportScaler.VisibleBounds.get -> DotGame.Framework.Rectangle
+DotGame.Toolkit.Particles.AnimatedSpriteParticleRenderer
+DotGame.Toolkit.Particles.AnimatedSpriteParticleRenderer.Equals(DotGame.Toolkit.Particles.AnimatedSpriteParticleRenderer? other) -> bool
+DotGame.Toolkit.Particles.AnimatedSpriteParticleRenderer.Pivot.get -> System.Numerics.Vector2
+DotGame.Toolkit.Particles.AnimatedSpriteParticleRenderer.Pivot.init -> void
+DotGame.Toolkit.Particles.AnimatedSpriteParticleRenderer.Size.get -> System.Numerics.Vector2?
+DotGame.Toolkit.Particles.AnimatedSpriteParticleRenderer.Size.init -> void
+DotGame.Toolkit.Particles.AnimatedSpriteParticleRenderer.SpriteAnimation.get -> DotGame.Toolkit.Animation.SpriteAnimation!
+DotGame.Toolkit.Particles.AnimatedSpriteParticleRenderer.Timing.get -> DotGame.Toolkit.Particles.ParticleAnimationTiming
+DotGame.Toolkit.Particles.AnimatedSpriteParticleRenderer.Timing.init -> void
+DotGame.Toolkit.Particles.CompositeParticleRenderer
+DotGame.Toolkit.Particles.CompositeParticleRenderer.Equals(DotGame.Toolkit.Particles.CompositeParticleRenderer? other) -> bool
+DotGame.Toolkit.Particles.CompositeParticleRenderer.Renderers.get -> System.ReadOnlySpan<DotGame.Toolkit.Particles.ParticleRenderer!>
+DotGame.Toolkit.Particles.EmitShape
+DotGame.Toolkit.Particles.EmitShape.EmitShape() -> void
+DotGame.Toolkit.Particles.EmitShape.Equals(DotGame.Toolkit.Particles.EmitShape other) -> bool
+DotGame.Toolkit.Particles.FloatRange
+DotGame.Toolkit.Particles.FloatRange.Deconstruct(out float Min, out float Max) -> void
+DotGame.Toolkit.Particles.FloatRange.Equals(DotGame.Toolkit.Particles.FloatRange other) -> bool
+DotGame.Toolkit.Particles.FloatRange.FloatRange() -> void
+DotGame.Toolkit.Particles.FloatRange.FloatRange(float Min, float Max) -> void
+DotGame.Toolkit.Particles.FloatRange.FloatRange(float value) -> void
+DotGame.Toolkit.Particles.FloatRange.IsConstant.get -> bool
+DotGame.Toolkit.Particles.FloatRange.Lerp(float amount) -> float
+DotGame.Toolkit.Particles.FloatRange.Max.get -> float
+DotGame.Toolkit.Particles.FloatRange.Max.init -> void
+DotGame.Toolkit.Particles.FloatRange.Min.get -> float
+DotGame.Toolkit.Particles.FloatRange.Min.init -> void
+DotGame.Toolkit.Particles.IParticleBehavior
+DotGame.Toolkit.Particles.IParticleBehavior.Start(ref DotGame.Toolkit.Particles.Particle particle) -> void
+DotGame.Toolkit.Particles.IParticleBehavior.Update(ref DotGame.Toolkit.Particles.Particle particle, float elapsedSeconds) -> bool
+DotGame.Toolkit.Particles.Particle
+DotGame.Toolkit.Particles.Particle.AgeSeconds -> float
+DotGame.Toolkit.Particles.Particle.Color -> DotGame.Framework.Color
+DotGame.Toolkit.Particles.Particle.Custom -> System.Numerics.Vector4
+DotGame.Toolkit.Particles.Particle.EndColor -> DotGame.Framework.Color
+DotGame.Toolkit.Particles.Particle.LifetimeSeconds -> float
+DotGame.Toolkit.Particles.Particle.NormalizedAge.get -> float
+DotGame.Toolkit.Particles.Particle.Opacity -> float
+DotGame.Toolkit.Particles.Particle.Origin -> System.Numerics.Vector2
+DotGame.Toolkit.Particles.Particle.Particle() -> void
+DotGame.Toolkit.Particles.Particle.Position -> System.Numerics.Vector2
+DotGame.Toolkit.Particles.Particle.Rotation -> DotGame.Framework.Angle
+DotGame.Toolkit.Particles.Particle.Scale -> System.Numerics.Vector2
+DotGame.Toolkit.Particles.Particle.Spin -> DotGame.Framework.Angle
+DotGame.Toolkit.Particles.Particle.Variant -> uint
+DotGame.Toolkit.Particles.Particle.Velocity -> System.Numerics.Vector2
+DotGame.Toolkit.Particles.ParticleAnimationTiming
+DotGame.Toolkit.Particles.ParticleAnimationTiming.Loop = 1 -> DotGame.Toolkit.Particles.ParticleAnimationTiming
+DotGame.Toolkit.Particles.ParticleAnimationTiming.OverLife = 0 -> DotGame.Toolkit.Particles.ParticleAnimationTiming
+DotGame.Toolkit.Particles.ParticleBlend
+DotGame.Toolkit.Particles.ParticleBlend.Additive = 1 -> DotGame.Toolkit.Particles.ParticleBlend
+DotGame.Toolkit.Particles.ParticleBlend.Alpha = 0 -> DotGame.Toolkit.Particles.ParticleBlend
+DotGame.Toolkit.Particles.ParticleBurst
+DotGame.Toolkit.Particles.ParticleBurst.Count.get -> int
+DotGame.Toolkit.Particles.ParticleBurst.Count.init -> void
+DotGame.Toolkit.Particles.ParticleBurst.Deconstruct(out float TimeSeconds, out int Count) -> void
+DotGame.Toolkit.Particles.ParticleBurst.Equals(DotGame.Toolkit.Particles.ParticleBurst other) -> bool
+DotGame.Toolkit.Particles.ParticleBurst.ParticleBurst() -> void
+DotGame.Toolkit.Particles.ParticleBurst.ParticleBurst(float TimeSeconds, int Count) -> void
+DotGame.Toolkit.Particles.ParticleBurst.TimeSeconds.get -> float
+DotGame.Toolkit.Particles.ParticleBurst.TimeSeconds.init -> void
+DotGame.Toolkit.Particles.ParticleColor
+DotGame.Toolkit.Particles.ParticleColor.Equals(DotGame.Toolkit.Particles.ParticleColor other) -> bool
+DotGame.Toolkit.Particles.ParticleColor.ParticleColor() -> void
+DotGame.Toolkit.Particles.ParticleCurve
+DotGame.Toolkit.Particles.ParticleCurve.Evaluate(float time) -> float
+DotGame.Toolkit.Particles.ParticleCurve.IsConstant.get -> bool
+DotGame.Toolkit.Particles.ParticleCurve.Keys.get -> System.ReadOnlySpan<DotGame.Toolkit.Particles.ParticleCurveKey>
+DotGame.Toolkit.Particles.ParticleCurveKey
+DotGame.Toolkit.Particles.ParticleCurveKey.Deconstruct(out float Time, out float Value, out DotGame.Toolkit.Animation.Easing? Ease) -> void
+DotGame.Toolkit.Particles.ParticleCurveKey.Ease.get -> DotGame.Toolkit.Animation.Easing?
+DotGame.Toolkit.Particles.ParticleCurveKey.Ease.init -> void
+DotGame.Toolkit.Particles.ParticleCurveKey.Equals(DotGame.Toolkit.Particles.ParticleCurveKey other) -> bool
+DotGame.Toolkit.Particles.ParticleCurveKey.ParticleCurveKey() -> void
+DotGame.Toolkit.Particles.ParticleCurveKey.ParticleCurveKey(float Time, float Value, DotGame.Toolkit.Animation.Easing? Ease = null) -> void
+DotGame.Toolkit.Particles.ParticleCurveKey.Time.get -> float
+DotGame.Toolkit.Particles.ParticleCurveKey.Time.init -> void
+DotGame.Toolkit.Particles.ParticleCurveKey.Value.get -> float
+DotGame.Toolkit.Particles.ParticleCurveKey.Value.init -> void
+DotGame.Toolkit.Particles.ParticleDrawState
+DotGame.Toolkit.Particles.ParticleDrawState.AgeSeconds.get -> float
+DotGame.Toolkit.Particles.ParticleDrawState.Color.get -> DotGame.Framework.Color
+DotGame.Toolkit.Particles.ParticleDrawState.Custom.get -> System.Numerics.Vector4
+DotGame.Toolkit.Particles.ParticleDrawState.NormalizedAge.get -> float
+DotGame.Toolkit.Particles.ParticleDrawState.ParticleDrawState() -> void
+DotGame.Toolkit.Particles.ParticleDrawState.Position.get -> System.Numerics.Vector2
+DotGame.Toolkit.Particles.ParticleDrawState.Rotation.get -> DotGame.Framework.Angle
+DotGame.Toolkit.Particles.ParticleDrawState.Scale.get -> System.Numerics.Vector2
+DotGame.Toolkit.Particles.ParticleDrawState.Variant.get -> uint
+DotGame.Toolkit.Particles.ParticleDrawState.Velocity.get -> System.Numerics.Vector2
+DotGame.Toolkit.Particles.ParticleEffect
+DotGame.Toolkit.Particles.ParticleEffect.<Clone>$() -> DotGame.Toolkit.Particles.ParticleEffect!
+DotGame.Toolkit.Particles.ParticleEffect.AlignToVelocity.get -> bool
+DotGame.Toolkit.Particles.ParticleEffect.AlignToVelocity.init -> void
+DotGame.Toolkit.Particles.ParticleEffect.Behavior.get -> DotGame.Toolkit.Particles.IParticleBehavior?
+DotGame.Toolkit.Particles.ParticleEffect.Behavior.init -> void
+DotGame.Toolkit.Particles.ParticleEffect.Blend.get -> DotGame.Toolkit.Particles.ParticleBlend
+DotGame.Toolkit.Particles.ParticleEffect.Blend.init -> void
+DotGame.Toolkit.Particles.ParticleEffect.Bursts.get -> DotGame.Toolkit.Particles.ParticleBurst[]!
+DotGame.Toolkit.Particles.ParticleEffect.Bursts.init -> void
+DotGame.Toolkit.Particles.ParticleEffect.Capacity.get -> int
+DotGame.Toolkit.Particles.ParticleEffect.Capacity.init -> void
+DotGame.Toolkit.Particles.ParticleEffect.Color.get -> DotGame.Toolkit.Particles.ParticleColor
+DotGame.Toolkit.Particles.ParticleEffect.Color.init -> void
+DotGame.Toolkit.Particles.ParticleEffect.ColorEase.get -> DotGame.Toolkit.Animation.Easing?
+DotGame.Toolkit.Particles.ParticleEffect.ColorEase.init -> void
+DotGame.Toolkit.Particles.ParticleEffect.DelaySeconds.get -> float
+DotGame.Toolkit.Particles.ParticleEffect.DelaySeconds.init -> void
+DotGame.Toolkit.Particles.ParticleEffect.DirectionDegrees.get -> DotGame.Toolkit.Particles.FloatRange
+DotGame.Toolkit.Particles.ParticleEffect.DirectionDegrees.init -> void
+DotGame.Toolkit.Particles.ParticleEffect.Drag.get -> System.Numerics.Vector2
+DotGame.Toolkit.Particles.ParticleEffect.Drag.init -> void
+DotGame.Toolkit.Particles.ParticleEffect.DurationSeconds.get -> float?
+DotGame.Toolkit.Particles.ParticleEffect.DurationSeconds.init -> void
+DotGame.Toolkit.Particles.ParticleEffect.EndColor.get -> DotGame.Toolkit.Particles.ParticleColor?
+DotGame.Toolkit.Particles.ParticleEffect.EndColor.init -> void
+DotGame.Toolkit.Particles.ParticleEffect.Equals(DotGame.Toolkit.Particles.ParticleEffect? other) -> bool
+DotGame.Toolkit.Particles.ParticleEffect.Flip.get -> DotGame.Toolkit.Particles.ParticleFlip?
+DotGame.Toolkit.Particles.ParticleEffect.Flip.init -> void
+DotGame.Toolkit.Particles.ParticleEffect.Gravity.get -> System.Numerics.Vector2
+DotGame.Toolkit.Particles.ParticleEffect.Gravity.init -> void
+DotGame.Toolkit.Particles.ParticleEffect.LifetimeSeconds.get -> DotGame.Toolkit.Particles.FloatRange
+DotGame.Toolkit.Particles.ParticleEffect.LifetimeSeconds.init -> void
+DotGame.Toolkit.Particles.ParticleEffect.Opacity.get -> DotGame.Toolkit.Particles.FloatRange
+DotGame.Toolkit.Particles.ParticleEffect.Opacity.init -> void
+DotGame.Toolkit.Particles.ParticleEffect.OpacityOverLife.get -> DotGame.Toolkit.Particles.ParticleCurve!
+DotGame.Toolkit.Particles.ParticleEffect.OpacityOverLife.init -> void
+DotGame.Toolkit.Particles.ParticleEffect.Overflow.get -> DotGame.Toolkit.Particles.ParticleOverflow
+DotGame.Toolkit.Particles.ParticleEffect.Overflow.init -> void
+DotGame.Toolkit.Particles.ParticleEffect.ParticleEffect() -> void
+DotGame.Toolkit.Particles.ParticleEffect.Rate.get -> float
+DotGame.Toolkit.Particles.ParticleEffect.Rate.init -> void
+DotGame.Toolkit.Particles.ParticleEffect.RateOverDuration.get -> DotGame.Toolkit.Particles.ParticleCurve!
+DotGame.Toolkit.Particles.ParticleEffect.RateOverDuration.init -> void
+DotGame.Toolkit.Particles.ParticleEffect.RatePerDistance.get -> float
+DotGame.Toolkit.Particles.ParticleEffect.RatePerDistance.init -> void
+DotGame.Toolkit.Particles.ParticleEffect.Renderer.get -> DotGame.Toolkit.Particles.ParticleRenderer!
+DotGame.Toolkit.Particles.ParticleEffect.Renderer.init -> void
+DotGame.Toolkit.Particles.ParticleEffect.RotationDegrees.get -> DotGame.Toolkit.Particles.FloatRange
+DotGame.Toolkit.Particles.ParticleEffect.RotationDegrees.init -> void
+DotGame.Toolkit.Particles.ParticleEffect.Scale.get -> DotGame.Toolkit.Particles.FloatRange
+DotGame.Toolkit.Particles.ParticleEffect.Scale.init -> void
+DotGame.Toolkit.Particles.ParticleEffect.ScaleOverLife.get -> DotGame.Toolkit.Particles.ParticleCurve!
+DotGame.Toolkit.Particles.ParticleEffect.ScaleOverLife.init -> void
+DotGame.Toolkit.Particles.ParticleEffect.ScaleX.get -> DotGame.Toolkit.Particles.FloatRange
+DotGame.Toolkit.Particles.ParticleEffect.ScaleX.init -> void
+DotGame.Toolkit.Particles.ParticleEffect.ScaleY.get -> DotGame.Toolkit.Particles.FloatRange
+DotGame.Toolkit.Particles.ParticleEffect.ScaleY.init -> void
+DotGame.Toolkit.Particles.ParticleEffect.Shape.get -> DotGame.Toolkit.Particles.EmitShape
+DotGame.Toolkit.Particles.ParticleEffect.Shape.init -> void
+DotGame.Toolkit.Particles.ParticleEffect.ShapeScalesWithEmitter.get -> bool
+DotGame.Toolkit.Particles.ParticleEffect.ShapeScalesWithEmitter.init -> void
+DotGame.Toolkit.Particles.ParticleEffect.Speed.get -> DotGame.Toolkit.Particles.FloatRange
+DotGame.Toolkit.Particles.ParticleEffect.Speed.init -> void
+DotGame.Toolkit.Particles.ParticleEffect.SpinDegrees.get -> DotGame.Toolkit.Particles.FloatRange
+DotGame.Toolkit.Particles.ParticleEffect.SpinDegrees.init -> void
+DotGame.Toolkit.Particles.ParticleEffect.Sway.get -> DotGame.Toolkit.Particles.ParticleSway?
+DotGame.Toolkit.Particles.ParticleEffect.Sway.init -> void
+DotGame.Toolkit.Particles.ParticleEmitter
+DotGame.Toolkit.Particles.ParticleEmitter.Equals(DotGame.Toolkit.Particles.ParticleEmitter other) -> bool
+DotGame.Toolkit.Particles.ParticleEmitter.IsActive.get -> bool
+DotGame.Toolkit.Particles.ParticleEmitter.ParticleEmitter() -> void
+DotGame.Toolkit.Particles.ParticleEmitter.Position.get -> System.Numerics.Vector2
+DotGame.Toolkit.Particles.ParticleEmitter.Position.set -> void
+DotGame.Toolkit.Particles.ParticleEmitter.Scale.get -> float
+DotGame.Toolkit.Particles.ParticleEmitter.Scale.set -> void
+DotGame.Toolkit.Particles.ParticleEmitter.Stop() -> void
+DotGame.Toolkit.Particles.ParticleEmitter.Teleport(System.Numerics.Vector2 position) -> void
+DotGame.Toolkit.Particles.ParticleEmitter.TimeSeconds.get -> float
+DotGame.Toolkit.Particles.ParticleFlip
+DotGame.Toolkit.Particles.ParticleFlip.Deconstruct(out DotGame.Toolkit.Particles.FloatRange Frequency, out float MinWidth) -> void
+DotGame.Toolkit.Particles.ParticleFlip.Equals(DotGame.Toolkit.Particles.ParticleFlip other) -> bool
+DotGame.Toolkit.Particles.ParticleFlip.Frequency.get -> DotGame.Toolkit.Particles.FloatRange
+DotGame.Toolkit.Particles.ParticleFlip.Frequency.init -> void
+DotGame.Toolkit.Particles.ParticleFlip.MinWidth.get -> float
+DotGame.Toolkit.Particles.ParticleFlip.MinWidth.init -> void
+DotGame.Toolkit.Particles.ParticleFlip.ParticleFlip() -> void
+DotGame.Toolkit.Particles.ParticleFlip.ParticleFlip(DotGame.Toolkit.Particles.FloatRange Frequency, float MinWidth = 0.15) -> void
+DotGame.Toolkit.Particles.ParticleOverflow
+DotGame.Toolkit.Particles.ParticleOverflow.DropNew = 0 -> DotGame.Toolkit.Particles.ParticleOverflow
+DotGame.Toolkit.Particles.ParticleOverflow.ReplaceOldest = 1 -> DotGame.Toolkit.Particles.ParticleOverflow
+DotGame.Toolkit.Particles.ParticleOverrides
+DotGame.Toolkit.Particles.ParticleOverrides.Color.get -> DotGame.Toolkit.Particles.ParticleColor?
+DotGame.Toolkit.Particles.ParticleOverrides.Color.init -> void
+DotGame.Toolkit.Particles.ParticleOverrides.DirectionDegrees.get -> DotGame.Toolkit.Particles.FloatRange?
+DotGame.Toolkit.Particles.ParticleOverrides.DirectionDegrees.init -> void
+DotGame.Toolkit.Particles.ParticleOverrides.Equals(DotGame.Toolkit.Particles.ParticleOverrides other) -> bool
+DotGame.Toolkit.Particles.ParticleOverrides.ParticleOverrides() -> void
+DotGame.Toolkit.Particles.ParticleOverrides.Shape.get -> DotGame.Toolkit.Particles.EmitShape?
+DotGame.Toolkit.Particles.ParticleOverrides.Shape.init -> void
+DotGame.Toolkit.Particles.ParticleOverrides.Variant.get -> uint?
+DotGame.Toolkit.Particles.ParticleOverrides.Variant.init -> void
+DotGame.Toolkit.Particles.ParticleRenderer
+DotGame.Toolkit.Particles.ParticleRenderer.ParticleRenderer() -> void
+DotGame.Toolkit.Particles.ParticleRenderer.ParticleRenderer(DotGame.Toolkit.Particles.ParticleRenderer! original) -> void
+DotGame.Toolkit.Particles.ParticleSpawn
+DotGame.Toolkit.Particles.ParticleSpawn.Color.get -> DotGame.Framework.Color?
+DotGame.Toolkit.Particles.ParticleSpawn.Color.init -> void
+DotGame.Toolkit.Particles.ParticleSpawn.Equals(DotGame.Toolkit.Particles.ParticleSpawn other) -> bool
+DotGame.Toolkit.Particles.ParticleSpawn.Layer.get -> int
+DotGame.Toolkit.Particles.ParticleSpawn.Layer.init -> void
+DotGame.Toolkit.Particles.ParticleSpawn.LifetimeSeconds.get -> float?
+DotGame.Toolkit.Particles.ParticleSpawn.LifetimeSeconds.init -> void
+DotGame.Toolkit.Particles.ParticleSpawn.Opacity.get -> float?
+DotGame.Toolkit.Particles.ParticleSpawn.Opacity.init -> void
+DotGame.Toolkit.Particles.ParticleSpawn.ParticleSpawn() -> void
+DotGame.Toolkit.Particles.ParticleSpawn.Position.get -> System.Numerics.Vector2
+DotGame.Toolkit.Particles.ParticleSpawn.Position.init -> void
+DotGame.Toolkit.Particles.ParticleSpawn.RotationDegrees.get -> float?
+DotGame.Toolkit.Particles.ParticleSpawn.RotationDegrees.init -> void
+DotGame.Toolkit.Particles.ParticleSpawn.Scale.get -> System.Numerics.Vector2?
+DotGame.Toolkit.Particles.ParticleSpawn.Scale.init -> void
+DotGame.Toolkit.Particles.ParticleSpawn.Variant.get -> uint?
+DotGame.Toolkit.Particles.ParticleSpawn.Variant.init -> void
+DotGame.Toolkit.Particles.ParticleSpawn.Velocity.get -> System.Numerics.Vector2?
+DotGame.Toolkit.Particles.ParticleSpawn.Velocity.init -> void
+DotGame.Toolkit.Particles.ParticleSway
+DotGame.Toolkit.Particles.ParticleSway.Amplitude.get -> DotGame.Toolkit.Particles.FloatRange
+DotGame.Toolkit.Particles.ParticleSway.Amplitude.init -> void
+DotGame.Toolkit.Particles.ParticleSway.Deconstruct(out DotGame.Toolkit.Particles.FloatRange Amplitude, out DotGame.Toolkit.Particles.FloatRange Frequency) -> void
+DotGame.Toolkit.Particles.ParticleSway.Equals(DotGame.Toolkit.Particles.ParticleSway other) -> bool
+DotGame.Toolkit.Particles.ParticleSway.Frequency.get -> DotGame.Toolkit.Particles.FloatRange
+DotGame.Toolkit.Particles.ParticleSway.Frequency.init -> void
+DotGame.Toolkit.Particles.ParticleSway.ParticleSway() -> void
+DotGame.Toolkit.Particles.ParticleSway.ParticleSway(DotGame.Toolkit.Particles.FloatRange Amplitude, DotGame.Toolkit.Particles.FloatRange Frequency) -> void
+DotGame.Toolkit.Particles.ParticleSystem
+DotGame.Toolkit.Particles.ParticleSystem.Bounds.get -> DotGame.Framework.Rectangle?
+DotGame.Toolkit.Particles.ParticleSystem.Bounds.set -> void
+DotGame.Toolkit.Particles.ParticleSystem.Burst(DotGame.Framework.Rectangle area, int count, in DotGame.Toolkit.Particles.ParticleOverrides overrides = default(DotGame.Toolkit.Particles.ParticleOverrides)) -> void
+DotGame.Toolkit.Particles.ParticleSystem.Burst(System.Numerics.Vector2 position, int count, in DotGame.Toolkit.Particles.ParticleOverrides overrides = default(DotGame.Toolkit.Particles.ParticleOverrides)) -> void
+DotGame.Toolkit.Particles.ParticleSystem.Clear() -> void
+DotGame.Toolkit.Particles.ParticleSystem.Count.get -> int
+DotGame.Toolkit.Particles.ParticleSystem.CreateEmitter(System.Numerics.Vector2 position) -> DotGame.Toolkit.Particles.ParticleEmitter
+DotGame.Toolkit.Particles.ParticleSystem.Draw(DotGame.Framework.Graphics.SpriteBatch! spriteBatch) -> void
+DotGame.Toolkit.Particles.ParticleSystem.Draw(DotGame.Framework.Graphics.SpriteBatch! spriteBatch, DotGame.Framework.Color color) -> void
+DotGame.Toolkit.Particles.ParticleSystem.Effects.get -> System.Collections.Generic.IReadOnlyList<DotGame.Toolkit.Particles.ParticleEffect!>!
+DotGame.Toolkit.Particles.ParticleSystem.Emit(in DotGame.Toolkit.Particles.ParticleSpawn spawn) -> void
+DotGame.Toolkit.Particles.ParticleSystem.IsActive.get -> bool
+DotGame.Toolkit.Particles.ParticleSystem.ParticleSystem(int seed, params DotGame.Toolkit.Particles.ParticleEffect![]! effects) -> void
+DotGame.Toolkit.Particles.ParticleSystem.ParticleSystem(params DotGame.Toolkit.Particles.ParticleEffect![]! effects) -> void
+DotGame.Toolkit.Particles.ParticleSystem.ReleaseReserved() -> void
+DotGame.Toolkit.Particles.ParticleSystem.Reserve() -> void
+DotGame.Toolkit.Particles.ParticleSystem.Update(System.TimeSpan elapsed) -> void
+DotGame.Toolkit.Particles.ParticleSystem.WhenEmptyAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+DotGame.Toolkit.Particles.SpriteParticleRenderer
+DotGame.Toolkit.Particles.SpriteParticleRenderer.Equals(DotGame.Toolkit.Particles.SpriteParticleRenderer? other) -> bool
+DotGame.Toolkit.Particles.SpriteParticleRenderer.Pivot.get -> System.Numerics.Vector2
+DotGame.Toolkit.Particles.SpriteParticleRenderer.Pivot.init -> void
+DotGame.Toolkit.Particles.SpriteParticleRenderer.Size.get -> System.Numerics.Vector2?
+DotGame.Toolkit.Particles.SpriteParticleRenderer.Size.init -> void
+DotGame.Toolkit.Particles.SpriteParticleRenderer.Textures.get -> System.ReadOnlySpan<DotGame.Toolkit.Graphics.ITextureSource!>
+DotGame.Toolkit.Particles.StretchedSpriteParticleRenderer
+DotGame.Toolkit.Particles.StretchedSpriteParticleRenderer.Equals(DotGame.Toolkit.Particles.StretchedSpriteParticleRenderer? other) -> bool
+DotGame.Toolkit.Particles.StretchedSpriteParticleRenderer.LengthPerSpeed.get -> float
+DotGame.Toolkit.Particles.StretchedSpriteParticleRenderer.LengthPerSpeed.init -> void
+DotGame.Toolkit.Particles.StretchedSpriteParticleRenderer.MaxLength.get -> float?
+DotGame.Toolkit.Particles.StretchedSpriteParticleRenderer.MaxLength.init -> void
+DotGame.Toolkit.Particles.StretchedSpriteParticleRenderer.Texture.get -> DotGame.Toolkit.Graphics.ITextureSource!
+DotGame.Toolkit.Thickness
+DotGame.Toolkit.Thickness.Bottom.get -> float
+DotGame.Toolkit.Thickness.Bottom.init -> void
+DotGame.Toolkit.Thickness.Horizontal.get -> float
+DotGame.Toolkit.Thickness.Left.get -> float
+DotGame.Toolkit.Thickness.Left.init -> void
+DotGame.Toolkit.Thickness.Right.get -> float
+DotGame.Toolkit.Thickness.Right.init -> void
+DotGame.Toolkit.Thickness.Thickness() -> void
+DotGame.Toolkit.Thickness.Thickness(float all) -> void
+DotGame.Toolkit.Thickness.Thickness(float left, float top, float right, float bottom) -> void
+DotGame.Toolkit.Thickness.Thickness(float leftAndRight, float topAndBottom) -> void
+DotGame.Toolkit.Thickness.Top.get -> float
+DotGame.Toolkit.Thickness.Top.init -> void
+DotGame.Toolkit.Thickness.Vertical.get -> float
+DotGame.Toolkit.ThicknessInt
+DotGame.Toolkit.ThicknessInt.Bottom.get -> int
+DotGame.Toolkit.ThicknessInt.Bottom.init -> void
+DotGame.Toolkit.ThicknessInt.Horizontal.get -> int
+DotGame.Toolkit.ThicknessInt.Left.get -> int
+DotGame.Toolkit.ThicknessInt.Left.init -> void
+DotGame.Toolkit.ThicknessInt.Right.get -> int
+DotGame.Toolkit.ThicknessInt.Right.init -> void
+DotGame.Toolkit.ThicknessInt.ThicknessInt() -> void
+DotGame.Toolkit.ThicknessInt.ThicknessInt(int all) -> void
+DotGame.Toolkit.ThicknessInt.ThicknessInt(int left, int top, int right, int bottom) -> void
+DotGame.Toolkit.ThicknessInt.ThicknessInt(int leftAndRight, int topAndBottom) -> void
+DotGame.Toolkit.ThicknessInt.Top.get -> int
+DotGame.Toolkit.ThicknessInt.Top.init -> void
+DotGame.Toolkit.ThicknessInt.Vertical.get -> int
+override DotGame.Toolkit.Animation.SpriteAnimationFrame.GetHashCode() -> int
+override DotGame.Toolkit.Audio.SoundSegment.GetHashCode() -> int
+override DotGame.Toolkit.Fonts.CharacterCursor.GetHashCode() -> int
+override DotGame.Toolkit.Fonts.TextEffects.Equals(object? obj) -> bool
+override DotGame.Toolkit.Fonts.TextEffects.GetHashCode() -> int
+override DotGame.Toolkit.Fonts.TextEffects.ToString() -> string!
+override DotGame.Toolkit.Fonts.TextGlow.GetHashCode() -> int
+override DotGame.Toolkit.Fonts.TextLayoutLine.GetHashCode() -> int
+override DotGame.Toolkit.Fonts.TextOutline.GetHashCode() -> int
+override DotGame.Toolkit.Fonts.TextShadow.GetHashCode() -> int
+override DotGame.Toolkit.Graphics.HsvColor.GetHashCode() -> int
+override DotGame.Toolkit.Particles.AnimatedSpriteParticleRenderer.<Clone>$() -> DotGame.Toolkit.Particles.AnimatedSpriteParticleRenderer!
+override DotGame.Toolkit.Particles.AnimatedSpriteParticleRenderer.Draw(DotGame.Framework.Graphics.SpriteBatch! spriteBatch, System.ReadOnlySpan<DotGame.Toolkit.Particles.ParticleDrawState> particles) -> void
+override DotGame.Toolkit.Particles.AnimatedSpriteParticleRenderer.Equals(object? obj) -> bool
+override DotGame.Toolkit.Particles.AnimatedSpriteParticleRenderer.GetHashCode() -> int
+override DotGame.Toolkit.Particles.AnimatedSpriteParticleRenderer.ToString() -> string!
+override DotGame.Toolkit.Particles.CompositeParticleRenderer.<Clone>$() -> DotGame.Toolkit.Particles.CompositeParticleRenderer!
+override DotGame.Toolkit.Particles.CompositeParticleRenderer.Draw(DotGame.Framework.Graphics.SpriteBatch! spriteBatch, System.ReadOnlySpan<DotGame.Toolkit.Particles.ParticleDrawState> particles) -> void
+override DotGame.Toolkit.Particles.CompositeParticleRenderer.Equals(object? obj) -> bool
+override DotGame.Toolkit.Particles.CompositeParticleRenderer.GetHashCode() -> int
+override DotGame.Toolkit.Particles.CompositeParticleRenderer.ToString() -> string!
+override DotGame.Toolkit.Particles.EmitShape.GetHashCode() -> int
+override DotGame.Toolkit.Particles.FloatRange.GetHashCode() -> int
+override DotGame.Toolkit.Particles.ParticleBurst.GetHashCode() -> int
+override DotGame.Toolkit.Particles.ParticleColor.GetHashCode() -> int
+override DotGame.Toolkit.Particles.ParticleCurveKey.GetHashCode() -> int
+override DotGame.Toolkit.Particles.ParticleEffect.Equals(object? obj) -> bool
+override DotGame.Toolkit.Particles.ParticleEffect.GetHashCode() -> int
+override DotGame.Toolkit.Particles.ParticleEffect.ToString() -> string!
+override DotGame.Toolkit.Particles.ParticleEmitter.Equals(object? obj) -> bool
+override DotGame.Toolkit.Particles.ParticleEmitter.GetHashCode() -> int
+override DotGame.Toolkit.Particles.ParticleFlip.GetHashCode() -> int
+override DotGame.Toolkit.Particles.ParticleOverrides.GetHashCode() -> int
+override DotGame.Toolkit.Particles.ParticleRenderer.Equals(object? obj) -> bool
+override DotGame.Toolkit.Particles.ParticleRenderer.GetHashCode() -> int
+override DotGame.Toolkit.Particles.ParticleRenderer.ToString() -> string!
+override DotGame.Toolkit.Particles.ParticleSpawn.GetHashCode() -> int
+override DotGame.Toolkit.Particles.ParticleSway.GetHashCode() -> int
+override DotGame.Toolkit.Particles.SpriteParticleRenderer.<Clone>$() -> DotGame.Toolkit.Particles.SpriteParticleRenderer!
+override DotGame.Toolkit.Particles.SpriteParticleRenderer.Draw(DotGame.Framework.Graphics.SpriteBatch! spriteBatch, System.ReadOnlySpan<DotGame.Toolkit.Particles.ParticleDrawState> particles) -> void
+override DotGame.Toolkit.Particles.SpriteParticleRenderer.Equals(object? obj) -> bool
+override DotGame.Toolkit.Particles.SpriteParticleRenderer.GetHashCode() -> int
+override DotGame.Toolkit.Particles.SpriteParticleRenderer.ToString() -> string!
+override DotGame.Toolkit.Particles.StretchedSpriteParticleRenderer.<Clone>$() -> DotGame.Toolkit.Particles.StretchedSpriteParticleRenderer!
+override DotGame.Toolkit.Particles.StretchedSpriteParticleRenderer.Draw(DotGame.Framework.Graphics.SpriteBatch! spriteBatch, System.ReadOnlySpan<DotGame.Toolkit.Particles.ParticleDrawState> particles) -> void
+override DotGame.Toolkit.Particles.StretchedSpriteParticleRenderer.Equals(object? obj) -> bool
+override DotGame.Toolkit.Particles.StretchedSpriteParticleRenderer.GetHashCode() -> int
+override DotGame.Toolkit.Particles.StretchedSpriteParticleRenderer.ToString() -> string!
+override DotGame.Toolkit.Thickness.Equals(object? obj) -> bool
+override DotGame.Toolkit.Thickness.GetHashCode() -> int
+override DotGame.Toolkit.Thickness.ToString() -> string!
+override DotGame.Toolkit.ThicknessInt.Equals(object? obj) -> bool
+override DotGame.Toolkit.ThicknessInt.GetHashCode() -> int
+override DotGame.Toolkit.ThicknessInt.ToString() -> string!
+override sealed DotGame.Toolkit.Particles.AnimatedSpriteParticleRenderer.Equals(DotGame.Toolkit.Particles.ParticleRenderer? other) -> bool
+override sealed DotGame.Toolkit.Particles.CompositeParticleRenderer.Equals(DotGame.Toolkit.Particles.ParticleRenderer? other) -> bool
+override sealed DotGame.Toolkit.Particles.SpriteParticleRenderer.Equals(DotGame.Toolkit.Particles.ParticleRenderer? other) -> bool
+override sealed DotGame.Toolkit.Particles.StretchedSpriteParticleRenderer.Equals(DotGame.Toolkit.Particles.ParticleRenderer? other) -> bool
+static DotGame.Toolkit.Animation.Easing.Back(DotGame.Toolkit.Animation.EasingMode mode, float overshoot = 1.70158) -> DotGame.Toolkit.Animation.Easing!
+static DotGame.Toolkit.Animation.Easing.BackIn.get -> DotGame.Toolkit.Animation.Easing!
+static DotGame.Toolkit.Animation.Easing.BackInOut.get -> DotGame.Toolkit.Animation.Easing!
+static DotGame.Toolkit.Animation.Easing.BackOut.get -> DotGame.Toolkit.Animation.Easing!
+static DotGame.Toolkit.Animation.Easing.BounceIn.get -> DotGame.Toolkit.Animation.Easing!
+static DotGame.Toolkit.Animation.Easing.BounceInOut.get -> DotGame.Toolkit.Animation.Easing!
+static DotGame.Toolkit.Animation.Easing.BounceOut.get -> DotGame.Toolkit.Animation.Easing!
+static DotGame.Toolkit.Animation.Easing.CircIn.get -> DotGame.Toolkit.Animation.Easing!
+static DotGame.Toolkit.Animation.Easing.CircInOut.get -> DotGame.Toolkit.Animation.Easing!
+static DotGame.Toolkit.Animation.Easing.CircOut.get -> DotGame.Toolkit.Animation.Easing!
+static DotGame.Toolkit.Animation.Easing.CubicBezier(float x1, float y1, float x2, float y2) -> DotGame.Toolkit.Animation.Easing!
+static DotGame.Toolkit.Animation.Easing.CubicIn.get -> DotGame.Toolkit.Animation.Easing!
+static DotGame.Toolkit.Animation.Easing.CubicInOut.get -> DotGame.Toolkit.Animation.Easing!
+static DotGame.Toolkit.Animation.Easing.CubicOut.get -> DotGame.Toolkit.Animation.Easing!
+static DotGame.Toolkit.Animation.Easing.Custom(System.Func<float, float>! easeIn, DotGame.Toolkit.Animation.EasingMode mode) -> DotGame.Toolkit.Animation.Easing!
+static DotGame.Toolkit.Animation.Easing.Elastic(DotGame.Toolkit.Animation.EasingMode mode, float amplitude = 1, float? period = null) -> DotGame.Toolkit.Animation.Easing!
+static DotGame.Toolkit.Animation.Easing.ElasticIn.get -> DotGame.Toolkit.Animation.Easing!
+static DotGame.Toolkit.Animation.Easing.ElasticInOut.get -> DotGame.Toolkit.Animation.Easing!
+static DotGame.Toolkit.Animation.Easing.ElasticOut.get -> DotGame.Toolkit.Animation.Easing!
+static DotGame.Toolkit.Animation.Easing.ExpoIn.get -> DotGame.Toolkit.Animation.Easing!
+static DotGame.Toolkit.Animation.Easing.ExpoInOut.get -> DotGame.Toolkit.Animation.Easing!
+static DotGame.Toolkit.Animation.Easing.Exponential(DotGame.Toolkit.Animation.EasingMode mode, float exponent = 2) -> DotGame.Toolkit.Animation.Easing!
+static DotGame.Toolkit.Animation.Easing.ExpoOut.get -> DotGame.Toolkit.Animation.Easing!
+static DotGame.Toolkit.Animation.Easing.Linear.get -> DotGame.Toolkit.Animation.Easing!
+static DotGame.Toolkit.Animation.Easing.QuadIn.get -> DotGame.Toolkit.Animation.Easing!
+static DotGame.Toolkit.Animation.Easing.QuadInOut.get -> DotGame.Toolkit.Animation.Easing!
+static DotGame.Toolkit.Animation.Easing.QuadOut.get -> DotGame.Toolkit.Animation.Easing!
+static DotGame.Toolkit.Animation.Easing.QuartIn.get -> DotGame.Toolkit.Animation.Easing!
+static DotGame.Toolkit.Animation.Easing.QuartInOut.get -> DotGame.Toolkit.Animation.Easing!
+static DotGame.Toolkit.Animation.Easing.QuartOut.get -> DotGame.Toolkit.Animation.Easing!
+static DotGame.Toolkit.Animation.Easing.QuintIn.get -> DotGame.Toolkit.Animation.Easing!
+static DotGame.Toolkit.Animation.Easing.QuintInOut.get -> DotGame.Toolkit.Animation.Easing!
+static DotGame.Toolkit.Animation.Easing.QuintOut.get -> DotGame.Toolkit.Animation.Easing!
+static DotGame.Toolkit.Animation.Easing.SineIn.get -> DotGame.Toolkit.Animation.Easing!
+static DotGame.Toolkit.Animation.Easing.SineInOut.get -> DotGame.Toolkit.Animation.Easing!
+static DotGame.Toolkit.Animation.Easing.SineOut.get -> DotGame.Toolkit.Animation.Easing!
+static DotGame.Toolkit.Animation.Easing.Spring(float damping = 0.5) -> DotGame.Toolkit.Animation.Easing!
+static DotGame.Toolkit.Animation.Easing.Steps(int count) -> DotGame.Toolkit.Animation.Easing!
+static DotGame.Toolkit.Animation.SpriteAnimationExtensions.CreateAnimation(this DotGame.Toolkit.Graphics.TextureAtlas! atlas, string! name, float framesPerSecond, DotGame.Toolkit.Animation.PlaybackMode playback = DotGame.Toolkit.Animation.PlaybackMode.Loop) -> DotGame.Toolkit.Animation.SpriteAnimation!
+static DotGame.Toolkit.Animation.SpriteAnimationExtensions.Draw(this DotGame.Framework.Graphics.SpriteBatch! spriteBatch, DotGame.Toolkit.Animation.SpriteAnimationPlayer! player, System.Numerics.Vector2 position, DotGame.Framework.Color color, DotGame.Framework.Angle rotation = default(DotGame.Framework.Angle), System.Numerics.Vector2 origin = default(System.Numerics.Vector2), System.Numerics.Vector2? scale = null, DotGame.Framework.Graphics.SpriteFlip flip = DotGame.Framework.Graphics.SpriteFlip.None) -> void
+static DotGame.Toolkit.Animation.SpriteAnimationExtensions.GetAnimationFrames(this DotGame.Toolkit.Graphics.TextureAtlas! atlas, string! name) -> System.Collections.Generic.IReadOnlyList<DotGame.Toolkit.Graphics.TextureRegion!>!
+static DotGame.Toolkit.Animation.SpriteAnimationFrame.operator !=(DotGame.Toolkit.Animation.SpriteAnimationFrame left, DotGame.Toolkit.Animation.SpriteAnimationFrame right) -> bool
+static DotGame.Toolkit.Animation.SpriteAnimationFrame.operator ==(DotGame.Toolkit.Animation.SpriteAnimationFrame left, DotGame.Toolkit.Animation.SpriteAnimationFrame right) -> bool
+static DotGame.Toolkit.Animation.Tween.Create(DotGame.Framework.Angle from, DotGame.Framework.Angle to, System.TimeSpan duration, DotGame.Toolkit.Animation.Easing? easing = null, System.TimeSpan delay = default(System.TimeSpan), DotGame.Toolkit.Animation.PlaybackMode playback = DotGame.Toolkit.Animation.PlaybackMode.Once) -> DotGame.Toolkit.Animation.Tween<DotGame.Framework.Angle>!
+static DotGame.Toolkit.Animation.Tween.Create(DotGame.Framework.Color from, DotGame.Framework.Color to, System.TimeSpan duration, DotGame.Toolkit.Animation.Easing? easing = null, System.TimeSpan delay = default(System.TimeSpan), DotGame.Toolkit.Animation.PlaybackMode playback = DotGame.Toolkit.Animation.PlaybackMode.Once) -> DotGame.Toolkit.Animation.Tween<DotGame.Framework.Color>!
+static DotGame.Toolkit.Animation.Tween.Create(float from, float to, System.TimeSpan duration, DotGame.Toolkit.Animation.Easing? easing = null, System.TimeSpan delay = default(System.TimeSpan), DotGame.Toolkit.Animation.PlaybackMode playback = DotGame.Toolkit.Animation.PlaybackMode.Once) -> DotGame.Toolkit.Animation.Tween<float>!
+static DotGame.Toolkit.Animation.Tween.Create(System.Numerics.Vector2 from, System.Numerics.Vector2 to, System.TimeSpan duration, DotGame.Toolkit.Animation.Easing? easing = null, System.TimeSpan delay = default(System.TimeSpan), DotGame.Toolkit.Animation.PlaybackMode playback = DotGame.Toolkit.Animation.PlaybackMode.Once) -> DotGame.Toolkit.Animation.Tween<System.Numerics.Vector2>!
+static DotGame.Toolkit.Animation.Tween.Create<T>(T from, T to, System.TimeSpan duration, System.Func<T, T, float, T>! lerp, DotGame.Toolkit.Animation.Easing? easing = null, System.TimeSpan delay = default(System.TimeSpan), DotGame.Toolkit.Animation.PlaybackMode playback = DotGame.Toolkit.Animation.PlaybackMode.Once) -> DotGame.Toolkit.Animation.Tween<T>!
+static DotGame.Toolkit.Audio.AudioServiceExtensions.CreateVoice(this DotGame.Framework.Audio.AudioService! audioService, DotGame.Toolkit.Audio.SoundSegment segment) -> DotGame.Framework.Audio.SoundVoice!
+static DotGame.Toolkit.Audio.SoundExtensions.AsSegment(this DotGame.Framework.Audio.Sound! sound) -> DotGame.Toolkit.Audio.SoundSegment
+static DotGame.Toolkit.Audio.SoundExtensions.AsSegment(this DotGame.Framework.Audio.Sound! sound, System.TimeSpan offset, System.TimeSpan duration) -> DotGame.Toolkit.Audio.SoundSegment
+static DotGame.Toolkit.Audio.SoundSegment.operator !=(DotGame.Toolkit.Audio.SoundSegment left, DotGame.Toolkit.Audio.SoundSegment right) -> bool
+static DotGame.Toolkit.Audio.SoundSegment.operator ==(DotGame.Toolkit.Audio.SoundSegment left, DotGame.Toolkit.Audio.SoundSegment right) -> bool
+static DotGame.Toolkit.Fonts.CharacterCursor.operator !=(DotGame.Toolkit.Fonts.CharacterCursor left, DotGame.Toolkit.Fonts.CharacterCursor right) -> bool
+static DotGame.Toolkit.Fonts.CharacterCursor.operator ==(DotGame.Toolkit.Fonts.CharacterCursor left, DotGame.Toolkit.Fonts.CharacterCursor right) -> bool
+static DotGame.Toolkit.Fonts.CharacterCursor.Start.get -> DotGame.Toolkit.Fonts.CharacterCursor
+static DotGame.Toolkit.Fonts.SpriteBatchTextExtensions.DrawString(this DotGame.Framework.Graphics.SpriteBatch! spriteBatch, DotGame.Toolkit.Fonts.SpriteFont! font, System.ReadOnlySpan<char> text, System.Numerics.Vector2 position, DotGame.Framework.Color color, float opacity = 1, DotGame.Framework.Angle rotation = default(DotGame.Framework.Angle), System.Numerics.Vector2 origin = default(System.Numerics.Vector2), System.Numerics.Vector2? scale = null, float tracking = 0, DotGame.Toolkit.Fonts.TextEffects? effects = null, DotGame.Toolkit.Fonts.TextLayers layers = DotGame.Toolkit.Fonts.TextLayers.All) -> void
+static DotGame.Toolkit.Fonts.SpriteBatchTextExtensions.DrawString(this DotGame.Framework.Graphics.SpriteBatch! spriteBatch, DotGame.Toolkit.Fonts.SpriteFont! font, System.Text.StringBuilder! text, System.Numerics.Vector2 position, DotGame.Framework.Color color, float opacity = 1, DotGame.Framework.Angle rotation = default(DotGame.Framework.Angle), System.Numerics.Vector2 origin = default(System.Numerics.Vector2), System.Numerics.Vector2? scale = null, float tracking = 0, DotGame.Toolkit.Fonts.TextEffects? effects = null, DotGame.Toolkit.Fonts.TextLayers layers = DotGame.Toolkit.Fonts.TextLayers.All) -> void
+static DotGame.Toolkit.Fonts.SpriteBatchTextExtensions.DrawString<TCharacterAttributes>(this DotGame.Framework.Graphics.SpriteBatch! spriteBatch, DotGame.Toolkit.Fonts.SpriteFont! font, System.ReadOnlySpan<char> text, TCharacterAttributes characterAttributes, in DotGame.Toolkit.Fonts.CharacterCursor cursorOffset, System.Numerics.Vector2 position, DotGame.Framework.Color color, float opacity = 1, DotGame.Framework.Angle rotation = default(DotGame.Framework.Angle), System.Numerics.Vector2 origin = default(System.Numerics.Vector2), System.Numerics.Vector2? scale = null, float tracking = 0, DotGame.Toolkit.Fonts.TextEffects? effects = null, DotGame.Toolkit.Fonts.TextLayers layers = DotGame.Toolkit.Fonts.TextLayers.All) -> void
+static DotGame.Toolkit.Fonts.SpriteBatchTextExtensions.DrawString<TCharacterAttributes>(this DotGame.Framework.Graphics.SpriteBatch! spriteBatch, DotGame.Toolkit.Fonts.SpriteFont! font, System.Text.StringBuilder! text, TCharacterAttributes characterAttributes, in DotGame.Toolkit.Fonts.CharacterCursor cursorOffset, System.Numerics.Vector2 position, DotGame.Framework.Color color, float opacity = 1, DotGame.Framework.Angle rotation = default(DotGame.Framework.Angle), System.Numerics.Vector2 origin = default(System.Numerics.Vector2), System.Numerics.Vector2? scale = null, float tracking = 0, DotGame.Toolkit.Fonts.TextEffects? effects = null, DotGame.Toolkit.Fonts.TextLayers layers = DotGame.Toolkit.Fonts.TextLayers.All) -> void
+static DotGame.Toolkit.Fonts.TextEffects.None.get -> DotGame.Toolkit.Fonts.TextEffects!
+static DotGame.Toolkit.Fonts.TextEffects.operator !=(DotGame.Toolkit.Fonts.TextEffects? left, DotGame.Toolkit.Fonts.TextEffects? right) -> bool
+static DotGame.Toolkit.Fonts.TextEffects.operator ==(DotGame.Toolkit.Fonts.TextEffects? left, DotGame.Toolkit.Fonts.TextEffects? right) -> bool
+static DotGame.Toolkit.Fonts.TextGlow.operator !=(DotGame.Toolkit.Fonts.TextGlow left, DotGame.Toolkit.Fonts.TextGlow right) -> bool
+static DotGame.Toolkit.Fonts.TextGlow.operator ==(DotGame.Toolkit.Fonts.TextGlow left, DotGame.Toolkit.Fonts.TextGlow right) -> bool
+static DotGame.Toolkit.Fonts.TextLayoutLine.operator !=(DotGame.Toolkit.Fonts.TextLayoutLine left, DotGame.Toolkit.Fonts.TextLayoutLine right) -> bool
+static DotGame.Toolkit.Fonts.TextLayoutLine.operator ==(DotGame.Toolkit.Fonts.TextLayoutLine left, DotGame.Toolkit.Fonts.TextLayoutLine right) -> bool
+static DotGame.Toolkit.Fonts.TextOutline.operator !=(DotGame.Toolkit.Fonts.TextOutline left, DotGame.Toolkit.Fonts.TextOutline right) -> bool
+static DotGame.Toolkit.Fonts.TextOutline.operator ==(DotGame.Toolkit.Fonts.TextOutline left, DotGame.Toolkit.Fonts.TextOutline right) -> bool
+static DotGame.Toolkit.Fonts.TextShadow.operator !=(DotGame.Toolkit.Fonts.TextShadow left, DotGame.Toolkit.Fonts.TextShadow right) -> bool
+static DotGame.Toolkit.Fonts.TextShadow.operator ==(DotGame.Toolkit.Fonts.TextShadow left, DotGame.Toolkit.Fonts.TextShadow right) -> bool
+static DotGame.Toolkit.GameExtensions.InitializeToolkit(this DotGame.Framework.Game! game) -> void
+static DotGame.Toolkit.Graphics.GraphicsServiceExtensions.CreateTextureFromJpeg(this DotGame.Framework.Graphics.GraphicsService! graphics, System.ReadOnlySpan<byte> jpeg) -> DotGame.Framework.Graphics.Texture!
+static DotGame.Toolkit.Graphics.GraphicsServiceExtensions.CreateTextureFromPng(this DotGame.Framework.Graphics.GraphicsService! graphics, System.ReadOnlySpan<byte> png) -> DotGame.Framework.Graphics.Texture!
+static DotGame.Toolkit.Graphics.GraphicsServiceExtensions.CreateTextureFromPngAsync(this DotGame.Framework.Graphics.GraphicsService! graphics, System.IO.Stream! stream, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<DotGame.Framework.Graphics.Texture!>!
+static DotGame.Toolkit.Graphics.HsvColor.FromColor(DotGame.Framework.Color color) -> DotGame.Toolkit.Graphics.HsvColor
+static DotGame.Toolkit.Graphics.HsvColor.operator !=(DotGame.Toolkit.Graphics.HsvColor left, DotGame.Toolkit.Graphics.HsvColor right) -> bool
+static DotGame.Toolkit.Graphics.HsvColor.operator ==(DotGame.Toolkit.Graphics.HsvColor left, DotGame.Toolkit.Graphics.HsvColor right) -> bool
+static DotGame.Toolkit.Graphics.NinePatch.FromRegion(DotGame.Toolkit.Graphics.TextureRegion! region) -> DotGame.Toolkit.Graphics.NinePatch!
+static DotGame.Toolkit.Graphics.SpriteBatchExtensions.AsSource(this DotGame.Framework.Graphics.Texture! texture) -> DotGame.Toolkit.Graphics.ITextureSource!
+static DotGame.Toolkit.Graphics.SpriteBatchExtensions.Draw(this DotGame.Framework.Graphics.SpriteBatch! spriteBatch, DotGame.Toolkit.Graphics.ITextureSource! source, System.Numerics.Vector2 position, DotGame.Framework.Color color, DotGame.Framework.Angle rotation = default(DotGame.Framework.Angle), System.Numerics.Vector2 origin = default(System.Numerics.Vector2), System.Numerics.Vector2? scale = null, DotGame.Framework.Rectangle? sourceRectangle = null, DotGame.Framework.Graphics.SpriteFlip flip = DotGame.Framework.Graphics.SpriteFlip.None) -> void
+static DotGame.Toolkit.Graphics.SpriteBatchExtensions.Draw(this DotGame.Framework.Graphics.SpriteBatch! spriteBatch, DotGame.Toolkit.Graphics.TextureRegion! region, System.Numerics.Vector2 position, DotGame.Framework.Color color, DotGame.Framework.Angle rotation = default(DotGame.Framework.Angle), System.Numerics.Vector2 origin = default(System.Numerics.Vector2), System.Numerics.Vector2? scale = null, DotGame.Framework.Graphics.SpriteFlip flip = DotGame.Framework.Graphics.SpriteFlip.None) -> void
+static DotGame.Toolkit.Graphics.SpriteBatchShapeExtensions.DrawCircle(this DotGame.Framework.Graphics.SpriteBatch! spriteBatch, System.Numerics.Vector2 center, float radius, DotGame.Framework.Color color, float thickness = 1, int? segments = null) -> void
+static DotGame.Toolkit.Graphics.SpriteBatchShapeExtensions.DrawLine(this DotGame.Framework.Graphics.SpriteBatch! spriteBatch, System.Numerics.Vector2 start, System.Numerics.Vector2 end, DotGame.Framework.Color color, float thickness = 1) -> void
+static DotGame.Toolkit.Graphics.SpriteBatchShapeExtensions.DrawPolygon(this DotGame.Framework.Graphics.SpriteBatch! spriteBatch, System.ReadOnlySpan<System.Numerics.Vector2> points, DotGame.Framework.Color color, float thickness = 1) -> void
+static DotGame.Toolkit.Graphics.SpriteBatchShapeExtensions.DrawRectangle(this DotGame.Framework.Graphics.SpriteBatch! spriteBatch, DotGame.Framework.Rectangle rectangle, DotGame.Framework.Color color, float thickness = 1) -> void
+static DotGame.Toolkit.Graphics.SpriteBatchShapeExtensions.FillCircle(this DotGame.Framework.Graphics.SpriteBatch! spriteBatch, System.Numerics.Vector2 center, float radius, DotGame.Framework.Color color, int? segments = null) -> void
+static DotGame.Toolkit.Graphics.SpriteBatchShapeExtensions.FillPolygon(this DotGame.Framework.Graphics.SpriteBatch! spriteBatch, System.ReadOnlySpan<System.Numerics.Vector2> points, DotGame.Framework.Color color) -> void
+static DotGame.Toolkit.Graphics.SpriteBatchShapeExtensions.FillRectangle(this DotGame.Framework.Graphics.SpriteBatch! spriteBatch, DotGame.Framework.Rectangle rectangle, DotGame.Framework.Color color) -> void
+static DotGame.Toolkit.Graphics.SpriteBatchShapeExtensions.FillTriangle(this DotGame.Framework.Graphics.SpriteBatch! spriteBatch, System.Numerics.Vector2 a, System.Numerics.Vector2 b, System.Numerics.Vector2 c, DotGame.Framework.Color color) -> void
+static DotGame.Toolkit.Graphics.SpriteBatchShapeExtensions.FillTriangles(this DotGame.Framework.Graphics.SpriteBatch! spriteBatch, System.ReadOnlySpan<DotGame.Framework.Graphics.Vertex> vertices) -> void
+static DotGame.Toolkit.Graphics.SpriteBatchShapeExtensions.FillTriangles(this DotGame.Framework.Graphics.SpriteBatch! spriteBatch, System.ReadOnlySpan<DotGame.Framework.Graphics.Vertex> vertices, System.ReadOnlySpan<ushort> indices) -> void
+static DotGame.Toolkit.Particles.AnimatedSpriteParticleRenderer.operator !=(DotGame.Toolkit.Particles.AnimatedSpriteParticleRenderer? left, DotGame.Toolkit.Particles.AnimatedSpriteParticleRenderer? right) -> bool
+static DotGame.Toolkit.Particles.AnimatedSpriteParticleRenderer.operator ==(DotGame.Toolkit.Particles.AnimatedSpriteParticleRenderer? left, DotGame.Toolkit.Particles.AnimatedSpriteParticleRenderer? right) -> bool
+static DotGame.Toolkit.Particles.CompositeParticleRenderer.operator !=(DotGame.Toolkit.Particles.CompositeParticleRenderer? left, DotGame.Toolkit.Particles.CompositeParticleRenderer? right) -> bool
+static DotGame.Toolkit.Particles.CompositeParticleRenderer.operator ==(DotGame.Toolkit.Particles.CompositeParticleRenderer? left, DotGame.Toolkit.Particles.CompositeParticleRenderer? right) -> bool
+static DotGame.Toolkit.Particles.EmitShape.Circle(float radius) -> DotGame.Toolkit.Particles.EmitShape
+static DotGame.Toolkit.Particles.EmitShape.Line(System.Numerics.Vector2 extent) -> DotGame.Toolkit.Particles.EmitShape
+static DotGame.Toolkit.Particles.EmitShape.operator !=(DotGame.Toolkit.Particles.EmitShape left, DotGame.Toolkit.Particles.EmitShape right) -> bool
+static DotGame.Toolkit.Particles.EmitShape.operator ==(DotGame.Toolkit.Particles.EmitShape left, DotGame.Toolkit.Particles.EmitShape right) -> bool
+static DotGame.Toolkit.Particles.EmitShape.Point.get -> DotGame.Toolkit.Particles.EmitShape
+static DotGame.Toolkit.Particles.EmitShape.Rectangle(float width, float height) -> DotGame.Toolkit.Particles.EmitShape
+static DotGame.Toolkit.Particles.EmitShape.Ring(float radius) -> DotGame.Toolkit.Particles.EmitShape
+static DotGame.Toolkit.Particles.FloatRange.Around(float center, float variance) -> DotGame.Toolkit.Particles.FloatRange
+static DotGame.Toolkit.Particles.FloatRange.implicit operator DotGame.Toolkit.Particles.FloatRange((float Min, float Max) range) -> DotGame.Toolkit.Particles.FloatRange
+static DotGame.Toolkit.Particles.FloatRange.implicit operator DotGame.Toolkit.Particles.FloatRange(float value) -> DotGame.Toolkit.Particles.FloatRange
+static DotGame.Toolkit.Particles.FloatRange.operator !=(DotGame.Toolkit.Particles.FloatRange left, DotGame.Toolkit.Particles.FloatRange right) -> bool
+static DotGame.Toolkit.Particles.FloatRange.operator ==(DotGame.Toolkit.Particles.FloatRange left, DotGame.Toolkit.Particles.FloatRange right) -> bool
+static DotGame.Toolkit.Particles.ParticleBurst.operator !=(DotGame.Toolkit.Particles.ParticleBurst left, DotGame.Toolkit.Particles.ParticleBurst right) -> bool
+static DotGame.Toolkit.Particles.ParticleBurst.operator ==(DotGame.Toolkit.Particles.ParticleBurst left, DotGame.Toolkit.Particles.ParticleBurst right) -> bool
+static DotGame.Toolkit.Particles.ParticleColor.Between(DotGame.Framework.Color from, DotGame.Framework.Color to) -> DotGame.Toolkit.Particles.ParticleColor
+static DotGame.Toolkit.Particles.ParticleColor.Constant(DotGame.Framework.Color color) -> DotGame.Toolkit.Particles.ParticleColor
+static DotGame.Toolkit.Particles.ParticleColor.implicit operator DotGame.Toolkit.Particles.ParticleColor(DotGame.Framework.Color color) -> DotGame.Toolkit.Particles.ParticleColor
+static DotGame.Toolkit.Particles.ParticleColor.operator !=(DotGame.Toolkit.Particles.ParticleColor left, DotGame.Toolkit.Particles.ParticleColor right) -> bool
+static DotGame.Toolkit.Particles.ParticleColor.operator ==(DotGame.Toolkit.Particles.ParticleColor left, DotGame.Toolkit.Particles.ParticleColor right) -> bool
+static DotGame.Toolkit.Particles.ParticleColor.Palette(params DotGame.Framework.Color[]! colors) -> DotGame.Toolkit.Particles.ParticleColor
+static DotGame.Toolkit.Particles.ParticleColor.White.get -> DotGame.Toolkit.Particles.ParticleColor
+static DotGame.Toolkit.Particles.ParticleCurve.Between(float from, float to, DotGame.Toolkit.Animation.Easing? ease = null) -> DotGame.Toolkit.Particles.ParticleCurve!
+static DotGame.Toolkit.Particles.ParticleCurve.Constant(float value) -> DotGame.Toolkit.Particles.ParticleCurve!
+static DotGame.Toolkit.Particles.ParticleCurve.FromKeys(params DotGame.Toolkit.Particles.ParticleCurveKey[]! keys) -> DotGame.Toolkit.Particles.ParticleCurve!
+static DotGame.Toolkit.Particles.ParticleCurve.One.get -> DotGame.Toolkit.Particles.ParticleCurve!
+static DotGame.Toolkit.Particles.ParticleCurveKey.operator !=(DotGame.Toolkit.Particles.ParticleCurveKey left, DotGame.Toolkit.Particles.ParticleCurveKey right) -> bool
+static DotGame.Toolkit.Particles.ParticleCurveKey.operator ==(DotGame.Toolkit.Particles.ParticleCurveKey left, DotGame.Toolkit.Particles.ParticleCurveKey right) -> bool
+static DotGame.Toolkit.Particles.ParticleEffect.operator !=(DotGame.Toolkit.Particles.ParticleEffect? left, DotGame.Toolkit.Particles.ParticleEffect? right) -> bool
+static DotGame.Toolkit.Particles.ParticleEffect.operator ==(DotGame.Toolkit.Particles.ParticleEffect? left, DotGame.Toolkit.Particles.ParticleEffect? right) -> bool
+static DotGame.Toolkit.Particles.ParticleEmitter.operator !=(DotGame.Toolkit.Particles.ParticleEmitter left, DotGame.Toolkit.Particles.ParticleEmitter right) -> bool
+static DotGame.Toolkit.Particles.ParticleEmitter.operator ==(DotGame.Toolkit.Particles.ParticleEmitter left, DotGame.Toolkit.Particles.ParticleEmitter right) -> bool
+static DotGame.Toolkit.Particles.ParticleFlip.operator !=(DotGame.Toolkit.Particles.ParticleFlip left, DotGame.Toolkit.Particles.ParticleFlip right) -> bool
+static DotGame.Toolkit.Particles.ParticleFlip.operator ==(DotGame.Toolkit.Particles.ParticleFlip left, DotGame.Toolkit.Particles.ParticleFlip right) -> bool
+static DotGame.Toolkit.Particles.ParticleOverrides.operator !=(DotGame.Toolkit.Particles.ParticleOverrides left, DotGame.Toolkit.Particles.ParticleOverrides right) -> bool
+static DotGame.Toolkit.Particles.ParticleOverrides.operator ==(DotGame.Toolkit.Particles.ParticleOverrides left, DotGame.Toolkit.Particles.ParticleOverrides right) -> bool
+static DotGame.Toolkit.Particles.ParticleRenderer.Animation(DotGame.Toolkit.Animation.SpriteAnimation! animation, DotGame.Toolkit.Particles.ParticleAnimationTiming timing = DotGame.Toolkit.Particles.ParticleAnimationTiming.OverLife) -> DotGame.Toolkit.Particles.AnimatedSpriteParticleRenderer!
+static DotGame.Toolkit.Particles.ParticleRenderer.AnyOf(params DotGame.Toolkit.Graphics.ITextureSource![]! textures) -> DotGame.Toolkit.Particles.SpriteParticleRenderer!
+static DotGame.Toolkit.Particles.ParticleRenderer.Composite(params DotGame.Toolkit.Particles.ParticleRenderer![]! renderers) -> DotGame.Toolkit.Particles.CompositeParticleRenderer!
+static DotGame.Toolkit.Particles.ParticleRenderer.operator !=(DotGame.Toolkit.Particles.ParticleRenderer? left, DotGame.Toolkit.Particles.ParticleRenderer? right) -> bool
+static DotGame.Toolkit.Particles.ParticleRenderer.operator ==(DotGame.Toolkit.Particles.ParticleRenderer? left, DotGame.Toolkit.Particles.ParticleRenderer? right) -> bool
+static DotGame.Toolkit.Particles.ParticleRenderer.Sprite(DotGame.Toolkit.Graphics.ITextureSource! texture) -> DotGame.Toolkit.Particles.SpriteParticleRenderer!
+static DotGame.Toolkit.Particles.ParticleRenderer.Stretched(DotGame.Toolkit.Graphics.ITextureSource! texture, float lengthPerSpeed) -> DotGame.Toolkit.Particles.StretchedSpriteParticleRenderer!
+static DotGame.Toolkit.Particles.ParticleSpawn.operator !=(DotGame.Toolkit.Particles.ParticleSpawn left, DotGame.Toolkit.Particles.ParticleSpawn right) -> bool
+static DotGame.Toolkit.Particles.ParticleSpawn.operator ==(DotGame.Toolkit.Particles.ParticleSpawn left, DotGame.Toolkit.Particles.ParticleSpawn right) -> bool
+static DotGame.Toolkit.Particles.ParticleSway.operator !=(DotGame.Toolkit.Particles.ParticleSway left, DotGame.Toolkit.Particles.ParticleSway right) -> bool
+static DotGame.Toolkit.Particles.ParticleSway.operator ==(DotGame.Toolkit.Particles.ParticleSway left, DotGame.Toolkit.Particles.ParticleSway right) -> bool
+static DotGame.Toolkit.Particles.SpriteParticleRenderer.operator !=(DotGame.Toolkit.Particles.SpriteParticleRenderer? left, DotGame.Toolkit.Particles.SpriteParticleRenderer? right) -> bool
+static DotGame.Toolkit.Particles.SpriteParticleRenderer.operator ==(DotGame.Toolkit.Particles.SpriteParticleRenderer? left, DotGame.Toolkit.Particles.SpriteParticleRenderer? right) -> bool
+static DotGame.Toolkit.Particles.StretchedSpriteParticleRenderer.operator !=(DotGame.Toolkit.Particles.StretchedSpriteParticleRenderer? left, DotGame.Toolkit.Particles.StretchedSpriteParticleRenderer? right) -> bool
+static DotGame.Toolkit.Particles.StretchedSpriteParticleRenderer.operator ==(DotGame.Toolkit.Particles.StretchedSpriteParticleRenderer? left, DotGame.Toolkit.Particles.StretchedSpriteParticleRenderer? right) -> bool
+static DotGame.Toolkit.Thickness.operator !=(DotGame.Toolkit.Thickness a, DotGame.Toolkit.Thickness b) -> bool
+static DotGame.Toolkit.Thickness.operator ==(DotGame.Toolkit.Thickness a, DotGame.Toolkit.Thickness b) -> bool
+static DotGame.Toolkit.Thickness.Zero.get -> DotGame.Toolkit.Thickness
+static DotGame.Toolkit.ThicknessInt.implicit operator DotGame.Toolkit.Thickness(DotGame.Toolkit.ThicknessInt t) -> DotGame.Toolkit.Thickness
+static DotGame.Toolkit.ThicknessInt.operator !=(DotGame.Toolkit.ThicknessInt a, DotGame.Toolkit.ThicknessInt b) -> bool
+static DotGame.Toolkit.ThicknessInt.operator ==(DotGame.Toolkit.ThicknessInt a, DotGame.Toolkit.ThicknessInt b) -> bool
+static DotGame.Toolkit.ThicknessInt.Zero.get -> DotGame.Toolkit.ThicknessInt
+virtual DotGame.Toolkit.Particles.ParticleRenderer.EqualityContract.get -> System.Type!
+virtual DotGame.Toolkit.Particles.ParticleRenderer.Equals(DotGame.Toolkit.Particles.ParticleRenderer? other) -> bool
+virtual DotGame.Toolkit.Particles.ParticleRenderer.PrintMembers(System.Text.StringBuilder! builder) -> bool
+~override DotGame.Toolkit.Animation.SpriteAnimationFrame.Equals(object obj) -> bool
+~override DotGame.Toolkit.Animation.SpriteAnimationFrame.ToString() -> string
+~override DotGame.Toolkit.Audio.SoundSegment.Equals(object obj) -> bool
+~override DotGame.Toolkit.Audio.SoundSegment.ToString() -> string
+~override DotGame.Toolkit.Fonts.CharacterCursor.Equals(object obj) -> bool
+~override DotGame.Toolkit.Fonts.CharacterCursor.ToString() -> string
+~override DotGame.Toolkit.Fonts.TextGlow.Equals(object obj) -> bool
+~override DotGame.Toolkit.Fonts.TextGlow.ToString() -> string
+~override DotGame.Toolkit.Fonts.TextLayoutLine.Equals(object obj) -> bool
+~override DotGame.Toolkit.Fonts.TextLayoutLine.ToString() -> string
+~override DotGame.Toolkit.Fonts.TextOutline.Equals(object obj) -> bool
+~override DotGame.Toolkit.Fonts.TextOutline.ToString() -> string
+~override DotGame.Toolkit.Fonts.TextShadow.Equals(object obj) -> bool
+~override DotGame.Toolkit.Fonts.TextShadow.ToString() -> string
+~override DotGame.Toolkit.Graphics.HsvColor.Equals(object obj) -> bool
+~override DotGame.Toolkit.Graphics.HsvColor.ToString() -> string
+~override DotGame.Toolkit.Particles.EmitShape.Equals(object obj) -> bool
+~override DotGame.Toolkit.Particles.EmitShape.ToString() -> string
+~override DotGame.Toolkit.Particles.FloatRange.Equals(object obj) -> bool
+~override DotGame.Toolkit.Particles.FloatRange.ToString() -> string
+~override DotGame.Toolkit.Particles.ParticleBurst.Equals(object obj) -> bool
+~override DotGame.Toolkit.Particles.ParticleBurst.ToString() -> string
+~override DotGame.Toolkit.Particles.ParticleColor.Equals(object obj) -> bool
+~override DotGame.Toolkit.Particles.ParticleColor.ToString() -> string
+~override DotGame.Toolkit.Particles.ParticleCurveKey.Equals(object obj) -> bool
+~override DotGame.Toolkit.Particles.ParticleCurveKey.ToString() -> string
+~override DotGame.Toolkit.Particles.ParticleFlip.Equals(object obj) -> bool
+~override DotGame.Toolkit.Particles.ParticleFlip.ToString() -> string
+~override DotGame.Toolkit.Particles.ParticleOverrides.Equals(object obj) -> bool
+~override DotGame.Toolkit.Particles.ParticleOverrides.ToString() -> string
+~override DotGame.Toolkit.Particles.ParticleSpawn.Equals(object obj) -> bool
+~override DotGame.Toolkit.Particles.ParticleSpawn.ToString() -> string
+~override DotGame.Toolkit.Particles.ParticleSway.Equals(object obj) -> bool
+~override DotGame.Toolkit.Particles.ParticleSway.ToString() -> string

@@ -1,0 +1,4 @@
+<Solution>
+    <Project Path="src/DotGame.Toolkit.VisualStudio/DotGame.Toolkit.VisualStudio.csproj" />
+    <Project Path="test/DotGame.Toolkit.VisualStudio.Tests/DotGame.Toolkit.VisualStudio.Tests.csproj" />
+</Solution>

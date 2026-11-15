@@ -1,0 +1,52 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <!--
+        DotGame Toolkit for Visual Studio: a texture atlas's or sound bank's settings in its folder's Properties
+        window, and DotGame folders' icons in Solution Explorer. A package that adds automation extenders to C#
+        folders, and project system (CPS) parts for the icons, in a VSIX. Build it with Visual Studio's MSBuild (the
+        VSSDK's tasks run on .NET Framework); DeployExtension installs it in the experimental instance.
+    -->
+
+    <PropertyGroup>
+        <TargetFramework>net48</TargetFramework>
+        <!-- The icons are WPF resources, for the image manifest's pack URIs -->
+        <UseWPF>true</UseWPF>
+        <RootNamespace>DotGame.Toolkit.VisualStudio</RootNamespace>
+        <AssemblyVersion>0.1.0.0</AssemblyVersion>
+        <FileVersion>0.1.0.0</FileVersion>
+        <!-- The VSSDK build tools package imports its targets -->
+        <VSSDKBuildToolsAutoSetup>true</VSSDKBuildToolsAutoSetup>
+        <GeneratePkgDefFile>true</GeneratePkgDefFile>
+        <IncludeAssemblyInVSIXContainer>true</IncludeAssemblyInVSIXContainer>
+        <IncludeDebugSymbolsInVSIXContainer>false</IncludeDebugSymbolsInVSIXContainer>
+        <IncludeDebugSymbolsInLocalVSIXDeployment>true</IncludeDebugSymbolsInLocalVSIXDeployment>
+        <CopyBuildOutputToOutputDirectory>true</CopyBuildOutputToOutputDirectory>
+        <CopyOutputSymbolsToOutputDirectory>true</CopyOutputSymbolsToOutputDirectory>
+        <DeployExtension Condition="'$(DeployExtension)' == ''">false</DeployExtension>
+        <VSSDKTargetPlatformRegRootSuffix>Exp</VSSDKTargetPlatformRegRootSuffix>
+        <!-- F5 starts the experimental instance -->
+        <StartAction>Program</StartAction>
+        <StartProgram>$(DevEnvDir)devenv.exe</StartProgram>
+        <StartArguments>/rootsuffix Exp</StartArguments>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <None Include="source.extension.vsixmanifest" SubType="Designer" />
+        <Content Include="..\..\..\LICENSE" Link="LICENSE" IncludeInVSIX="true" CopyToOutputDirectory="PreserveNewest" />
+        <!-- Visual Studio reads the image manifest from the extension's folder -->
+        <Content Include="Images\DotGame.imagemanifest" Link="DotGame.imagemanifest" IncludeInVSIX="true" CopyToOutputDirectory="PreserveNewest" />
+        <Resource Include="Images\*.png" />
+        <None Include="Images\draw_icons.py" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <!-- The project system's types use MEF's -->
+        <Reference Include="System.ComponentModel.Composition" />
+        <PackageReference Include="Microsoft.VisualStudio.SDK" Version="$(MicrosoftVisualStudioSdkVersion)" ExcludeAssets="runtime" />
+        <PackageReference Include="Microsoft.VisualStudio.ProjectSystem" Version="$(MicrosoftVisualStudioProjectSystemVersion)" ExcludeAssets="runtime" />
+        <!-- Visual Studio's own MSBuild evaluates the projects -->
+        <PackageReference Include="Microsoft.Build" Version="$(MicrosoftBuildVersion)" ExcludeAssets="runtime" />
+        <PackageReference Include="Microsoft.VSSDK.BuildTools" Version="$(MicrosoftVSSDKBuildToolsVersion)" PrivateAssets="all" />
+    </ItemGroup>
+
+</Project>

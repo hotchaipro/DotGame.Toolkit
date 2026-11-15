@@ -1,0 +1,4 @@
+# Test names separate the member and the case with underscores (Draw_OutsideABatch_Throws)
+
+[*.cs]
+dotnet_diagnostic.CA1707.severity = none

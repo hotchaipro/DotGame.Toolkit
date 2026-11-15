@@ -1,0 +1,16 @@
+<Project>
+    <!-- The versions of the packages this repository's projects reference, in one place -->
+    <PropertyGroup>
+        <!-- DotGame.Imaging (PNG, JPEG and WebP): the content pipeline's build tool reads texture sources with it, and the toolkit decodes images with it at run time -->
+        <DotGameImagingVersion>2.0.2</DotGameImagingVersion>
+        <!-- As the oldest SDK global.json allows (10.0.100): the tasks run in its MSBuild, 18.0 -->
+        <MicrosoftBuildUtilitiesCoreVersion>18.0.2</MicrosoftBuildUtilitiesCoreVersion>
+        <XunitV3Version>4.0.3</XunitV3Version>
+        <!-- The Visual Studio extension (vs/): the newest SDK and project system packages, which Visual Studio 2026 (18.x) runs -->
+        <MicrosoftVisualStudioSdkVersion>17.14.40265</MicrosoftVisualStudioSdkVersion>
+        <MicrosoftVSSDKBuildToolsVersion>18.9.820</MicrosoftVSSDKBuildToolsVersion>
+        <MicrosoftVisualStudioProjectSystemVersion>17.9.380</MicrosoftVisualStudioProjectSystemVersion>
+        <!-- Its tests evaluate projects with MSBuild itself -->
+        <MicrosoftBuildVersion>18.0.2</MicrosoftBuildVersion>
+    </PropertyGroup>
+</Project>

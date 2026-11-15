@@ -1,0 +1,49 @@
+<Project>
+
+    <!--
+        DotGame.Toolkit.targets
+
+        The one include for a game built on the toolkit, on every platform:
+
+            <Import Project="<DotGame folder>\packaging\build\DotGame.Toolkit.targets" />
+
+        It imports the framework's include (DotGame.Framework.targets: the
+        framework for the project's platform and its content pipeline), then adds
+        the toolkit's content pipeline (TextureAtlasContent, SoundBankContent,
+        SpriteFontContent). The toolkit itself is the game's own reference, as a
+        package would be: each platform's project (or the game's library) references
+        toolkit\DotGame.Toolkit.csproj (or a library's include does). A game built on a library over the
+        toolkit imports that library's include instead, which imports this one.
+
+        The layout mirrors the future NuGet package (build\<PackageId>.targets is
+        imported automatically from a PackageReference).
+
+        Properties (required, as an environment variable or set before the Import):
+            DotGameFrameworkDir   A clone of the DotGame framework repository,
+                                  anywhere.
+    -->
+
+    <PropertyGroup>
+        <_DotGameToolkitImported>true</_DotGameToolkitImported>
+        <_DotGameToolkitRoot>$([MSBuild]::NormalizeDirectory('$(MSBuildThisFileDirectory)..\..'))</_DotGameToolkitRoot>
+    </PropertyGroup>
+
+    <Import Project="$(_DotGameToolkitRoot)eng\DotGame.FrameworkDir.props" Condition="'$(_DotGameFrameworkDirImported)' != 'true'" />
+
+    <Import Project="$(DotGameFrameworkDir)packaging\build\DotGame.Framework.targets"
+                    Condition="'$(DotGameFrameworkDir)' != '' and '$(_DotGameFrameworkImported)' != 'true'" />
+
+    <!--
+        The toolkit's projects find the framework only through DotGameFrameworkDir, so the game's value goes
+        to every project it references (the toolkit's, and through them the framework's), as it does to
+        the content pipeline's tools built on demand.
+    -->
+    <ItemDefinitionGroup Condition="'$(DotGameFrameworkDir)' != ''">
+        <ProjectReference>
+            <AdditionalProperties>%(AdditionalProperties);DotGameFrameworkDir=$(DotGameFrameworkDir)</AdditionalProperties>
+        </ProjectReference>
+    </ItemDefinitionGroup>
+
+    <Import Project="$(_DotGameToolkitRoot)pipeline\build\DotGame.Toolkit.ContentPipeline.targets" />
+
+</Project>

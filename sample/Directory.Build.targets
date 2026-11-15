@@ -1,0 +1,16 @@
+<Project>
+
+    <!--
+        Not in a game's: the sample builds the toolkit and the framework from their source, so their build
+        files (the content pipelines, and the platform's settings) come from the toolkit's include here,
+        where a game's come from its DotGame packages. It adds each platform's project reference to the
+        framework's platform project, as a game has a package reference to DotGame.Framework.<Platform>,
+        and to the toolkit's project, as a game has a package reference to DotGame.Toolkit.
+    -->
+    <Import Project="..\packaging\build\DotGame.Toolkit.targets" />
+
+    <ItemGroup>
+        <ProjectReference Include="$(MSBuildThisFileDirectory)..\toolkit\DotGame.Toolkit.csproj" />
+    </ItemGroup>
+
+</Project>

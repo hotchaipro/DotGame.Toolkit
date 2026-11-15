@@ -1,0 +1,37 @@
+name: Set up MSVC
+description: >-
+  Sets the variables a Visual Studio Developer Command Prompt has, so the C++ tools for an architecture
+  are on PATH for the rest of the job. It runs Visual Studio's vcvarsall.bat and keeps the variables it
+  changes. A composite action, so no Node.js runtime is involved.
+inputs:
+  arch:
+    description: The architecture to build for, as vcvarsall.bat takes it (x64, arm64, x64_arm64, ...)
+    default: x64
+runs:
+  using: composite
+  steps:
+    - shell: pwsh
+      env:
+        MSVC_ARCH: ${{ inputs.arch }}
+      run: |
+        $vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio\Installer\vswhere.exe'
+        $vcvars = & $vswhere -latest -products * -find 'VC\Auxiliary\Build\vcvarsall.bat' | Select-Object -First 1
+        if (-not $vcvars) { throw "No Visual Studio with the C++ tools" }
+        $before = @{}
+        Get-ChildItem env: | ForEach-Object { $before[$_.Name] = $_.Value }
+        # A batch file, as PowerShell's quoting of a command line isn't cmd's
+        $batch = Join-Path ([IO.Path]::GetTempPath()) "msvc-$PID.cmd"
+        Set-Content $batch "@call `"$vcvars`" %1 > nul && set" -Encoding ascii
+        $after = & $batch $env:MSVC_ARCH
+        $status = $LASTEXITCODE
+        Remove-Item $batch
+        if ($status -or -not ($after -match '^VCToolsInstallDir=')) { throw "vcvarsall.bat $env:MSVC_ARCH failed" }
+        # PowerShell's hashtables ignore case, as Windows does for variable names (Path and PATH)
+        foreach ($line in $after) {
+          $i = $line.IndexOf('=')
+          if ($i -lt 1) { continue }
+          $name = $line.Substring(0, $i)
+          $value = $line.Substring($i + 1)
+          if ($before[$name] -cne $value) { "$name=$value" | Add-Content $env:GITHUB_ENV -Encoding utf8 }
+        }
+        Write-Host "MSVC $env:MSVC_ARCH, from $vcvars"

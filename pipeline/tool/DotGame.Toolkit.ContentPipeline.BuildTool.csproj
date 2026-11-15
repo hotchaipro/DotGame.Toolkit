@@ -1,0 +1,52 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <!--
+        DotGame.Toolkit.ContentPipeline.BuildTool: the command-line tool that
+        builds the toolkit content types (texture atlases, sound banks and sprite
+        fonts).  Invoked by ..\ContentPipeline.Toolkit.targets, which
+        builds this project on demand; run it without arguments for usage.
+
+        Increment the version of a content type in ContentVersions.props when a
+        change can change its output; the version is part of its content cache
+        key.
+
+        The tool is fully trimmable and Native AOT compatible: IsAotCompatible
+        enables the trim, AOT and single-file analyzers, so code that would break
+        under trimming or AOT is flagged at build time.  Avoid reflection,
+        reflection-based serialization and runtime code generation.
+    -->
+
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>net11.0</TargetFramework>
+        <Nullable>enable</Nullable>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <IsPackable>false</IsPackable>
+        <IsAotCompatible>true</IsAotCompatible>
+        <InvariantGlobalization>true</InvariantGlobalization>
+        <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+        <!-- Run with 'dotnet <tool>.dll' (or as a native AOT executable), so no app host is needed. -->
+        <UseAppHost>false</UseAppHost>
+        <!-- Run on the newest installed runtime when .NET 10 itself is not installed. -->
+        <RollForward>Major</RollForward>
+    </PropertyGroup>
+
+    <!--
+        The framework's content pipeline build tool provides the shared helpers
+        (command-line parsing, logging, external processes, PNG reading and
+        writing).
+    -->
+    <ItemGroup>
+        <ProjectReference Include="$(DotGameFrameworkDir)pipeline\tool\DotGame.Framework.ContentPipeline.BuildTool.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <InternalsVisibleTo Include="DotGame.Toolkit.ContentPipeline.Tests" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <Using Include="DotGame.Framework.ContentPipeline.BuildTool" />
+        <Using Include="DotGame.Framework.ContentPipeline.BuildTool.Graphics" />
+    </ItemGroup>
+
+</Project>

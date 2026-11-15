@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Properties pane (browse object) for TextureAtlasContent items.
+    See ContentPipeline.TextureContent.BrowseObject.xaml in the framework
+    pipeline for why each rule lives in its own file.
+    Registered by ContentPipeline.Toolkit.targets.
+-->
+<Rule Name="TextureAtlasContent"
+      DisplayName="Texture Atlas Content"
+      PageTemplate="generic"
+      Description="Source image packed into a texture atlas by the content pipeline."
+      xmlns="http://schemas.microsoft.com/build/2009/properties">
+
+  <Rule.DataSource>
+    <DataSource Persistence="ProjectFile" HasConfigurationCondition="False" ItemType="TextureAtlasContent" />
+  </Rule.DataSource>
+
+  <Rule.Categories>
+    <Category Name="ContentPipeline" DisplayName="Content Pipeline" />
+    <Category Name="Advanced" DisplayName="Advanced" />
+    <Category Name="Misc" DisplayName="Misc" />
+  </Rule.Categories>
+
+  <DynamicEnumProperty Name="{}{ItemType}"
+                       DisplayName="Build Action"
+                       Category="Advanced"
+                       Description="How the file relates to the build and deployment processes."
+                       EnumProvider="ItemTypes" />
+
+  <StringProperty Name="Name"
+                  DisplayName="Name"
+                  Description="The atlas's name (default spritesheet): the file name of its descriptor (.json) and pages. All items of a folder sharing a name are packed into the same atlas."
+                  Category="ContentPipeline" />
+
+  <EnumProperty Name="Compression"
+                DisplayName="Compression"
+                Description="Selects the codec used to encode each atlas page: Lossless (default) keeps every pixel's color, exactly or within LosslessQuality, and keeps sharp edges and flat colors; Lossy only looks right, at LossyQuality."
+                Category="ContentPipeline">
+    <EnumValue Name="Lossless" DisplayName="Lossless" IsDefault="true" />
+    <EnumValue Name="Lossy" DisplayName="Lossy" />
+  </EnumProperty>
+
+  <IntProperty Name="LosslessQuality"
+               DisplayName="Lossless Quality"
+               Description="Quality scale 1..10 (default 10) for Lossless compression only: 10 is exact, lower lets colors change a little where that saves bytes, never further than asked for. An error with Compression=Lossy."
+               Category="ContentPipeline"
+               MinValue="1"
+               MaxValue="10" />
+
+  <IntProperty Name="LossyQuality"
+               DisplayName="Lossy Quality"
+               Description="Quality scale 1..10 (default 8) for Lossy compression only. An error with Compression=Lossless."
+               Category="ContentPipeline"
+               MinValue="1"
+               MaxValue="10" />
+
+  <BoolProperty Name="GpuCompression"
+                DisplayName="GPU Compression"
+                Description="Whether to store the atlas's pages in a format the platform's GPU samples compressed (default false): ASTC on Android and iOS, a quarter of the memory or less, with nothing to decode at load, but larger to download than lossy WebP. GPU formats are lossy, so the pages are too. Platforms without one use their lossy encoding."
+                Category="ContentPipeline" />
+
+  <BoolProperty Name="Preload"
+                DisplayName="Preload"
+                Description="Whether the game needs this before its first frame (default false). On the web, the page starts downloading it at once, alongside the game's code; elsewhere content is read from the app, so it changes nothing."
+                Category="ContentPipeline" />
+
+  <StringProperty Name="Identity" Visible="false" ReadOnly="true" Category="Misc"
+                  Description="The item specified in the Include attribute.">
+    <StringProperty.DataSource>
+      <DataSource Persistence="Intrinsic" ItemType="TextureAtlasContent" PersistedName="Identity" />
+    </StringProperty.DataSource>
+  </StringProperty>
+
+  <StringProperty Name="FullPath" DisplayName="Full Path" ReadOnly="true" Category="Misc"
+                  Description="Location of the file.">
+    <StringProperty.DataSource>
+      <DataSource Persistence="Intrinsic" ItemType="TextureAtlasContent" PersistedName="FullPath" />
+    </StringProperty.DataSource>
+  </StringProperty>
+
+  <StringProperty Name="FileNameAndExtension" DisplayName="File Name" ReadOnly="true" Category="Misc"
+                  Description="Name of the file or folder.">
+    <StringProperty.DataSource>
+      <DataSource Persistence="Intrinsic" ItemType="TextureAtlasContent" PersistedName="FileNameAndExtension" />
+    </StringProperty.DataSource>
+  </StringProperty>
+
+  <StringProperty Name="Extension" Visible="false" ReadOnly="true">
+    <StringProperty.DataSource>
+      <DataSource Persistence="Intrinsic" ItemType="TextureAtlasContent" PersistedName="Extension" />
+    </StringProperty.DataSource>
+  </StringProperty>
+
+  <StringProperty Name="URL" ReadOnly="true" Visible="false">
+    <StringProperty.DataSource>
+      <DataSource Persistence="Intrinsic" ItemType="TextureAtlasContent" PersistedName="FullPath" />
+    </StringProperty.DataSource>
+  </StringProperty>
+
+  <BoolProperty Name="Visible" Visible="false" />
+
+  <StringProperty Name="DependentUpon" Visible="false">
+    <StringProperty.Metadata>
+      <NameValuePair Name="DoNotCopyAcrossProjects" Value="true" />
+    </StringProperty.Metadata>
+  </StringProperty>
+
+  <StringProperty Name="Link" Visible="false">
+    <StringProperty.Metadata>
+      <NameValuePair Name="DoNotCopyAcrossProjects" Value="true" />
+    </StringProperty.Metadata>
+  </StringProperty>
+
+</Rule>

@@ -1,0 +1,27 @@
+# Build output
+bin/
+obj/
+artifacts/
+*.binlog
+
+# The content pipeline's per-project cache
+.dotgame/
+
+# Editors and IDEs
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+
+# Test results and packages
+TestResults/
+*.nupkg
+*.snupkg
+
+# Operating systems
+.DS_Store
+Thumbs.db
+desktop.ini
+# Native build trees (the built tools are checked in)
+native/glyphgen/build/

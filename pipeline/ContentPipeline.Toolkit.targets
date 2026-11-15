@@ -1,0 +1,895 @@
+<Project>
+
+    <!-- The toolkit's default content items and LinkBase, after the project's own items -->
+    <PropertyGroup>
+        <AfterMicrosoftNETSdkTargets>$(AfterMicrosoftNETSdkTargets);$(MSBuildThisFileDirectory)ContentPipeline.Toolkit.DefaultItems.targets</AfterMicrosoftNETSdkTargets>
+    </PropertyGroup>
+
+    <!--
+        ContentPipeline.Toolkit.targets
+
+        Opt-in MSBuild infrastructure for the DotGame.Toolkit composite
+        content types that are NOT part of the core framework pipeline:
+
+            TextureAtlasContent  Packed texture atlas (TexturePacker-aligned)
+            SoundBankContent     Concatenated sound bank
+            SpriteFontContent          Sprite font (.spritefont + atlas pages) built
+                                                      from a TTF/OTF font and optional fallback fonts
+
+        Platform-agnostic: this file reuses the framework's texture and sound
+        content processor commands for the final encode of each packed page /
+        concatenated bank.  The contract between the toolkit and framework is
+        therefore the same small set of properties the framework already
+        publishes for its own BuildTextures / BuildSound targets.  Each
+        platform must publish symmetric Lossless and Lossy property pairs:
+
+            $(TextureContentLosslessProcessorCommand)   $(TextureContentLossyProcessorCommand)
+            $(TextureContentLosslessProcessorOutputExtension)
+            $(TextureContentLossyProcessorOutputExtension)
+            $(SoundContentFlacProcessorCommand)          $(SoundContentLossyProcessorCommand)
+            $(SoundContentFlacProcessorOutputExtension)
+            $(SoundContentWavProcessorCommand)
+            $(SoundContentWavProcessorOutputExtension)
+            $(SoundContentLossyProcessorOutputExtension)
+
+        Command templates use {InputFile}/{OutputFile}/{IntermediateDir}
+        /{Quality} tokens.  The toolkit selects the Lossless or Lossy command
+        on a per-item basis from the item's Compression metadata
+        (Lossless|Lossy, default Lossless) and its quality, as the framework's
+        textures take them: LosslessQuality (1..10, default 10; below 10 an
+        atlas goes through $(TextureContentNearLosslessProcessorCommand)) or
+        LossyQuality (1..10, default 8).  Sound banks take LossyQuality.
+
+        The toolkit writes the intermediate packed PNG / concatenated PCM WAV
+        into $(ContentIntermediateDir) and then invokes the framework's
+        processor command for each page / bank.  If the framework ever swaps
+        its encoder (tool, codec, args), the toolkit tracks the change
+        automatically.
+
+        The packing, concatenation and font rendering are done by the
+        DotGame.Toolkit.ContentPipeline.BuildTool console tool
+        (tool\), which is built on demand the first time a
+        project with toolkit content builds (see
+        _ResolveToolkitContentPipelineBuildTool).  Set
+        ToolkitContentPipelineBuildTool to the path of a prebuilt tool (.dll
+        run with the dotnet host, or a native executable) to skip that build.
+
+        Imported by build\DotGame.Toolkit.ContentPipeline.targets AFTER
+        the framework content pipeline; consuming projects import that entry
+        point instead of this file:
+
+            <Import Project="<DotGame folder>\toolkit\pipeline\build\DotGame.Toolkit.ContentPipeline.targets" />
+
+        This file appends its targets to $(BuildContentDependsOn) so they
+        run as part of the standard BuildContent orchestration target
+        defined by the framework pipeline.
+    -->
+
+    <!-- Visual Studio integration -->
+
+    <ItemGroup>
+        <AvailableItemName Include="TextureAtlasContent" />
+        <AvailableItemName Include="SoundBankContent" />
+        <AvailableItemName Include="SpriteFontContent" />
+        <!--
+            Context=Project is required so the modern Common Project System (CPS)
+            loads the ItemType / ContentType definitions into the project tree
+            and shows these items in Solution Explorer.  Without it, the schema
+            is treated as file-level metadata only and CPS filters the unknown
+            item types out of the tree.  This mirrors the registration pattern
+            used by Microsoft.Managed.DesignTime.targets.
+        -->
+        <PropertyPageSchema Include="$(MSBuildThisFileDirectory)ContentPipeline.Toolkit.ProjectItemsSchema.xaml">
+            <Context>Project</Context>
+        </PropertyPageSchema>
+        <!--
+            Per-item-type property rules for the Properties window.  Separate files
+            with Context="File;BrowseObject" are required; see the equivalent block in
+            the framework's ContentPipeline.targets for why.
+        -->
+        <PropertyPageSchema Include="$(MSBuildThisFileDirectory)ContentPipeline.Toolkit.TextureAtlasContent.BrowseObject.xaml;
+                                                                  $(MSBuildThisFileDirectory)ContentPipeline.Toolkit.SoundBankContent.BrowseObject.xaml;
+                                                                  $(MSBuildThisFileDirectory)ContentPipeline.Toolkit.SpriteFontContent.BrowseObject.xaml">
+            <Context>File;BrowseObject</Context>
+        </PropertyPageSchema>
+        <!-- Lets the toolkit's Visual Studio extension (vs/) apply to the project: the atlas and sound bank folder pages -->
+        <ProjectCapability Include="DotGameToolkit" />
+    </ItemGroup>
+
+    <!-- Processor defaults: delegate to the framework content processors -->
+
+    <PropertyGroup Label="Toolkit sound bank content processor">
+        <!--
+            The bank's concatenated PCM is produced at the same rate the
+            framework's sound content processor encodes at, so a bank and a
+            standalone sound effect always land on the same output rate (and,
+            on WebGL, on the AudioContext rate — see ContentPipeline.webgl.targets).
+            Segment offsets are snapped to sample boundaries at this rate, so it
+            must match the rate the final encode uses or the snapping is
+            meaningless.  Normally inherited from the imported platform targets
+            file; the fallback only applies if none defined it.
+            SoundContentLossySampleRate is a lossy bank's, where the lossy encoder
+            needs another (Opus on WebGL is 48 kHz); it defaults to the same.
+        -->
+        <SoundContentSampleRate Condition="'$(SoundContentSampleRate)' == ''">44100</SoundContentSampleRate>
+        <SoundContentLossySampleRate Condition="'$(SoundContentLossySampleRate)' == ''">$(SoundContentSampleRate)</SoundContentLossySampleRate>
+    </PropertyGroup>
+
+    <!--
+        Content pipeline build tool.  Built from source with the MSBuild task
+        (rather than a ProjectReference) because BuildContent runs before
+        BeforeBuild, ahead of project reference resolution, and because the
+        consuming project's global properties (TargetFramework,
+        RuntimeIdentifier, Platform, ...) must not flow into the tool's build:
+        it always runs on the build machine.
+
+        Restoring and building the tool costs over a second even when nothing
+        changed, so _BuildToolkitContentPipelineBuildTool only runs when the
+        tool's sources are newer than a stamp file written after each build.
+        The tool references the framework's content pipeline build tool
+        (..\..\pipeline\ContentPipeline.BuildTool.props), which is built first
+        and also runs the texture and sound encodes in the toolkit's templates.
+
+        The tool is an incremental input of every toolkit content item, so
+        changing it re-runs the toolkit content targets.  The content cache key
+        holds the version of each toolkit content type (tool\ContentVersions.props)
+        and of the framework type it encodes with, rather than the tool's bytes,
+        so those runs are served from the cache unless a version changed.
+        *ContentProcessorDeps can add further files to both.
+    -->
+    <PropertyGroup Label="Toolkit content pipeline build tool">
+        <ToolkitContentPipelineBuildProject Condition="'$(ToolkitContentPipelineBuildProject)' == ''">$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)tool/DotGame.Toolkit.ContentPipeline.BuildTool.csproj'))</ToolkitContentPipelineBuildProject>
+        <ToolkitContentPipelineBuildConfiguration Condition="'$(ToolkitContentPipelineBuildConfiguration)' == ''">Release</ToolkitContentPipelineBuildConfiguration>
+        <_ToolkitContentPipelineBuildProjectDir>$([System.IO.Path]::GetDirectoryName('$(ToolkitContentPipelineBuildProject)'))$([System.IO.Path]::DirectorySeparatorChar)</_ToolkitContentPipelineBuildProjectDir>
+        <!-- The tool's default output path; checked against the build's actual output. -->
+        <_ToolkitContentPipelineBuildToolPath>$(_ToolkitContentPipelineBuildProjectDir)bin$([System.IO.Path]::DirectorySeparatorChar)$(ToolkitContentPipelineBuildConfiguration)$([System.IO.Path]::DirectorySeparatorChar)net11.0$([System.IO.Path]::DirectorySeparatorChar)$([System.IO.Path]::GetFileNameWithoutExtension('$(ToolkitContentPipelineBuildProject)')).dll</_ToolkitContentPipelineBuildToolPath>
+        <_ToolkitContentPipelineBuildStampFile>$(_ToolkitContentPipelineBuildProjectDir)obj$([System.IO.Path]::DirectorySeparatorChar)$(ToolkitContentPipelineBuildConfiguration)$([System.IO.Path]::DirectorySeparatorChar)ContentPipelineBuild.stamp</_ToolkitContentPipelineBuildStampFile>
+        <_ToolkitContentPipelineBuildVersionsFile>$(_ToolkitContentPipelineBuildProjectDir)ContentVersions.props</_ToolkitContentPipelineBuildVersionsFile>
+        <_ToolkitContentPipelineBuildRemoveProperties>TargetFramework;TargetFrameworks;RuntimeIdentifier;RuntimeIdentifiers;SelfContained;Platform;PlatformTarget;PublishTrimmed;PublishAot;PublishSingleFile;PublishReadyToRun;_IsPublishing;OutDir;OutputPath;BaseOutputPath;IntermediateOutputPath;BaseIntermediateOutputPath;MSBuildProjectExtensionsPath;PublishDir;OutputType;AppendRuntimeIdentifierToOutputPath;AppendTargetFrameworkToOutputPath;ArtifactsPath;UseArtifactsOutput;DotGameBuildRoot;BuildingInsideVisualStudio</_ToolkitContentPipelineBuildRemoveProperties>
+    </PropertyGroup>
+
+    <Import Project="$(_ToolkitContentPipelineBuildVersionsFile)" />
+
+    <!--
+        The Name of a sound bank or texture atlas whose items don't give one: the names most games
+        use. Items make one bank or atlas per output folder and Name, so a folder's items need a Name
+        only when they make more than one. A sprite font's Name defaults to its font file's name (see
+        the sprite font task). An item definition, so the default is on every item from the start,
+        for every target, wherever the project declares its items.
+    -->
+    <ItemDefinitionGroup>
+        <SoundBankContent>
+            <Name>soundbank</Name>
+        </SoundBankContent>
+        <TextureAtlasContent>
+            <Name>spritesheet</Name>
+        </TextureAtlasContent>
+    </ItemDefinitionGroup>
+
+    <Target Name="_CollectToolkitContentPipelineBuildToolInputs"
+                    Condition="'$(ToolkitContentPipelineBuildTool)' == ''">
+        <ItemGroup>
+            <_ToolkitContentPipelineBuildToolInput Include="$(_ToolkitContentPipelineBuildProjectDir)**\*.cs;$(ToolkitContentPipelineBuildProject);$(_ToolkitContentPipelineBuildProjectDir)..\Directory.Build.props"
+                                                                                          Exclude="$(_ToolkitContentPipelineBuildProjectDir)bin\**;$(_ToolkitContentPipelineBuildProjectDir)obj\**" />
+            <!-- A missing tool counts as out of date. -->
+            <_ToolkitContentPipelineBuildToolInput Include="$(_ToolkitContentPipelineBuildToolPath)" />
+            <!-- The framework tool it references (built first by _BuildContentPipelineBuildTool). -->
+            <_ToolkitContentPipelineBuildToolInput Include="$(_ContentPipelineBuildOutputPath)" />
+        </ItemGroup>
+    </Target>
+
+    <Target Name="_BuildToolkitContentPipelineBuildTool"
+                    DependsOnTargets="_BuildContentPipelineBuildTool;_CollectToolkitContentPipelineBuildToolInputs"
+                    Inputs="@(_ToolkitContentPipelineBuildToolInput)"
+                    Outputs="$(_ToolkitContentPipelineBuildStampFile)"
+                    Condition="'$(ToolkitContentPipelineBuildTool)' == ''">
+        <!--
+            Restore and build are separate MSBuild task calls with different
+            global properties so the build gets a fresh evaluation that imports
+            the restore output.
+        -->
+        <MSBuild Projects="$(ToolkitContentPipelineBuildProject)"
+                          Targets="Restore"
+                          Properties="Platform=AnyCPU;Configuration=$(ToolkitContentPipelineBuildConfiguration);$(_DotGameFrameworkDirProperty);_ToolkitContentPipelineBuildRestore=true"
+                          RemoveProperties="$(_ToolkitContentPipelineBuildRemoveProperties)" />
+        <MSBuild Projects="$(ToolkitContentPipelineBuildProject)"
+                          Targets="Build"
+                          Properties="Platform=AnyCPU;Configuration=$(ToolkitContentPipelineBuildConfiguration);$(_DotGameFrameworkDirProperty)"
+                          RemoveProperties="$(_ToolkitContentPipelineBuildRemoveProperties)">
+            <Output TaskParameter="TargetOutputs" PropertyName="_ToolkitContentPipelineBuildOutput" />
+        </MSBuild>
+        <Error Condition="'$(_ToolkitContentPipelineBuildOutput)' != '$(_ToolkitContentPipelineBuildToolPath)'"
+                      Text="The DotGame toolkit content pipeline build tool was built to '$(_ToolkitContentPipelineBuildOutput)' instead of the expected '$(_ToolkitContentPipelineBuildToolPath)'." />
+        <Touch Files="$(_ToolkitContentPipelineBuildStampFile)" AlwaysCreate="true" />
+    </Target>
+
+    <Target Name="_ResolveToolkitContentPipelineBuildTool"
+                    DependsOnTargets="_ResolveContentPipelineBuildTool;_BuildToolkitContentPipelineBuildTool"
+                    Condition="'@(TextureAtlasContent)@(SoundBankContent)@(SpriteFontContent)' != ''">
+        <PropertyGroup>
+            <_ToolkitContentPipelineBuildTool>$(_ToolkitContentPipelineBuildToolPath)</_ToolkitContentPipelineBuildTool>
+            <_ToolkitContentPipelineBuildTool Condition="'$(ToolkitContentPipelineBuildTool)' != ''">$([System.IO.Path]::GetFullPath('$(ToolkitContentPipelineBuildTool)'))</_ToolkitContentPipelineBuildTool>
+            <_ToolkitContentPipelineBuildToolInputs>$(_ToolkitContentPipelineBuildTool);$(_ToolkitContentPipelineBuildVersionsFile);$(_ContentPipelineBuildToolInputs)</_ToolkitContentPipelineBuildToolInputs>
+            <!-- Evaluated here rather than at evaluation time so the SDK's values are final. -->
+            <_ToolkitDotNetHost>$(DOTNET_HOST_PATH)</_ToolkitDotNetHost>
+            <_ToolkitDotNetHost Condition="'$(_ToolkitDotNetHost)' == '' and '$(NetCoreRoot)' != '' and Exists('$([MSBuild]::EnsureTrailingSlash($(NetCoreRoot)))dotnet$(_ExeExt)')">$([MSBuild]::EnsureTrailingSlash($(NetCoreRoot)))dotnet$(_ExeExt)</_ToolkitDotNetHost>
+            <_ToolkitDotNetHost Condition="'$(_ToolkitDotNetHost)' == ''">dotnet</_ToolkitDotNetHost>
+            <_ToolkitContentPipelineBuildCommand Condition="'$([System.IO.Path]::GetExtension($(_ToolkitContentPipelineBuildTool)).ToLowerInvariant())' == '.dll'">&quot;$(_ToolkitDotNetHost)&quot; &quot;$(_ToolkitContentPipelineBuildTool)&quot;</_ToolkitContentPipelineBuildCommand>
+            <_ToolkitContentPipelineBuildCommand Condition="'$(_ToolkitContentPipelineBuildCommand)' == ''">&quot;$(_ToolkitContentPipelineBuildTool)&quot;</_ToolkitContentPipelineBuildCommand>
+        </PropertyGroup>
+        <Error Condition="!Exists('$(_ToolkitContentPipelineBuildTool)')"
+                      Text="The DotGame toolkit content pipeline build tool was not found: '$(_ToolkitContentPipelineBuildTool)'." />
+    </Target>
+
+    <!--
+        Fail fast if the consumer imported the toolkit without first
+        importing a framework platform targets file that publishes the
+        content processor commands.
+    -->
+    <Target Name="_ValidateContentPipelineProfile"
+                    BeforeTargets="BuildContent"
+                    Condition="'@(TextureAtlasContent)@(SoundBankContent)@(SpriteFontContent)' != ''">
+        <Error Condition="'$(SoundContentFlacProcessorCommand)' == '' Or '$(SoundContentWavProcessorCommand)' == '' Or '$(SoundContentLossyProcessorCommand)' == '' Or '$(TextureContentLosslessProcessorCommand)' == '' Or '$(TextureContentLossyProcessorCommand)' == '' Or '$(TextureContentNearLosslessProcessorCommand)' == ''"
+                      Text="The DotGame.Toolkit content pipeline requires a framework platform targets file (e.g. ContentPipeline.desktop.targets) to be imported first so the TextureContent(Lossless|NearLossless|Lossy)ProcessorCommand and SoundContent(Flac|Wav|Lossy)ProcessorCommand properties are published." />
+    </Target>
+
+    <!-- Append to BuildContent -->
+    <!--
+        Skipped during Visual Studio design-time / IntelliSense builds
+        ('$(DesignTimeBuild)' == 'true') for the same reason the framework
+        pipeline empties its own BuildContentDependsOn: BuildTextureAtlas /
+        BuildSoundBank / BuildSpriteFont build and run the content pipeline
+        build tool, which shells out to external tools (astcenc /
+        glyphgen), and running them under a design-time build can stall the VS build
+        system and make unrelated operations such as Clean appear to hang.
+    -->
+    <PropertyGroup Condition="'$(DesignTimeBuild)' != 'true'">
+        <BuildContentDependsOn>
+            $(BuildContentDependsOn);
+            _PrepareToolkitContentItems;
+            BuildSoundBank;
+            BuildTextureAtlas;
+            BuildSpriteFont
+        </BuildContentDependsOn>
+    </PropertyGroup>
+
+    <!--
+        Declare exactly what the toolkit's items produce, so the framework
+        pipeline's _PruneStaleContentOutputs keeps it and nothing else:
+            atlas   <atlas>.json, and pages <atlas>_<n><ext>
+            bank    <bank>.json and <bank>_0<ext>
+            font    <font>.spritefont, and pages <font>_<n><ext>
+        Atlas and font builds remove their previous pages before writing new ones,
+        so the numbered pages that exist are exactly the current ones.  Runs after
+        BuildContent's other targets, so FontName (set while preparing the fonts)
+        is available; a font without one can't be described, so nothing is pruned.
+    -->
+    <PropertyGroup>
+        <ContentOutputStemsDependsOn>$(ContentOutputStemsDependsOn);_DeclareToolkitContentOutputs</ContentOutputStemsDependsOn>
+    </PropertyGroup>
+
+    <Target Name="_DeclareToolkitContentOutputs">
+        <ItemGroup>
+            <ContentOutputFile Include="@(TextureAtlasContent->'%(OutputRelativeDir)%(Name).json')" />
+            <_ContentOutputPageGroup Include="@(TextureAtlasContent->'%(OutputRelativeDir)%(Name)')"
+                                                              PageExtension="%(TextureAtlasContent._OutputExtension)" />
+            <ContentOutputFile Include="@(SoundBankContent->'%(OutputRelativeDir)%(Name).json')" />
+            <ContentOutputFile Include="@(SoundBankContent->'%(OutputRelativeDir)%(Name)_0%(_OutputExtension)')" />
+            <ContentOutputFile Include="@(SpriteFontContent->'%(OutputRelativeDir)%(FontName).spritefont')"
+                                                    Condition="'%(SpriteFontContent.FontName)' != ''" />
+            <_ContentOutputPageGroup Include="@(SpriteFontContent->'%(OutputRelativeDir)%(FontName)')"
+                                                              PageExtension="%(SpriteFontContent._OutputExtension)"
+                                                              Condition="'%(SpriteFontContent.FontName)' != ''" />
+            <_ContentOutputUnknown Include="@(SpriteFontContent)"
+                                                          Condition="'%(SpriteFontContent.FontName)' == '' or '%(SpriteFontContent._OutputExtension)' == ''" />
+        </ItemGroup>
+    </Target>
+
+    <!--
+        Emit toolkit manifest entries (one per atlas / bank, pointing at
+        the descriptor JSON) so loaders can resolve logical keys at
+        runtime without hard-coding extensions.
+    -->
+    <Target Name="_AddToolkitWebPreloadContent"
+                    BeforeTargets="_GenerateLaunchScreenPage"
+                    Condition="'$(StaticWebAssetsSdkBuildTasksAssembly)' != ''">
+        <ItemGroup>
+            <_WebPreloadContent Include="@(TextureAtlasContent->'%(OutputRelativeDir)%(Name)')" Condition="'%(TextureAtlasContent.Preload)' == 'true'" />
+            <_WebPreloadContent Include="@(SoundBankContent->'%(OutputRelativeDir)%(Name)')" Condition="'%(SoundBankContent.Preload)' == 'true'" />
+            <_WebPreloadContent Include="@(SpriteFontContent->'%(OutputRelativeDir)%(FontName)')" Condition="'%(SpriteFontContent.Preload)' == 'true'" />
+            <_WebPreloadFont Include="@(SpriteFontContent)" Condition="'%(SpriteFontContent.Preload)' == 'true'" />
+            <!-- A font can't draw without the text shader -->
+            <_WebPreloadContent Include="@(ShaderContent->'%(OutputRelativeDir)%(OutputName)')"
+                                                    Condition="'@(_WebPreloadFont)' != '' and $([System.String]::Copy('%(ShaderContent.OutputRelativeDir)').Replace('/', '\').Contains('_toolkit\Shaders'))" />
+        </ItemGroup>
+    </Target>
+
+    <Target Name="_AddToolkitContentManifestEntries"
+                    DependsOnTargets="_BuildContentPipelineTasks"
+                    BeforeTargets="BuildContentManifest"
+                    Condition="'$(DesignTimeBuild)' != 'true' and '@(SoundBankContent)@(TextureAtlasContent)@(SpriteFontContent)' != ''">
+        <!--
+            Fonts: register the .spritefont descriptor and every atlas page.  The
+            page count depends on the glyph set and atlas limits, so the pages are
+            discovered from the build output (fresh build or cache restore).
+        -->
+        <_FindPagedContentManifestEntries Condition="'@(SpriteFontContent)' != ''"
+                                                                            Items="@(SpriteFontContent)"
+                                                                            NameMetadata="FontName"
+                                                                            DescriptorExtension=".spritefont"
+                                                                            ContentOutputDir="$(ContentOutputDir)">
+            <Output TaskParameter="Entries" ItemName="ContentManifestEntry" />
+        </_FindPagedContentManifestEntries>
+        <!--
+            Atlases: the same, with a .json descriptor.  An atlas packs as many
+            pages as its sprites need, and each is loaded by its key.
+        -->
+        <_FindPagedContentManifestEntries Condition="'@(TextureAtlasContent)' != ''"
+                                                                            Items="@(TextureAtlasContent)"
+                                                                            NameMetadata="Name"
+                                                                            DescriptorExtension=".json"
+                                                                            ContentOutputDir="$(ContentOutputDir)">
+            <Output TaskParameter="Entries" ItemName="ContentManifestEntry" />
+        </_FindPagedContentManifestEntries>
+        <ItemGroup>
+            <ContentManifestEntry Include="@(SoundBankContent -> '%(OutputRelativeDir)%(Name)')"
+                                                          Condition="'@(SoundBankContent)' != ''">
+                <RelativePath>%(SoundBankContent.OutputRelativeDir)%(SoundBankContent.Name).json</RelativePath>
+            </ContentManifestEntry>
+            <!--
+                Register the produced base audio file (e.g. <bank>_0.<ext>) so
+                SoundBankLoader can resolve its extension-less logical key
+                (<bank>_0) at runtime.
+            -->
+            <ContentManifestEntry Include="@(SoundBankContent -> '%(OutputRelativeDir)%(Name)_0')"
+                                                          Condition="'@(SoundBankContent)' != ''">
+                <RelativePath>%(SoundBankContent.OutputRelativeDir)%(SoundBankContent.Name)_0%(SoundBankContent._OutputExtension)</RelativePath>
+            </ContentManifestEntry>
+        </ItemGroup>
+    </Target>
+
+    <!-- Targets -->
+
+    <Target Name="_PrepareToolkitContentItems" DependsOnTargets="_BuildContentPipelineTasks;_ValidateContentPipeline;_ResolveToolkitContentPipelineBuildTool">
+        <_AddIndexMetadata InputItems="@(SoundBankContent)" Condition="'@(SoundBankContent)' != ''">
+            <Output TaskParameter="OutputItems" ItemName="_IndexedSoundBankContent" />
+        </_AddIndexMetadata>
+        <ItemGroup Condition="'@(SoundBankContent)' != ''">
+            <SoundBankContent Remove="@(SoundBankContent)" />
+            <SoundBankContent Include="@(_IndexedSoundBankContent)" />
+        </ItemGroup>
+
+        <!--
+            Default and validate Compression/LossyQuality on each SoundBankContent
+            item, then stamp _EncodeCommand and _OutputExtension routed to the
+            framework's Lossless or Lossy sound processor command.
+        -->
+        <ItemGroup Condition="'@(SoundBankContent)' != ''">
+            <SoundBankContent>
+                <Compression Condition="'%(SoundBankContent.Compression)' == ''">Lossless</Compression>
+                <LossyQuality Condition="'%(SoundBankContent.LossyQuality)' == ''">8</LossyQuality>
+                <!-- Default or none: FLAC, as the framework's SoundContent (ContentPipeline.targets) -->
+                <LosslessFormat Condition="'%(SoundBankContent.LosslessFormat)' == '' or '%(SoundBankContent.LosslessFormat)' == 'Default'">FLAC</LosslessFormat>
+            </SoundBankContent>
+            <_SoundBankContentInvalid Include="@(SoundBankContent)" Condition="'%(SoundBankContent.Compression)' != 'Lossless' and '%(SoundBankContent.Compression)' != 'Lossy'" />
+            <_SoundBankContentBadFormat Include="@(SoundBankContent)" Condition="'%(SoundBankContent.LosslessFormat)' != 'FLAC' and '%(SoundBankContent.LosslessFormat)' != 'WAV'" />
+            <_SoundBankContentBadLossyFormat Include="@(SoundBankContent)" Condition="'%(SoundBankContent.LossyFormat)' != '' and '%(SoundBankContent.LossyFormat)' != 'Default' and '%(SoundBankContent.LossyFormat)' != 'Opus'" />
+            <!--
+                LossyFormat="Opus": a lossy bank is Opus on a platform whose default lossy format is
+                another (AAC on iOS: SoundContentOpusProcessorCommand). Elsewhere Opus is the default.
+            -->
+            <SoundBankContent>
+                <_Opus Condition="'%(SoundBankContent.Compression)' == 'Lossy' and '%(SoundBankContent.LossyFormat)' == 'Opus' and '$(SoundContentOpusProcessorCommand)' != ''">true</_Opus>
+            </SoundBankContent>
+        </ItemGroup>
+        <Error Condition="'@(_SoundBankContentBadLossyFormat)' != ''"
+                      Code="SND0003"
+                      Text="SoundBankContent item '%(_SoundBankContentBadLossyFormat.Identity)' has LossyFormat='%(_SoundBankContentBadLossyFormat.LossyFormat)': it can be Opus, or Default (or left out) for the platform's own." />
+        <Error Condition="'@(_SoundBankContentInvalid)' != ''"
+                      Text="SoundBankContent item '%(_SoundBankContentInvalid.Identity)' has invalid Compression='%(_SoundBankContentInvalid.Compression)'.  Expected 'Lossless' or 'Lossy'." />
+        <Error Condition="'@(_SoundBankContentBadFormat)' != ''"
+                      Code="SND0002"
+                      Text="SoundBankContent item '%(_SoundBankContentBadFormat.Identity)' has LosslessFormat='%(_SoundBankContentBadFormat.LosslessFormat)': it can be Default, FLAC or WAV." />
+        <ItemGroup Condition="'@(SoundBankContent)' != ''">
+            <SoundBankContent>
+                <_EncodeCommand Condition="'%(SoundBankContent.Compression)' == 'Lossless' and '%(SoundBankContent.LosslessFormat)' != 'FLAC'">$(SoundContentWavProcessorCommand)</_EncodeCommand>
+                <_EncodeCommand Condition="'%(SoundBankContent.Compression)' == 'Lossless' and '%(SoundBankContent.LosslessFormat)' == 'FLAC'">$(SoundContentFlacProcessorCommand)</_EncodeCommand>
+                <_EncodeCommand Condition="'%(SoundBankContent.Compression)' == 'Lossy' and '%(SoundBankContent._Opus)' != 'true'">$(SoundContentLossyProcessorCommand)</_EncodeCommand>
+                <_EncodeCommand Condition="'%(SoundBankContent._Opus)' == 'true'">$(SoundContentOpusProcessorCommand)</_EncodeCommand>
+                <_OutputExtension Condition="'%(SoundBankContent.Compression)' == 'Lossless' and '%(SoundBankContent.LosslessFormat)' != 'FLAC'">$(SoundContentWavProcessorOutputExtension)</_OutputExtension>
+                <_OutputExtension Condition="'%(SoundBankContent.Compression)' == 'Lossless' and '%(SoundBankContent.LosslessFormat)' == 'FLAC'">$(SoundContentFlacProcessorOutputExtension)</_OutputExtension>
+                <_OutputExtension Condition="'%(SoundBankContent.Compression)' == 'Lossy' and '%(SoundBankContent._Opus)' != 'true'">$(SoundContentLossyProcessorOutputExtension)</_OutputExtension>
+                <_OutputExtension Condition="'%(SoundBankContent._Opus)' == 'true'">$(SoundContentOpusProcessorOutputExtension)</_OutputExtension>
+                <_ProcessorDeps Condition="'%(SoundBankContent.Compression)' == 'Lossless'">$(SoundBankContentProcessorDeps);$(SoundContentLosslessProcessorDeps)</_ProcessorDeps>
+                <_ProcessorDeps Condition="'%(SoundBankContent.Compression)' == 'Lossy'">$(SoundBankContentProcessorDeps);$(SoundContentLossyProcessorDeps)</_ProcessorDeps>
+                <_SampleRate Condition="'%(SoundBankContent.Compression)' == 'Lossless'">$(SoundContentSampleRate)</_SampleRate>
+                <_SampleRate Condition="'%(SoundBankContent.Compression)' == 'Lossy' and '%(SoundBankContent._Opus)' != 'true'">$(SoundContentLossySampleRate)</_SampleRate>
+                <_SampleRate Condition="'%(SoundBankContent._Opus)' == 'true'">$(SoundContentOpusSampleRate)</_SampleRate>
+            </SoundBankContent>
+        </ItemGroup>
+        <ItemGroup Condition="'@(SoundBankContent)' != ''">
+            <SoundBankContent>
+                <_InputListFile>$(ContentIntermediateDir)%(SoundBankContent.OutputRelativeDir)%(SoundBankContent.Name).inputs.txt</_InputListFile>
+                <_EncodeTemplateFile>$(ContentIntermediateDir)%(SoundBankContent.OutputRelativeDir)%(SoundBankContent.Name).encode.cmd</_EncodeTemplateFile>
+                <!-- Resolve {Quality} at MSBuild time before persisting the encode
+                          template; the build tool reads the file verbatim and only
+                          substitutes the per-item {InputFile}/{OutputFile} tokens. -->
+                <_EncodeCommandResolved>$([System.String]::Copy('%(SoundBankContent._EncodeCommand)').Replace('{Quality}', '%(SoundBankContent.LossyQuality)'))</_EncodeCommandResolved>
+            </SoundBankContent>
+        </ItemGroup>
+
+        <_AddIndexMetadata InputItems="@(TextureAtlasContent)" Condition="'@(TextureAtlasContent)' != ''">
+            <Output TaskParameter="OutputItems" ItemName="_IndexedTextureAtlasContent" />
+        </_AddIndexMetadata>
+        <ItemGroup Condition="'@(TextureAtlasContent)' != ''">
+            <TextureAtlasContent Remove="@(TextureAtlasContent)" />
+            <TextureAtlasContent Include="@(_IndexedTextureAtlasContent)" />
+        </ItemGroup>
+
+        <ItemGroup Condition="'@(TextureAtlasContent)' != ''">
+            <TextureAtlasContent>
+                <GpuCompression Condition="'%(TextureAtlasContent.GpuCompression)' == ''">false</GpuCompression>
+            </TextureAtlasContent>
+            <!-- Separate updates: each sees the values the one before set -->
+            <TextureAtlasContent>
+                <Compression Condition="'%(TextureAtlasContent.Compression)' == '' and '%(TextureAtlasContent.GpuCompression)' == 'true'">Lossy</Compression>
+            </TextureAtlasContent>
+            <TextureAtlasContent>
+                <Compression Condition="'%(TextureAtlasContent.Compression)' == ''">Lossless</Compression>
+            </TextureAtlasContent>
+            <!-- Each compression's quality, before the defaults fill them in -->
+            <_TextureAtlasContentMisplacedQuality Include="@(TextureAtlasContent)" Condition="('%(TextureAtlasContent.Compression)' == 'Lossless' and '%(TextureAtlasContent.LossyQuality)' != '') or ('%(TextureAtlasContent.Compression)' == 'Lossy' and '%(TextureAtlasContent.LosslessQuality)' != '')" />
+            <TextureAtlasContent>
+                <LosslessQuality Condition="'%(TextureAtlasContent.Compression)' == 'Lossless' and '%(TextureAtlasContent.LosslessQuality)' == ''">10</LosslessQuality>
+                <LossyQuality Condition="'%(TextureAtlasContent.Compression)' == 'Lossy' and '%(TextureAtlasContent.LossyQuality)' == ''">8</LossyQuality>
+            </TextureAtlasContent>
+            <TextureAtlasContent Condition="'%(TextureAtlasContent.Compression)' == 'Lossless'">
+                <_Quality>%(TextureAtlasContent.LosslessQuality)</_Quality>
+            </TextureAtlasContent>
+            <TextureAtlasContent Condition="'%(TextureAtlasContent.Compression)' == 'Lossy'">
+                <_Quality>%(TextureAtlasContent.LossyQuality)</_Quality>
+            </TextureAtlasContent>
+            <_TextureAtlasContentInvalid Include="@(TextureAtlasContent)" Condition="'%(TextureAtlasContent.Compression)' != 'Lossless' and '%(TextureAtlasContent.Compression)' != 'Lossy'" />
+            <_TextureAtlasContentInvalidQuality Include="@(TextureAtlasContent)" Condition="'%(TextureAtlasContent.Compression)' == 'Lossless' and !$([System.Text.RegularExpressions.Regex]::IsMatch('%(TextureAtlasContent.LosslessQuality)', '^([1-9]|10)$'))" />
+            <_TextureAtlasContentLosslessGpu Include="@(TextureAtlasContent)" Condition="'%(TextureAtlasContent.GpuCompression)' == 'true' and '%(TextureAtlasContent.Compression)' != 'Lossy'" />
+            <_TextureAtlasContentGpu Include="@(TextureAtlasContent)" Condition="'%(TextureAtlasContent.GpuCompression)' == 'true' and '$(TextureContentGpuProcessorCommand)' != ''" />
+        </ItemGroup>
+        <Error Condition="'@(_TextureAtlasContentLosslessGpu)' != ''"
+                      Text="TextureAtlasContent item '%(_TextureAtlasContentLosslessGpu.Identity)' has GpuCompression='true' and Compression='%(_TextureAtlasContentLosslessGpu.Compression)'.  GPU formats are lossy: remove Compression, or set it to Lossy." />
+        <!-- A block spanning two sprites would bleed between them: ASTC's are 4 x 4 at their smallest -->
+        <PropertyGroup Condition="'@(_TextureAtlasContentGpu)' != '' and '$(TextureAtlasPadding)' == '0'">
+            <TextureAtlasPadding>4</TextureAtlasPadding>
+        </PropertyGroup>
+        <Error Condition="'@(_TextureAtlasContentInvalid)' != ''"
+                      Text="TextureAtlasContent item '%(_TextureAtlasContentInvalid.Identity)' has invalid Compression='%(_TextureAtlasContentInvalid.Compression)'.  Expected 'Lossless' or 'Lossy'." />
+        <Error Condition="'@(_TextureAtlasContentMisplacedQuality)' != ''"
+                      Text="TextureAtlasContent item '%(_TextureAtlasContentMisplacedQuality.Identity)' is Compression='%(_TextureAtlasContentMisplacedQuality.Compression)' and sets the other compression's quality: Lossless items take LosslessQuality, Lossy items LossyQuality." />
+        <Error Condition="'@(_TextureAtlasContentInvalidQuality)' != ''"
+                      Text="TextureAtlasContent item '%(_TextureAtlasContentInvalidQuality.Identity)' has invalid LosslessQuality='%(_TextureAtlasContentInvalidQuality.LosslessQuality)'.  Expected 1 to 10." />
+        <ItemGroup Condition="'@(TextureAtlasContent)' != ''">
+            <TextureAtlasContent>
+                <_EncodeCommand Condition="'%(TextureAtlasContent.Compression)' == 'Lossless' and '%(TextureAtlasContent.LosslessQuality)' == '10'">$(TextureContentLosslessProcessorCommand)</_EncodeCommand>
+                <_EncodeCommand Condition="'%(TextureAtlasContent.Compression)' == 'Lossless' and '%(TextureAtlasContent.LosslessQuality)' != '10'">$(TextureContentNearLosslessProcessorCommand)</_EncodeCommand>
+                <_EncodeCommand Condition="'%(TextureAtlasContent.Compression)' == 'Lossy' and ('%(TextureAtlasContent.GpuCompression)' != 'true' or '$(TextureContentGpuProcessorCommand)' == '')">$(TextureContentLossyProcessorCommand)</_EncodeCommand>
+                <_EncodeCommand Condition="'%(TextureAtlasContent.Compression)' == 'Lossy' and '%(TextureAtlasContent.GpuCompression)' == 'true' and '$(TextureContentGpuProcessorCommand)' != ''">$(TextureContentGpuProcessorCommand)</_EncodeCommand>
+                <_OutputExtension Condition="'%(TextureAtlasContent.Compression)' == 'Lossless' and '%(TextureAtlasContent.LosslessQuality)' == '10'">$(TextureContentLosslessProcessorOutputExtension)</_OutputExtension>
+                <_OutputExtension Condition="'%(TextureAtlasContent.Compression)' == 'Lossless' and '%(TextureAtlasContent.LosslessQuality)' != '10'">$(TextureContentNearLosslessProcessorOutputExtension)</_OutputExtension>
+                <_OutputExtension Condition="'%(TextureAtlasContent.Compression)' == 'Lossy' and ('%(TextureAtlasContent.GpuCompression)' != 'true' or '$(TextureContentGpuProcessorCommand)' == '')">$(TextureContentLossyProcessorOutputExtension)</_OutputExtension>
+                <_OutputExtension Condition="'%(TextureAtlasContent.Compression)' == 'Lossy' and '%(TextureAtlasContent.GpuCompression)' == 'true' and '$(TextureContentGpuProcessorCommand)' != ''">$(TextureContentGpuProcessorOutputExtension)</_OutputExtension>
+                <_ProcessorDeps Condition="'%(TextureAtlasContent.Compression)' == 'Lossless' and '%(TextureAtlasContent.LosslessQuality)' == '10'">$(TextureAtlasContentProcessorDeps);$(TextureContentLosslessProcessorDeps)</_ProcessorDeps>
+                <_ProcessorDeps Condition="'%(TextureAtlasContent.Compression)' == 'Lossless' and '%(TextureAtlasContent.LosslessQuality)' != '10'">$(TextureAtlasContentProcessorDeps);$(TextureContentNearLosslessProcessorDeps)</_ProcessorDeps>
+                <_ProcessorDeps Condition="'%(TextureAtlasContent.Compression)' == 'Lossy' and ('%(TextureAtlasContent.GpuCompression)' != 'true' or '$(TextureContentGpuProcessorCommand)' == '')">$(TextureAtlasContentProcessorDeps);$(TextureContentLossyProcessorDeps)</_ProcessorDeps>
+                <_ProcessorDeps Condition="'%(TextureAtlasContent.Compression)' == 'Lossy' and '%(TextureAtlasContent.GpuCompression)' == 'true' and '$(TextureContentGpuProcessorCommand)' != ''">$(TextureAtlasContentProcessorDeps);$(TextureContentGpuProcessorDeps)</_ProcessorDeps>
+            </TextureAtlasContent>
+        </ItemGroup>
+        <ItemGroup Condition="'@(TextureAtlasContent)' != ''">
+            <TextureAtlasContent>
+                <_InputListFile>$(ContentIntermediateDir)%(TextureAtlasContent.OutputRelativeDir)%(TextureAtlasContent.Name).inputs.txt</_InputListFile>
+                <_EncodeTemplateFile>$(ContentIntermediateDir)%(TextureAtlasContent.OutputRelativeDir)%(TextureAtlasContent.Name).encode.cmd</_EncodeTemplateFile>
+                <_PackingOptionsFile>$(ContentIntermediateDir)%(TextureAtlasContent.OutputRelativeDir)%(TextureAtlasContent.Name).packing.options</_PackingOptionsFile>
+                <!-- Resolve {Quality} and {PremultiplyAlpha} at MSBuild time before
+                          persisting the encode template; the build tool reads
+                          the file verbatim and only substitutes the per-page {InputFile}/
+                          {OutputFile}/{IntermediateDir} tokens.  Atlas pages hold sprite
+                          color, so they are always premultiplied.  Atlas PAGES are a
+                          build-time-generated input (not a source file), so per-page
+                          encodes are intentionally NOT content-cached; the shared cache
+                          keys on the source item and does not apply here. -->
+                <_EncodeCommandResolved>$([System.String]::Copy('%(TextureAtlasContent._EncodeCommand)').Replace('{Quality}', '%(TextureAtlasContent._Quality)').Replace('{PremultiplyAlpha}', 'true'))</_EncodeCommandResolved>
+            </TextureAtlasContent>
+        </ItemGroup>
+    </Target>
+
+    <!--
+        Persist the aggregate build inputs (source file list + resolved encode
+        command) for each atlas / sound bank to sidecar files BEFORE the
+        corresponding build target runs its incremental Inputs/Outputs check,
+        and add those sidecars to that check.
+
+        BuildTextureAtlas / BuildSoundBank are many-to-one: their output is a
+        function of the entire input SET, not of individual files.  A pure
+        timestamp comparison over the current item list cannot observe a change
+        to the set itself, so an incremental build silently produced a stale
+        artifact whenever a source file was removed or renamed, or a file was
+        added whose LastWriteTime predates the existing output (very common:
+        file copies, archive extraction and most art tools preserve source
+        timestamps).  The same applies to Compression/LossyQuality metadata changes,
+        which alter the encode command without touching any file timestamp.
+
+        Writing the sidecars with WriteOnlyWhenDifferent means their timestamps
+        only move when the set or the encode settings actually change, which is
+        exactly the invalidation signal the build targets need.
+
+        Absolute paths (FullPath) are persisted rather than the raw item specs
+        so the build tool is CWD-agnostic.  TextureAtlasContent items
+        typically come from relative globs like '..\Content\Sprites\*' which
+        only resolve when the tool's working directory matches the project
+        directory; that assumption silently breaks in browser-wasm inner
+        builds, container/CI, and tooling like SWA CLI.  The encode command is
+        persisted verbatim to a sidecar so the tool can read it without the
+        quoting damage of passing a nested command on a command line.
+    -->
+    <Target Name="_WriteToolkitContentInputLists"
+                    DependsOnTargets="_PrepareToolkitContentItems"
+                    BeforeTargets="BuildSoundBank;BuildTextureAtlas"
+                    Condition="'@(SoundBankContent)@(TextureAtlasContent)' != ''">
+        <MakeDir Condition="'@(SoundBankContent)' != ''"
+                          Directories="$(ContentIntermediateDir)%(SoundBankContent.OutputRelativeDir)" />
+        <WriteLinesToFile Condition="'@(SoundBankContent)' != ''"
+                                            File="%(SoundBankContent._InputListFile)"
+                                            Lines="@(SoundBankContent->'%(FullPath)', ';')"
+                                            Overwrite="true"
+                                            WriteOnlyWhenDifferent="true" />
+        <WriteLinesToFile Condition="'@(SoundBankContent)' != ''"
+                                            File="%(SoundBankContent._EncodeTemplateFile)"
+                                            Lines="%(SoundBankContent._EncodeCommandResolved)"
+                                            Overwrite="true"
+                                            WriteOnlyWhenDifferent="true" />
+
+        <MakeDir Condition="'@(TextureAtlasContent)' != ''"
+                          Directories="$(ContentIntermediateDir)%(TextureAtlasContent.OutputRelativeDir)" />
+        <WriteLinesToFile Condition="'@(TextureAtlasContent)' != ''"
+                                            File="%(TextureAtlasContent._InputListFile)"
+                                            Lines="@(TextureAtlasContent->'%(FullPath)', ';')"
+                                            Overwrite="true"
+                                            WriteOnlyWhenDifferent="true" />
+        <WriteLinesToFile Condition="'@(TextureAtlasContent)' != ''"
+                                            File="%(TextureAtlasContent._EncodeTemplateFile)"
+                                            Lines="%(TextureAtlasContent._EncodeCommandResolved)"
+                                            Overwrite="true"
+                                            WriteOnlyWhenDifferent="true" />
+        <!-- A change to these rebuilds the atlas: the cache key has them, but the key only matters once
+                  this target has decided to run -->
+        <WriteLinesToFile Condition="'@(TextureAtlasContent)' != ''"
+                                            File="%(TextureAtlasContent._PackingOptionsFile)"
+                                            Lines="padding=$(TextureAtlasPadding);extrude=$(TextureAtlasExtrude);width=$(TextureAtlasMaxWidth);height=$(TextureAtlasMaxHeight);pot=$(TextureAtlasPowerOfTwo);square=$(TextureAtlasSquare)"
+                                            Overwrite="true"
+                                            WriteOnlyWhenDifferent="true" />
+    </Target>
+
+    <Target Name="_ValidateSoundBankName"
+                    Condition="'@(SoundBankContent)' != ''">
+        <Error Condition="'%(SoundBankContent.Name)' == ''"
+                      Code="SBK0002"
+                      Text="SoundBankContent item '%(SoundBankContent.Identity)' has an empty Name." />
+    </Target>
+
+    <Target Name="BuildSoundBank"
+                    DependsOnTargets="_BuildContentPipelineTasks;_ValidateSoundBankName"
+                    Inputs="@(SoundBankContent);@(SoundBankContent->'%(_InputListFile)');@(SoundBankContent->'%(_EncodeTemplateFile)');$(_ToolkitContentPipelineBuildToolInputs);$(SoundBankContentProcessorDeps);$(SoundContentLosslessProcessorDeps);$(SoundContentLossyProcessorDeps)"
+                    Outputs="$(ContentOutputDir)%(SoundBankContent.OutputRelativeDir)%(SoundBankContent.Name).json"
+                    Condition="'@(SoundBankContent)' != ''">
+        <MakeDir Directories="$(ContentOutputDir)%(SoundBankContent.OutputRelativeDir);$(ContentIntermediateDir)%(SoundBankContent.OutputRelativeDir)" />
+        <PropertyGroup>
+            <_SoundBankInputListFile>$(ContentIntermediateDir)%(SoundBankContent.OutputRelativeDir)%(SoundBankContent.Name).inputs.txt</_SoundBankInputListFile>
+            <_SoundBankEncodeTemplateFile>$(ContentIntermediateDir)%(SoundBankContent.OutputRelativeDir)%(SoundBankContent.Name).encode.cmd</_SoundBankEncodeTemplateFile>
+            <_SoundBankIntermediateDir>$(ContentIntermediateDir)%(SoundBankContent.OutputRelativeDir)</_SoundBankIntermediateDir>
+            <_SoundBankIntermediateDir Condition="$(_SoundBankIntermediateDir.EndsWith('\')) Or $(_SoundBankIntermediateDir.EndsWith('/'))">$(_SoundBankIntermediateDir.Substring(0, $([MSBuild]::Subtract($(_SoundBankIntermediateDir.Length), 1))))</_SoundBankIntermediateDir>
+            <_SoundBankDisplayDir>%(SoundBankContent.OutputRelativeDir)</_SoundBankDisplayDir>
+            <_SoundBankDisplayDir Condition="$(_SoundBankDisplayDir.EndsWith('\')) Or $(_SoundBankDisplayDir.EndsWith('/'))">$(_SoundBankDisplayDir.Substring(0, $([MSBuild]::Subtract($(_SoundBankDisplayDir.Length), 1))))</_SoundBankDisplayDir>
+        </PropertyGroup>
+        <!-- The input list and encode template sidecars are written by
+                  _WriteToolkitContentInputLists, which runs before this target's
+                  incremental check so that a change to the input set or to the
+                  encode settings invalidates the bank. -->
+        <!--
+            In-process content-cache fast path.  On a hit this hashes the input
+            set and copies the cached descriptor + audio artefacts inside the
+            running MSBuild process, avoiding the build tool start and the whole
+            decode/concatenate/re-encode pass below.  Only genuine misses fall
+            through to the Exec, which then populates the cache.
+        -->
+        <_TryRestoreFromContentGroupCache
+            SourceFiles="@(SoundBankContent->'%(FullPath)')"
+            OutputBaseFile="$(ContentOutputDir)%(SoundBankContent.OutputRelativeDir)%(SoundBankContent.Name)"
+            CacheDir="$(ContentCacheDir)"
+            CommandTemplate="%(SoundBankContent._EncodeCommandResolved)"
+            ToolPaths="$(_ContentPipelineBuildToolPaths)"
+            ProcessorDeps="%(SoundBankContent._ProcessorDeps)"
+            ExtraKey="version=$(ToolkitContentPipelineSoundBankVersion)/$(ContentPipelineSoundVersion);bank=%(SoundBankContent.Name);ext=%(SoundBankContent._OutputExtension);rate=%(SoundBankContent._SampleRate);ch=2"
+            LockTimeoutMilliseconds="$(ContentCacheLockTimeoutMilliseconds)">
+            <Output TaskParameter="Restored" PropertyName="_SoundBankCacheRestored" />
+            <Output TaskParameter="CachePath" PropertyName="_SoundBankCachePath" />
+        </_TryRestoreFromContentGroupCache>
+        <Message Condition="'$(_SoundBankCacheRestored)' == 'true'"
+                          Text="%(SoundBankContent.OutputRelativeDir)* -&gt; %(SoundBankContent.OutputRelativeDir)%(SoundBankContent.Name).json [cached]"
+                          Importance="high" />
+        <Exec Condition="'$(_SoundBankCacheRestored)' != 'true'"
+                    WorkingDirectory="$(MSBuildProjectDirectory)"
+                    Command="$(_ToolkitContentPipelineBuildCommand) soundbank --input-list &quot;$(_SoundBankInputListFile)&quot; --output &quot;$(ContentOutputDir)%(SoundBankContent.OutputRelativeDir)%(SoundBankContent.Name).json&quot; --audio-output &quot;$(ContentOutputDir)%(SoundBankContent.OutputRelativeDir)%(SoundBankContent.Name)_0%(SoundBankContent._OutputExtension)&quot; --encode-command-file &quot;$(_SoundBankEncodeTemplateFile)&quot; --intermediate-dir &quot;$(_SoundBankIntermediateDir)&quot; --sample-rate %(SoundBankContent._SampleRate) --channels 2 --input-display-dir &quot;$(_SoundBankDisplayDir)&quot; --output-display-file &quot;%(SoundBankContent.OutputRelativeDir)%(SoundBankContent.Name).json&quot; --audio-display-file &quot;%(SoundBankContent.OutputRelativeDir)%(SoundBankContent.Name)_0%(SoundBankContent._OutputExtension)&quot; --bank-display-name &quot;%(SoundBankContent.Name)&quot;" />
+        <!--
+            Publish the freshly built bank (descriptor + the single _0 audio part)
+            so the next clean build, branch switch, or peer machine can restore it.
+        -->
+        <_SaveToContentGroupCache IgnoreFolder="$(_ContentCacheIgnoreFolder)" Condition="'$(_SoundBankCacheRestored)' != 'true'"
+            OutputBaseFile="$(ContentOutputDir)%(SoundBankContent.OutputRelativeDir)%(SoundBankContent.Name)"
+            Suffixes=".json"
+            PageExtension="%(SoundBankContent._OutputExtension)"
+            CachePath="$(_SoundBankCachePath)"
+            CacheDir="$(ContentCacheDir)" />
+    </Target>
+
+    <Target Name="_ValidateTextureAtlasName"
+                    Condition="'@(TextureAtlasContent)' != ''">
+        <Error Condition="'%(TextureAtlasContent.Name)' == ''"
+                      Code="ATL0002"
+                      Text="TextureAtlasContent item '%(TextureAtlasContent.Identity)' has an empty Name." />
+    </Target>
+
+    <PropertyGroup Label="Texture atlas packing options">
+        <!-- TexturePacker semantics: TextureAtlasPadding is the transparent
+                  buffer between sprites' extruded footprints (shapePadding); the
+                  per-sprite extrude band is configured separately via
+                  TextureAtlasExtrude.  Total separation between two adjacent sprite
+                  frames is TextureAtlasPadding + 2 * TextureAtlasExtrude. -->
+        <TextureAtlasPadding Condition="'$(TextureAtlasPadding)' == ''">0</TextureAtlasPadding>
+        <TextureAtlasExtrude Condition="'$(TextureAtlasExtrude)' == ''">1</TextureAtlasExtrude>
+        <TextureAtlasMaxWidth Condition="'$(TextureAtlasMaxWidth)' == ''">4096</TextureAtlasMaxWidth>
+        <TextureAtlasMaxHeight Condition="'$(TextureAtlasMaxHeight)' == ''">4096</TextureAtlasMaxHeight>
+        <TextureAtlasPowerOfTwo Condition="'$(TextureAtlasPowerOfTwo)' == ''">false</TextureAtlasPowerOfTwo>
+        <TextureAtlasSquare Condition="'$(TextureAtlasSquare)' == ''">false</TextureAtlasSquare>
+        <_TextureAtlasPowerOfTwoSwitch Condition="'$(TextureAtlasPowerOfTwo)' == 'true'">--power-of-two</_TextureAtlasPowerOfTwoSwitch>
+        <_TextureAtlasSquareSwitch Condition="'$(TextureAtlasSquare)' == 'true'">--square</_TextureAtlasSquareSwitch>
+    </PropertyGroup>
+
+    <Target Name="BuildTextureAtlas"
+                    DependsOnTargets="_BuildContentPipelineTasks;_ValidateTextureAtlasName"
+                    Inputs="@(TextureAtlasContent);@(TextureAtlasContent->'%(_InputListFile)');@(TextureAtlasContent->'%(_EncodeTemplateFile)');@(TextureAtlasContent->'%(_PackingOptionsFile)');$(_ToolkitContentPipelineBuildToolInputs);$(TextureAtlasContentProcessorDeps);$(TextureContentLosslessProcessorDeps);$(TextureContentNearLosslessProcessorDeps);$(TextureContentLossyProcessorDeps)"
+                    Outputs="$(ContentOutputDir)%(TextureAtlasContent.OutputRelativeDir)%(TextureAtlasContent.Name).json"
+                    Condition="'@(TextureAtlasContent)' != ''">
+        <MakeDir Directories="$(ContentOutputDir)%(TextureAtlasContent.OutputRelativeDir);$(ContentIntermediateDir)%(TextureAtlasContent.OutputRelativeDir)" />
+        <!--
+            Remove the pages of the previous build first, as BuildSpriteFont does: a
+            cache restore or rebuild may produce fewer pages, and a leftover would be
+            published and kept by _PruneStaleContentOutputs, which keeps the numbered
+            pages that exist.
+        -->
+        <PropertyGroup>
+            <_TextureAtlasPagePattern>^$([System.Text.RegularExpressions.Regex]::Escape('%(TextureAtlasContent.Name)'))_[0-9]+$</_TextureAtlasPagePattern>
+        </PropertyGroup>
+        <ItemGroup>
+            <_TextureAtlasStalePage Include="$(ContentOutputDir)%(TextureAtlasContent.OutputRelativeDir)%(TextureAtlasContent.Name)_*%(TextureAtlasContent._OutputExtension)" />
+            <_TextureAtlasStalePage Remove="@(_TextureAtlasStalePage)"
+                                                            Condition="!$([System.Text.RegularExpressions.Regex]::IsMatch('%(_TextureAtlasStalePage.Filename)', '$(_TextureAtlasPagePattern)'))" />
+        </ItemGroup>
+        <Delete Files="@(_TextureAtlasStalePage)" />
+        <ItemGroup>
+            <_TextureAtlasStalePage Remove="@(_TextureAtlasStalePage)" />
+        </ItemGroup>
+        <PropertyGroup>
+            <_TextureAtlasInputListFile>$(ContentIntermediateDir)%(TextureAtlasContent.OutputRelativeDir)%(TextureAtlasContent.Name).inputs.txt</_TextureAtlasInputListFile>
+            <_TextureAtlasEncodeTemplateFile>$(ContentIntermediateDir)%(TextureAtlasContent.OutputRelativeDir)%(TextureAtlasContent.Name).encode.cmd</_TextureAtlasEncodeTemplateFile>
+            <_TextureAtlasIntermediateDir>$(ContentIntermediateDir)%(TextureAtlasContent.OutputRelativeDir)</_TextureAtlasIntermediateDir>
+            <_TextureAtlasIntermediateDir Condition="$(_TextureAtlasIntermediateDir.EndsWith('\')) Or $(_TextureAtlasIntermediateDir.EndsWith('/'))">$(_TextureAtlasIntermediateDir.Substring(0, $([MSBuild]::Subtract($(_TextureAtlasIntermediateDir.Length), 1))))</_TextureAtlasIntermediateDir>
+            <_TextureAtlasDisplayDir>%(TextureAtlasContent.OutputRelativeDir)</_TextureAtlasDisplayDir>
+            <_TextureAtlasDisplayDir Condition="$(_TextureAtlasDisplayDir.EndsWith('\')) Or $(_TextureAtlasDisplayDir.EndsWith('/'))">$(_TextureAtlasDisplayDir.Substring(0, $([MSBuild]::Subtract($(_TextureAtlasDisplayDir.Length), 1))))</_TextureAtlasDisplayDir>
+        </PropertyGroup>
+        <!-- The input list and encode template sidecars are written by
+                  _WriteToolkitContentInputLists, which runs before this target's
+                  incremental check so that a change to the input set or to the
+                  encode settings invalidates the atlas. -->
+        <!--
+            In-process content-cache fast path.  On a hit this hashes the input
+            set and copies the cached descriptor + page artefacts inside the
+            running MSBuild process, avoiding the build tool start and the whole
+            trim/pack/extrude/encode pass below.  Only genuine misses fall
+            through to the Exec, which then populates the cache.  The packing
+            options and the atlas name are part of the key because both change
+            the produced descriptor (which embeds the page file names).
+        -->
+        <_TryRestoreFromContentGroupCache
+            SourceFiles="@(TextureAtlasContent->'%(FullPath)')"
+            OutputBaseFile="$(ContentOutputDir)%(TextureAtlasContent.OutputRelativeDir)%(TextureAtlasContent.Name)"
+            CacheDir="$(ContentCacheDir)"
+            CommandTemplate="%(TextureAtlasContent._EncodeCommandResolved)"
+            ToolPaths="$(_ContentPipelineBuildToolPaths)"
+            ProcessorDeps="%(TextureAtlasContent._ProcessorDeps)"
+            ExtraKey="version=$(ToolkitContentPipelineTextureAtlasVersion)/$(ContentPipelineTextureVersion);atlas=%(TextureAtlasContent.Name);ext=%(TextureAtlasContent._OutputExtension);pad=$(TextureAtlasPadding);extrude=$(TextureAtlasExtrude);maxw=$(TextureAtlasMaxWidth);maxh=$(TextureAtlasMaxHeight);pot=$(TextureAtlasPowerOfTwo);square=$(TextureAtlasSquare)"
+            LockTimeoutMilliseconds="$(ContentCacheLockTimeoutMilliseconds)">
+            <Output TaskParameter="Restored" PropertyName="_TextureAtlasCacheRestored" />
+            <Output TaskParameter="CachePath" PropertyName="_TextureAtlasCachePath" />
+        </_TryRestoreFromContentGroupCache>
+        <Message Condition="'$(_TextureAtlasCacheRestored)' == 'true'"
+                          Text="%(TextureAtlasContent.OutputRelativeDir)* -&gt; %(TextureAtlasContent.OutputRelativeDir)%(TextureAtlasContent.Name).json [cached]"
+                          Importance="high" />
+        <Exec Condition="'$(_TextureAtlasCacheRestored)' != 'true'"
+                    WorkingDirectory="$(MSBuildProjectDirectory)"
+                    Command="$(_ToolkitContentPipelineBuildCommand) atlas --input-list &quot;$(_TextureAtlasInputListFile)&quot; --output &quot;$(ContentOutputDir)%(TextureAtlasContent.OutputRelativeDir)%(TextureAtlasContent.Name).json&quot; --texture-output-base &quot;$(ContentOutputDir)%(TextureAtlasContent.OutputRelativeDir)%(TextureAtlasContent.Name)&quot; --texture-output-extension &quot;%(TextureAtlasContent._OutputExtension)&quot; --encode-command-file &quot;$(_TextureAtlasEncodeTemplateFile)&quot; --intermediate-dir &quot;$(_TextureAtlasIntermediateDir)&quot; --input-display-dir &quot;$(_TextureAtlasDisplayDir)&quot; --output-display-file &quot;%(TextureAtlasContent.OutputRelativeDir)%(TextureAtlasContent.Name).json&quot; --atlas-display-name &quot;%(TextureAtlasContent.Name)&quot; --padding $(TextureAtlasPadding) --extrude $(TextureAtlasExtrude) --max-width $(TextureAtlasMaxWidth) --max-height $(TextureAtlasMaxHeight) $(_TextureAtlasPowerOfTwoSwitch) $(_TextureAtlasSquareSwitch)" />
+        <!--
+            Publish the freshly packed atlas (descriptor + every _N page) so the
+            next clean build, branch switch, or peer machine can restore it.
+        -->
+        <_SaveToContentGroupCache IgnoreFolder="$(_ContentCacheIgnoreFolder)" Condition="'$(_TextureAtlasCacheRestored)' != 'true'"
+            OutputBaseFile="$(ContentOutputDir)%(TextureAtlasContent.OutputRelativeDir)%(TextureAtlasContent.Name)"
+            Suffixes=".json"
+            PageExtension="%(TextureAtlasContent._OutputExtension)"
+            CachePath="$(_TextureAtlasCachePath)"
+            CacheDir="$(ContentCacheDir)" />
+    </Target>
+
+    <!-- ═══════════════════════════ Fonts ═══════════════════════════ -->
+
+    <!--
+        SpriteFontContent: one item per generated sprite font.  Include is the primary
+        font file; everything else is optional metadata (see
+        ContentPipeline.Toolkit.SpriteFontContent.BrowseObject.xaml and the toolkit
+        README):
+
+            Name, Size, Charset, CharsetFile, Fallback, GlyphFormat, PxRange,
+            PxRangeOffset, Kerning
+
+        Outputs (OutputRelativeDir from Link / RelativeDir as for other items):
+
+            <Name>.spritefont         descriptor (PBON), content key <dir>/<Name>
+            <Name>_<n><ext>           atlas pages, encoded by the framework's
+                                                                lossless texture processor
+
+        The glyphs are rendered by glyphgen (toolkit\native\glyphgen\, msdfgen + FreeType), a
+        prebuilt per-RID binary checked in under toolkit\native\glyphgen\<rid>\, so building
+        fonts needs no extra install beyond the tools textures already use.
+        Set GlyphGenExe to use a different binary.
+    -->
+
+    <PropertyGroup Label="glyphgen">
+        <_GlyphGenOS Condition="$([MSBuild]::IsOSPlatform('Windows'))">win</_GlyphGenOS>
+        <_GlyphGenOS Condition="$([MSBuild]::IsOSPlatform('OSX'))">osx</_GlyphGenOS>
+        <_GlyphGenOS Condition="'$(_GlyphGenOS)' == ''">linux</_GlyphGenOS>
+        <_GlyphGenArch>x64</_GlyphGenArch>
+        <_GlyphGenArch Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture)' == 'Arm64'">arm64</_GlyphGenArch>
+        <GlyphGenExe Condition="'$(GlyphGenExe)' == ''">$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)../native/glyphgen/$(_GlyphGenOS)-$(_GlyphGenArch)/glyphgen$(_ExeExt)'))</GlyphGenExe>
+        <GlyphGenPath>&quot;$(GlyphGenExe)&quot;</GlyphGenPath>
+    </PropertyGroup>
+
+    <PropertyGroup Label="Font content options">
+        <SpriteFontAtlasMaxWidth Condition="'$(SpriteFontAtlasMaxWidth)' == ''">2048</SpriteFontAtlasMaxWidth>
+        <SpriteFontAtlasMaxHeight Condition="'$(SpriteFontAtlasMaxHeight)' == ''">2048</SpriteFontAtlasMaxHeight>
+        <SpriteFontAtlasPowerOfTwo Condition="'$(SpriteFontAtlasPowerOfTwo)' == ''">false</SpriteFontAtlasPowerOfTwo>
+    </PropertyGroup>
+
+    <!--
+        The toolkit's tasks, compiled from tasks\ToolkitContentPipelineTasks.cs, which documents
+        each; built on demand like the framework's (its ContentPipeline.Tasks.targets). A package
+        sets ToolkitContentPipelineTasksAssembly to the prebuilt assembly, and nothing is built.
+    -->
+    <PropertyGroup Condition="'$(ToolkitContentPipelineTasksAssembly)' == ''">
+        <_ToolkitContentPipelineTasksDir>$(MSBuildThisFileDirectory)tasks\</_ToolkitContentPipelineTasksDir>
+        <_ToolkitContentPipelineTasksProject>$(_ToolkitContentPipelineTasksDir)DotGame.Toolkit.ContentPipeline.Tasks.csproj</_ToolkitContentPipelineTasksProject>
+        <_ToolkitContentPipelineTasksSource>$(_ToolkitContentPipelineTasksDir)ToolkitContentPipelineTasks.cs</_ToolkitContentPipelineTasksSource>
+        <_ToolkitContentPipelineTasksHash>$([MSBuild]::StableStringHash($([System.IO.File]::ReadAllText('$(_ToolkitContentPipelineTasksSource)'))))-$([MSBuild]::StableStringHash($([System.IO.File]::ReadAllText('$(_ToolkitContentPipelineTasksProject)'))))</_ToolkitContentPipelineTasksHash>
+        <ToolkitContentPipelineTasksAssembly>$(_ToolkitContentPipelineTasksDir)bin\$(_ToolkitContentPipelineTasksHash)\DotGame.Toolkit.ContentPipeline.Tasks.dll</ToolkitContentPipelineTasksAssembly>
+    </PropertyGroup>
+
+    <ItemGroup Condition="'$(_ToolkitContentPipelineTasksHash)' != ''">
+        <_ContentPipelineTasksProject Include="$(_ToolkitContentPipelineTasksProject)"
+                                                                    AssemblyFile="$(ToolkitContentPipelineTasksAssembly)" />
+        <_ContentPipelineTasksSource Include="$(_ToolkitContentPipelineTasksSource)" />
+    </ItemGroup>
+
+    <UsingTask TaskName="_ResolveSpriteFontContent" AssemblyFile="$(ToolkitContentPipelineTasksAssembly)" />
+    <UsingTask TaskName="_FindPagedContentManifestEntries" AssemblyFile="$(ToolkitContentPipelineTasksAssembly)" />
+
+    <!--
+        Distance-field font shader shipped with the toolkit.  Injected as a
+        ShaderContent item (content key _toolkit/Shaders/spritefont,
+        loaded by SpriteFontLoader) whenever the project has SpriteFontContent.  Added
+        at execution time so it does not appear in Solution Explorer.
+    -->
+    <Target Name="_AddToolkitSpriteFontShader"
+                    BeforeTargets="_PrepareContentItems"
+                    Condition="'@(SpriteFontContent)' != ''">
+        <PropertyGroup>
+            <_ToolkitContentLinkBase>$(ContentLinkBasePath)</_ToolkitContentLinkBase>
+            <_ToolkitContentLinkBase Condition="'$(_ToolkitContentLinkBase)' == ''">$(ContentManifestBasePath.Replace('/', '\'))</_ToolkitContentLinkBase>
+        </PropertyGroup>
+        <ItemGroup>
+            <ShaderContent Include="$(MSBuildThisFileDirectory)Shaders\spritefont.slang"
+                                          Exclude="@(ShaderContent)">
+                <Link>$(_ToolkitContentLinkBase)_toolkit\Shaders\spritefont.slang</Link>
+                <Visible>false</Visible>
+                <!-- From the toolkit's package: compiled when the package was made, so fonts need no shader tools -->
+                <Precompiled Condition="'$(ToolkitPrecompiledShadersDir)' != ''">$(ToolkitPrecompiledShadersDir)</Precompiled>
+            </ShaderContent>
+        </ItemGroup>
+    </Target>
+
+    <Target Name="_PrepareSpriteFontContentItems"
+                    DependsOnTargets="_BuildContentPipelineTasks;_PrepareToolkitContentItems"
+                    Condition="'@(SpriteFontContent)' != ''">
+        <_AddIndexMetadata InputItems="@(SpriteFontContent)">
+            <Output TaskParameter="OutputItems" ItemName="_IndexedSpriteFontContent" />
+        </_AddIndexMetadata>
+        <_ResolveSpriteFontContent Fonts="@(_IndexedSpriteFontContent)"
+                                                  ProjectDirectory="$(MSBuildProjectDirectory)"
+                                                  IntermediateDir="$(ContentIntermediateDir)"
+                                                  EncodeCommand="$(TextureContentLosslessProcessorCommand)"
+                                                  OutputExtension="$(TextureContentLosslessProcessorOutputExtension)"
+                                                  MaxWidth="$(SpriteFontAtlasMaxWidth)"
+                                                  MaxHeight="$(SpriteFontAtlasMaxHeight)"
+                                                  PowerOfTwo="$(SpriteFontAtlasPowerOfTwo)">
+            <Output TaskParameter="ResolvedFonts" ItemName="_ResolvedSpriteFontContent" />
+        </_ResolveSpriteFontContent>
+        <ItemGroup>
+            <SpriteFontContent Remove="@(SpriteFontContent)" />
+            <SpriteFontContent Include="@(_ResolvedSpriteFontContent)" />
+            <_IndexedSpriteFontContent Remove="@(_IndexedSpriteFontContent)" />
+            <_ResolvedSpriteFontContent Remove="@(_ResolvedSpriteFontContent)" />
+        </ItemGroup>
+    </Target>
+
+    <Target Name="BuildSpriteFont"
+                    DependsOnTargets="_BuildContentPipelineTasks;_PrepareSpriteFontContentItems"
+                    Inputs="%(SpriteFontContent._SourceFiles);%(SpriteFontContent._SettingsFile);$(_ToolkitContentPipelineBuildToolInputs);$(SpriteFontContentProcessorDeps);$(TextureContentLosslessProcessorDeps);$(GlyphGenExe)"
+                    Outputs="$(ContentOutputDir)%(SpriteFontContent.OutputRelativeDir)%(SpriteFontContent.FontName).spritefont"
+                    Condition="'@(SpriteFontContent)' != ''">
+        <MakeDir Directories="$(ContentOutputDir)%(SpriteFontContent.OutputRelativeDir);$(ContentIntermediateDir)%(SpriteFontContent.OutputRelativeDir)" />
+        <PropertyGroup>
+            <_SpriteFontIntermediateDir>$(ContentIntermediateDir)%(SpriteFontContent.OutputRelativeDir)%(SpriteFontContent.FontName).font</_SpriteFontIntermediateDir>
+            <_SpriteFontOutputBase>$(ContentOutputDir)%(SpriteFontContent.OutputRelativeDir)%(SpriteFontContent.FontName)</_SpriteFontOutputBase>
+            <_SpriteFontPagePattern>^$([System.Text.RegularExpressions.Regex]::Escape('%(SpriteFontContent.FontName)'))_[0-9]+$</_SpriteFontPagePattern>
+        </PropertyGroup>
+        <!--
+            Remove the pages of the previous build first: a cache restore or rebuild
+            may produce fewer pages, and leftovers would be registered in the manifest.
+        -->
+        <ItemGroup>
+            <_SpriteFontStalePage Include="$(_SpriteFontOutputBase)_*%(SpriteFontContent._OutputExtension)" />
+            <_SpriteFontStalePage Remove="@(_SpriteFontStalePage)"
+                                            Condition="!$([System.Text.RegularExpressions.Regex]::IsMatch('%(_SpriteFontStalePage.Filename)', '$(_SpriteFontPagePattern)'))" />
+        </ItemGroup>
+        <Delete Files="@(_SpriteFontStalePage)" />
+        <ItemGroup>
+            <_SpriteFontStalePage Remove="@(_SpriteFontStalePage)" />
+        </ItemGroup>
+        <!--
+            In-process content-cache fast path (see BuildTextureAtlas).  The key
+            covers the ordered font / fallback / charset files by content, every
+            resolved setting, the encode command, and the build tool and glyphgen
+            binaries, so a hit is byte-identical to a rebuild.
+        -->
+        <_TryRestoreFromContentGroupCache
+            SourceFiles="%(SpriteFontContent._SourceFiles)"
+            OutputBaseFile="$(_SpriteFontOutputBase)"
+            CacheDir="$(ContentCacheDir)"
+            CommandTemplate="%(SpriteFontContent._EncodeCommandResolved)"
+            ToolPaths="$(GlyphGenPath);$(_ContentPipelineBuildToolPaths)"
+            ProcessorDeps="$(SpriteFontContentProcessorDeps);$(TextureContentLosslessProcessorDeps);$(GlyphGenExe)"
+            ExtraKey="version=$(ToolkitContentPipelineSpriteFontVersion)/$(ContentPipelineTextureVersion);%(SpriteFontContent._ExtraKey)"
+            LockTimeoutMilliseconds="$(ContentCacheLockTimeoutMilliseconds)">
+            <Output TaskParameter="Restored" PropertyName="_SpriteFontCacheRestored" />
+            <Output TaskParameter="CachePath" PropertyName="_SpriteFontCachePath" />
+        </_TryRestoreFromContentGroupCache>
+        <Message Condition="'$(_SpriteFontCacheRestored)' == 'true'"
+                          Text="[%(SpriteFontContent.Index)/%(SpriteFontContent.Total)] %(SpriteFontContent.Identity) -&gt; %(SpriteFontContent.OutputRelativeDir)%(SpriteFontContent.FontName).spritefont [cached]"
+                          Importance="high" />
+        <Exec Condition="'$(_SpriteFontCacheRestored)' != 'true'"
+                    WorkingDirectory="$(MSBuildProjectDirectory)"
+                    Command="$(_ToolkitContentPipelineBuildCommand) spritefont --settings &quot;%(SpriteFontContent._SettingsFile)&quot; --glyphgen $(GlyphGenPath) --output-base &quot;$(_SpriteFontOutputBase)&quot; --texture-output-extension &quot;%(SpriteFontContent._OutputExtension)&quot; --intermediate-dir &quot;$(_SpriteFontIntermediateDir)&quot; --display-name &quot;%(SpriteFontContent.OutputRelativeDir)%(SpriteFontContent.FontName).spritefont&quot;" />
+        <_SaveToContentGroupCache IgnoreFolder="$(_ContentCacheIgnoreFolder)" Condition="'$(_SpriteFontCacheRestored)' != 'true'"
+            OutputBaseFile="$(_SpriteFontOutputBase)"
+            Suffixes=".spritefont"
+            PageExtension="%(SpriteFontContent._OutputExtension)"
+            CachePath="$(_SpriteFontCachePath)"
+            CacheDir="$(ContentCacheDir)" />
+    </Target>
+
+</Project>

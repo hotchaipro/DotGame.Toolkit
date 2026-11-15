@@ -1,0 +1,10 @@
+<Project>
+
+    <!--
+        The toolkit's pipeline follows the framework's, which DotGame.Framework.Build imports: NuGet
+        imports a package's build files after those of the packages it depends on.
+    -->
+    <Import Project="$(MSBuildThisFileDirectory)..\pipeline\ContentPipeline.Toolkit.targets"
+                    Condition="'$(_FrameworkContentPipelineImported)' == 'true'" />
+
+</Project>

@@ -1,0 +1,13 @@
+{
+  "$schema": "http://json.schemastore.org/vsix-publish",
+  "categories": [ "coding", "other" ],
+  "identity": {
+    "internalName": "DotGameToolkit"
+  },
+  "overview": "../../README.md",
+  "priceCategory": "free",
+  "publisher": "HotChaiGames",
+  "private": false,
+  "qna": true,
+  "repo": "https://github.com/hotchaipro/DotGame.Toolkit"
+}

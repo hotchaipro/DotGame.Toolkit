@@ -1,0 +1,44 @@
+<Project Sdk="Microsoft.Build.NoTargets/3.7.134">
+
+    <!--
+        DotGame toolkit content pipeline: MSBuild targets and the sprite
+        font shader.  The content is built by the build tool in ..\build,
+        which the targets build on demand, and sprite fonts are rendered by the
+        glyphgen native tool (..\native\glyphgen).  Nothing is compiled here.  Game
+        projects reference this project and import
+        build\DotGame.Toolkit.ContentPipeline.targets.
+    -->
+
+    <PropertyGroup>
+        <TargetFramework>net11.0</TargetFramework>
+        <IsPackable>false</IsPackable>
+        <!-- The task project in tasks\ is its own project, built on demand by the targets -->
+        <DefaultItemExcludes>$(DefaultItemExcludes);tasks\**;tool\**</DefaultItemExcludes>
+    </PropertyGroup>
+
+    <!--
+        NoTargets defaults ReferenceOutputAssembly to false, which also drops the
+        reference from NuGet restore.  Setting it to true lets the libraries flow
+        transitively to game projects, like package dependencies will.
+    -->
+    <ItemGroup>
+        <ProjectReference Include="..\toolkit\DotGame.Toolkit.csproj" ReferenceOutputAssembly="true" />
+        <ProjectReference Include="$(DotGameFrameworkDir)pipeline\DotGame.Framework.ContentPipeline.csproj" ReferenceOutputAssembly="true" />
+    </ItemGroup>
+
+    <!--
+        The framework content pipeline is also a NoTargets project with no output
+        assembly, so Visual Studio's dependency tree shows it as unresolved.
+        Report it to the design-time build the same way VS reports
+        ReferenceOutputAssembly="false" references (see
+        build\DotGame.Toolkit.ContentPipeline.targets).
+    -->
+    <Target Name="_DotGameFrameworkContentPipelineResolveDesignTime" BeforeTargets="ResolveProjectReferencesDesignTime2">
+        <ItemGroup>
+            <_ProjectReferencesWithoutOutputAssembly Include="@(ProjectReference)" Condition="'%(ProjectReference.Filename)' == 'DotGame.Framework.ContentPipeline'">
+                <OriginalItemSpec>%(ProjectReference.Identity)</OriginalItemSpec>
+            </_ProjectReferencesWithoutOutputAssembly>
+        </ItemGroup>
+    </Target>
+
+</Project>

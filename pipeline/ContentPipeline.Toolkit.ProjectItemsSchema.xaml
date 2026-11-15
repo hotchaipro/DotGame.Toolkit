@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Registers the DotGame.Toolkit content pipeline item types with
+    the .NET Project System (CPS) so they appear with proper display
+    names in Solution Explorer and the Build Action dropdown.
+
+    This container carries ONLY the item-type / content-type
+    registrations.  Properties shown in the Visual Studio Properties pane
+    are defined by the separate *.BrowseObject.xaml rule files, because a
+    <Rule> inside this container is never surfaced there (see
+    ContentPipeline.TextureContent.BrowseObject.xaml in the framework
+    pipeline for detail).
+
+    Loaded via PropertyPageSchema in ContentPipeline.Toolkit.targets.
+-->
+<ProjectSchemaDefinitions xmlns="http://schemas.microsoft.com/build/2009/properties">
+
+  <ItemType Name="TextureAtlasContent" DisplayName="Texture Atlas Content" />
+  <ItemType Name="SoundBankContent"    DisplayName="Sound Bank Content" />
+  <ItemType Name="SpriteFontContent"         DisplayName="Font Content" />
+
+  <ContentType Name="TextureAtlasContent" DisplayName="Texture Atlas Content" ItemType="TextureAtlasContent" />
+  <ContentType Name="SoundBankContent"    DisplayName="Sound Bank Content"    ItemType="SoundBankContent" />
+  <ContentType Name="SpriteFontContent"         DisplayName="Font Content"          ItemType="SpriteFontContent" />
+
+</ProjectSchemaDefinitions>

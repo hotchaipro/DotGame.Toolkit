@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    The extension's images: Visual Studio finds this manifest in the installed extension's folder. The IDs match
+    ContentFolderImages.cs; the PNGs are resources of the extension's assembly (draw_icons.py draws them). The
+    folders have a light and a dark theme's outline; the content folder's glyph is the same in both. Like Visual
+    Studio's folders, each looks the same open or closed.
+-->
+<ImageManifest xmlns="http://schemas.microsoft.com/VisualStudio/ImageManifestSchema/2014">
+    <Symbols>
+        <String Name="Resources" Value="/DotGame.Toolkit.VisualStudio;component/Images" />
+        <Guid Name="Catalog" Value="{8b2f7c1e-5a3d-4e6f-9c0b-1d2e3f4a5b6c}" />
+        <ID Name="ContentFolder" Value="1" />
+        <ID Name="ContentFolderOpen" Value="2" />
+        <ID Name="AtlasFolder" Value="3" />
+        <ID Name="AtlasFolderOpen" Value="4" />
+        <ID Name="BankFolder" Value="5" />
+        <ID Name="BankFolderOpen" Value="6" />
+    </Symbols>
+    <Images>
+        <Image Guid="$(Catalog)" ID="$(ContentFolder)" AllowColorInversion="false">
+            <Source Uri="$(Resources)/ContentFolder.16.png"><Size Value="16" /></Source>
+            <Source Uri="$(Resources)/ContentFolder.24.png"><Size Value="24" /></Source>
+            <Source Uri="$(Resources)/ContentFolder.32.png"><Size Value="32" /></Source>
+            <Source Uri="$(Resources)/ContentFolder.48.png"><Size Value="48" /></Source>
+        </Image>
+        <Image Guid="$(Catalog)" ID="$(ContentFolderOpen)" AllowColorInversion="false">
+            <Source Uri="$(Resources)/ContentFolder.16.png"><Size Value="16" /></Source>
+            <Source Uri="$(Resources)/ContentFolder.24.png"><Size Value="24" /></Source>
+            <Source Uri="$(Resources)/ContentFolder.32.png"><Size Value="32" /></Source>
+            <Source Uri="$(Resources)/ContentFolder.48.png"><Size Value="48" /></Source>
+        </Image>
+        <Image Guid="$(Catalog)" ID="$(AtlasFolder)" AllowColorInversion="false">
+            <Source Uri="$(Resources)/AtlasFolder.Light.16.png" Background="Light"><Size Value="16" /></Source>
+            <Source Uri="$(Resources)/AtlasFolder.Light.24.png" Background="Light"><Size Value="24" /></Source>
+            <Source Uri="$(Resources)/AtlasFolder.Light.32.png" Background="Light"><Size Value="32" /></Source>
+            <Source Uri="$(Resources)/AtlasFolder.Light.48.png" Background="Light"><Size Value="48" /></Source>
+            <Source Uri="$(Resources)/AtlasFolder.Dark.16.png" Background="Dark"><Size Value="16" /></Source>
+            <Source Uri="$(Resources)/AtlasFolder.Dark.24.png" Background="Dark"><Size Value="24" /></Source>
+            <Source Uri="$(Resources)/AtlasFolder.Dark.32.png" Background="Dark"><Size Value="32" /></Source>
+            <Source Uri="$(Resources)/AtlasFolder.Dark.48.png" Background="Dark"><Size Value="48" /></Source>
+        </Image>
+        <Image Guid="$(Catalog)" ID="$(AtlasFolderOpen)" AllowColorInversion="false">
+            <Source Uri="$(Resources)/AtlasFolder.Light.16.png" Background="Light"><Size Value="16" /></Source>
+            <Source Uri="$(Resources)/AtlasFolder.Light.24.png" Background="Light"><Size Value="24" /></Source>
+            <Source Uri="$(Resources)/AtlasFolder.Light.32.png" Background="Light"><Size Value="32" /></Source>
+            <Source Uri="$(Resources)/AtlasFolder.Light.48.png" Background="Light"><Size Value="48" /></Source>
+            <Source Uri="$(Resources)/AtlasFolder.Dark.16.png" Background="Dark"><Size Value="16" /></Source>
+            <Source Uri="$(Resources)/AtlasFolder.Dark.24.png" Background="Dark"><Size Value="24" /></Source>
+            <Source Uri="$(Resources)/AtlasFolder.Dark.32.png" Background="Dark"><Size Value="32" /></Source>
+            <Source Uri="$(Resources)/AtlasFolder.Dark.48.png" Background="Dark"><Size Value="48" /></Source>
+        </Image>
+        <Image Guid="$(Catalog)" ID="$(BankFolder)" AllowColorInversion="false">
+            <Source Uri="$(Resources)/BankFolder.Light.16.png" Background="Light"><Size Value="16" /></Source>
+            <Source Uri="$(Resources)/BankFolder.Light.24.png" Background="Light"><Size Value="24" /></Source>
+            <Source Uri="$(Resources)/BankFolder.Light.32.png" Background="Light"><Size Value="32" /></Source>
+            <Source Uri="$(Resources)/BankFolder.Light.48.png" Background="Light"><Size Value="48" /></Source>
+            <Source Uri="$(Resources)/BankFolder.Dark.16.png" Background="Dark"><Size Value="16" /></Source>
+            <Source Uri="$(Resources)/BankFolder.Dark.24.png" Background="Dark"><Size Value="24" /></Source>
+            <Source Uri="$(Resources)/BankFolder.Dark.32.png" Background="Dark"><Size Value="32" /></Source>
+            <Source Uri="$(Resources)/BankFolder.Dark.48.png" Background="Dark"><Size Value="48" /></Source>
+        </Image>
+        <Image Guid="$(Catalog)" ID="$(BankFolderOpen)" AllowColorInversion="false">
+            <Source Uri="$(Resources)/BankFolder.Light.16.png" Background="Light"><Size Value="16" /></Source>
+            <Source Uri="$(Resources)/BankFolder.Light.24.png" Background="Light"><Size Value="24" /></Source>
+            <Source Uri="$(Resources)/BankFolder.Light.32.png" Background="Light"><Size Value="32" /></Source>
+            <Source Uri="$(Resources)/BankFolder.Light.48.png" Background="Light"><Size Value="48" /></Source>
+            <Source Uri="$(Resources)/BankFolder.Dark.16.png" Background="Dark"><Size Value="16" /></Source>
+            <Source Uri="$(Resources)/BankFolder.Dark.24.png" Background="Dark"><Size Value="24" /></Source>
+            <Source Uri="$(Resources)/BankFolder.Dark.32.png" Background="Dark"><Size Value="32" /></Source>
+            <Source Uri="$(Resources)/BankFolder.Dark.48.png" Background="Dark"><Size Value="48" /></Source>
+        </Image>
+    </Images>
+</ImageManifest>

@@ -1,0 +1,39 @@
+<Project Sdk="Microsoft.NET.Sdk.WebAssembly">
+
+    <!-- The web: WebGL 2 and WebAssembly. Needs the wasm-tools workload. -->
+    <PropertyGroup>
+        <TargetFramework>net11.0</TargetFramework>
+        <RuntimeIdentifier>browser-wasm</RuntimeIdentifier>
+        <OverrideHtmlAssetPlaceholders>true</OverrideHtmlAssetPlaceholders>
+        <RootNamespace>Sample</RootNamespace>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+        <RunAOTCompilation>true</RunAOTCompilation>
+        <WasmStripILAfterAOT>true</WasmStripILAfterAOT>
+        <WasmEnableSIMD>true</WasmEnableSIMD>
+        <WasmEnableExceptionHandling>true</WasmEnableExceptionHandling>
+    </PropertyGroup>
+
+    <!-- The game's code, shared by every platform: a shared project, compiled into each platform's -->
+    <Import Project="..\shared\DotGame.Toolkit.Sample.projitems" Label="Shared" />
+
+    <!-- The launch screen, which the content pipeline makes into this platform's form -->
+    <ItemGroup Label="Launch screen">
+        <LaunchScreen Include="..\Content\LaunchScreen\logo.png" Background="#1f0841" LogoSize="140" />
+    </ItemGroup>
+
+    <ItemGroup Label="Content">
+        <!-- PxRange: room in the distance field for the outlines, shadows and glows the sample draws (an effect reaches at most half of it) -->
+        <SpriteFontContent Include="..\Content\Fonts\*.ttf" PxRange="12">
+            <LinkBase>wwwroot\Content\Fonts</LinkBase>
+        </SpriteFontContent>
+        <TextureAtlasContent Include="..\Content\Sprites\*.png">
+            <LinkBase>wwwroot\Content\Sprites</LinkBase>
+        </TextureAtlasContent>
+        <SoundBankContent Include="..\Content\Sounds\*.wav">
+            <LinkBase>wwwroot\Content\Sounds</LinkBase>
+        </SoundBankContent>
+    </ItemGroup>
+
+</Project>

@@ -1,0 +1,23 @@
+<Project>
+
+    <!--
+        Output versions of the content types built by
+        DotGame.Toolkit.ContentPipeline.BuildTool.  Each version is part of the
+        content cache key of its type (see ContentPipeline.Toolkit.targets), in
+        place of the tool's bytes, so unrelated tool changes keep the cache.  The
+        key also includes the version of the framework type each one encodes
+        with (pipeline\tool\ContentVersions.props).
+
+        Increment a version whenever a change to the tool can change the output
+        of that type for the same sources and settings: a change to its command,
+        to shared code it uses (for example atlas packing) or to a package it
+        depends on.
+    -->
+
+    <PropertyGroup>
+        <ToolkitContentPipelineTextureAtlasVersion>2</ToolkitContentPipelineTextureAtlasVersion>
+        <ToolkitContentPipelineSoundBankVersion>3</ToolkitContentPipelineSoundBankVersion>
+        <ToolkitContentPipelineSpriteFontVersion>4</ToolkitContentPipelineSpriteFontVersion>
+    </PropertyGroup>
+
+</Project>

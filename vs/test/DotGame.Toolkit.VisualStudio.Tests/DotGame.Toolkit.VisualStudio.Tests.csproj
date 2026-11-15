@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <!--
+        The extension's tests: finding a folder's atlas or bank items and writing its settings, on projects
+        MSBuild evaluates here. The code under test is compiled in, as it doesn't use Visual Studio.
+    -->
+
+    <PropertyGroup>
+        <TargetFramework>net11.0</TargetFramework>
+        <OutputType>Exe</OutputType>
+        <IsPackable>false</IsPackable>
+        <RootNamespace>DotGame.Toolkit.VisualStudio.Tests</RootNamespace>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <Compile Include="..\..\src\DotGame.Toolkit.VisualStudio\ContentGroupKind.cs" Link="Source\ContentGroupKind.cs" />
+        <Compile Include="..\..\src\DotGame.Toolkit.VisualStudio\ContentFolder.cs" Link="Source\ContentFolder.cs" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="xunit.v3" Version="$(XunitV3Version)" />
+        <PackageReference Include="Microsoft.Build" Version="$(MicrosoftBuildVersion)" />
+    </ItemGroup>
+
+</Project>

@@ -1,0 +1,33 @@
+<Project>
+
+    <!--
+        Settings every project here shares, as a game's Directory.Build.props has them (the dotnet new
+        template's). It takes the place of the repository's, so the sample builds as a game does, without
+        the repository's own rules.
+    -->
+    <PropertyGroup>
+        <Nullable>enable</Nullable>
+        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+        <InvariantGlobalization>true</InvariantGlobalization>
+        <InvariantTimezone>true</InvariantTimezone>
+    </PropertyGroup>
+
+    <!-- Smaller, faster Release builds: trimmed, without features a game doesn't use -->
+    <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+        <!-- Trimmed in full: iOS asks with MtouchLink, its SDK refusing PublishTrimmed (since 27.2) -->
+        <PublishTrimmed Condition="!$(MSBuildProjectName.EndsWith('.iOS'))">true</PublishTrimmed>
+        <TrimMode Condition="!$(MSBuildProjectName.EndsWith('.iOS'))">full</TrimMode>
+        <MtouchLink Condition="$(MSBuildProjectName.EndsWith('.iOS'))">Full</MtouchLink>
+        <EventSourceSupport>false</EventSourceSupport>
+        <UseSystemResourceKeys>true</UseSystemResourceKeys>
+        <MetadataUpdaterSupport>false</MetadataUpdaterSupport>
+        <HttpActivityPropagationSupport>false</HttpActivityPropagationSupport>
+    </PropertyGroup>
+
+    <!--
+        Not in a game's: the sample builds the toolkit and the framework from their source, not their
+        packages, and each platform builds its own copy of them and of the game's code.
+    -->
+    <Import Project="..\eng\DotGame.BuildRoot.props" />
+
+</Project>

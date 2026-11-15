@@ -1,0 +1,51 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <!--
+        The toolkit content pipeline's tests: its build tool and tasks, and MSBuild runs of the real
+        targets on temporary projects. See README.md here, and the README in the framework's
+        test\DotGame.Framework.ContentPipeline.Tests, whose Support\ folder these share.
+    -->
+
+    <PropertyGroup>
+        <TargetFramework>net11.0</TargetFramework>
+        <OutputType>Exe</OutputType>
+        <Nullable>enable</Nullable>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <IsPackable>false</IsPackable>
+        <RootNamespace>DotGame.Toolkit.ContentPipeline.Tests</RootNamespace>
+        <InvariantGlobalization>true</InvariantGlobalization>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="xunit.v3" Version="$(XunitV3Version)" />
+        <!-- The tasks reference these at compile time only; MSBuild supplies them when it loads the tasks -->
+        <PackageReference Include="Microsoft.Build.Utilities.Core" Version="$(MicrosoftBuildUtilitiesCoreVersion)" />
+    </ItemGroup>
+
+    <!--
+        Where the tests find the framework's repository and the toolkit's, the toolkit's content pipeline
+        targets, and its build tool (the framework's Support/Paths.cs, which these tests link)
+    -->
+    <ItemGroup>
+        <AssemblyMetadata Include="DotGameFrameworkDir" Value="$(DotGameFrameworkDir)" />
+        <AssemblyMetadata Include="DotGameLibraryDir" Value="$([MSBuild]::NormalizeDirectory('$(MSBuildThisFileDirectory)..\..'))" />
+        <AssemblyMetadata Include="DotGameLibraryContentTargets" Value="$([MSBuild]::NormalizePath('$(MSBuildThisFileDirectory)..\..\pipeline\build\DotGame.Toolkit.ContentPipeline.targets'))" />
+        <AssemblyMetadata Include="DotGameLibraryBuildToolProperty" Value="ToolkitContentPipelineBuildTool" />
+        <AssemblyMetadata Include="DotGameLibraryBuildTool" Value="DotGame.Toolkit.ContentPipeline.BuildTool.dll" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <Compile Include="$(DotGameFrameworkDir)test\DotGame.Framework.ContentPipeline.Tests\Support\**\*.cs" Link="Support\%(RecursiveDir)%(Filename)%(Extension)" />
+        <Compile Include="$(DotGameFrameworkDir)platform\shared\Content\Ktx2Texture.cs" Link="Platform\Shared\Content\Ktx2Texture.cs" />
+        <Compile Include="$(DotGameFrameworkDir)platform\shared\Content\Ktx2PixelFormat.cs" Link="Platform\Shared\Content\Ktx2PixelFormat.cs" />
+        <Using Include="System.Numerics" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\..\pipeline\tool\DotGame.Toolkit.ContentPipeline.BuildTool.csproj" />
+        <ProjectReference Include="..\..\pipeline\tasks\DotGame.Toolkit.ContentPipeline.Tasks.csproj" />
+        <ProjectReference Include="..\..\toolkit\DotGame.Toolkit.csproj" />
+        <ProjectReference Include="$(DotGameFrameworkDir)test\DotGame.ContentPipeline.FakeTool\DotGame.ContentPipeline.FakeTool.csproj" />
+    </ItemGroup>
+
+</Project>

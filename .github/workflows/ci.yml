@@ -1,0 +1,139 @@
+name: CI
+
+# Builds every project (DotGame.Toolkit.slnx), against the framework's source beside it, and runs the tests, on Windows, Linux and macOS, with
+# the framework's pinned content pipeline tools (its packaging/tool-sources.json).
+#
+# Runs on every push to main and every pull request, and by hand.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            rid: win-x64
+          - os: ubuntu-22.04
+            rid: linux-x64
+          # .NET for iOS 27.2 needs Xcode 27.2, which only the xcode-27 image has (a public preview for now:
+          # macos-latest has Xcode 26)
+          - os: xcode-27
+            rid: osx-arm64
+    runs-on: ${{ matrix.os }}
+    name: ${{ matrix.rid }}
+    # The toolkit and the framework side by side, as DotGame.Toolkit.slnx finds the framework's projects
+    defaults:
+      run:
+        working-directory: DotGame.Toolkit
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          path: DotGame.Toolkit
+      - name: Check out the framework
+        uses: actions/checkout@v7
+        with:
+          repository: hotchaipro/DotGame.Framework
+          path: DotGame.Framework
+      - name: Find the framework
+        shell: bash
+        run: |
+          fw=$(cd ../DotGame.Framework && pwd); if command -v cygpath > /dev/null; then fw=$(cygpath -m "$fw"); fi
+          echo "DotGameFrameworkDir=$fw/" >> "$GITHUB_ENV"
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: '11.0.x'
+      # The committed glyphgen binaries run on the oldest supported Linux: glibc 2.35, no libstdc++
+      - name: Check glyphgen's glibc floor
+        if: runner.os == 'Linux'
+        run: python native/check-linux-floor.py native/glyphgen/linux-x64/glyphgen native/glyphgen/linux-arm64/glyphgen
+      - name: Select Xcode 27.2
+        if: runner.os == 'macOS'
+        run: sudo xcode-select -s /Applications/Xcode_27.2.app
+      - name: Install the workloads
+        if: runner.os != 'Linux'
+        run: dotnet workload install android ios wasm-tools
+      - name: Install the workloads
+        if: runner.os == 'Linux'
+        run: dotnet workload install android wasm-tools
+      - name: Set up MSVC
+        if: runner.os == 'Windows'
+        uses: ./DotGame.Toolkit/.github/actions/msvc
+      - name: Fetch the pinned tools
+        shell: bash
+        run: python "${DotGameFrameworkDir}packaging/fetch-tools.py" ${{ matrix.rid }} "${DotGameFrameworkDir}artifacts/tools/${{ matrix.rid }}"
+      - name: Put the tools on PATH
+        shell: bash
+        run: |
+          echo "VULKAN_SDK=" >> "$GITHUB_ENV"
+          tools="${DotGameFrameworkDir}artifacts/tools/${{ matrix.rid }}/tools"
+          if [ "$RUNNER_OS" = Windows ]; then tools=$(cygpath -w "$tools"); fi
+          echo "$tools" >> "$GITHUB_PATH"
+      # macOS builds every project. Windows builds all but the iOS sample, whose AAC sounds only macOS's
+      # encoder makes, and Linux, which has no iOS workload, all but the iOS projects.
+      # Without the Platform that the MSVC setup sets for the native tools (x64), which would pick a
+      # solution configuration that doesn't exist
+      - name: Build
+        if: runner.os == 'macOS'
+        run: dotnet build DotGame.Toolkit.slnx
+      - name: Build
+        if: runner.os == 'Windows'
+        shell: bash
+        # (with forward slashes, since xargs reads backslashes as escapes)
+        run: unset Platform; dotnet sln DotGame.Toolkit.slnx list | tr -d '\015' | tr '\134' / | grep '\.csproj$' | grep -v 'Sample\.iOS\.csproj$' | xargs -n1 dotnet build
+      - name: Build
+        if: runner.os == 'Linux'
+        shell: bash
+        run: dotnet sln DotGame.Toolkit.slnx list | grep '\.csproj$' | grep -v '\.iOS\.csproj$' | xargs -n1 dotnet build
+      - name: Test
+        # The tests alone: the solution's sample apps aren't tests, and dotnet test would ask for a device to run them on
+        shell: bash
+        run: unset Platform; dotnet test --solution test/DotGame.Toolkit.Tests.slnf --no-build
+
+  # The API reference is up to date with the doc comments, and the docs' links resolve. Compiling the
+  # guides' samples (tools/api-docs/check-docs.cs without --links) needs the content pipeline's tools,
+  # so it's left to a local run.
+  docs:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v7
+      # The generator reads the framework's and DotGame.Imaging's source for links to their types
+      - name: Check out the framework
+        uses: actions/checkout@v7
+        with:
+          repository: hotchaipro/DotGame.Framework
+          path: siblings/DotGame.Framework
+      - name: Check out DotGame.Imaging
+        uses: actions/checkout@v7
+        with:
+          repository: hotchaipro/DotGame.Imaging
+          path: siblings/DotGame.Imaging
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: '11.0.x'
+      - name: Check the API reference
+        env:
+          DotGameFrameworkDir: ${{ github.workspace }}/siblings/DotGame.Framework/
+          DotGameImagingDir: ${{ github.workspace }}/siblings/DotGame.Imaging
+        run: dotnet run tools/api-docs/generate.cs -- --check
+      - name: Check the links
+        run: dotnet run tools/api-docs/check-docs.cs -- --links

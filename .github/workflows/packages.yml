@@ -1,0 +1,125 @@
+name: Packages
+
+# Packs the toolkit's packages, DotGame.Toolkit and DotGame.Toolkit.Build (packaging/pack.sh), once,
+# then each of the five build machines builds the toolkit's samples' desktop and web heads from the
+# packages alone, with no tool installed (packaging/test-packages.sh). The framework's packages and
+# the machine's tool package are packed from the framework's source beside it (its packaging/pack.sh
+# and pack-tools.sh). The packages are this run's artifacts.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'packaging/**'
+      - '.github/workflows/*packages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  VERSION: 0.1.0-ci.${{ github.run_number }}
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+
+jobs:
+  packages:
+    runs-on: ubuntu-22.04
+    name: packages
+    steps:
+      - uses: actions/checkout@v7
+      - name: Check out the framework
+        uses: actions/checkout@v7
+        with:
+          repository: hotchaipro/DotGame.Framework
+          path: DotGame.Framework
+      - name: Find the framework
+        shell: bash
+        run: |
+          echo "DotGameFrameworkDir=$(cd DotGame.Framework && pwd)/" >> "$GITHUB_ENV"
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: '11.0.x'
+      - name: Install the web workload
+        run: dotnet workload install wasm-tools
+      - name: Pack
+        shell: bash
+        env:
+          OUT: ${{ runner.temp }}/packages
+        run: |
+          status=0
+          PLATFORMS="desktop webgl" "${DotGameFrameworkDir}packaging/pack.sh" > pack.log 2>&1 || status=$?
+          [ $status -ne 0 ] || packaging/pack.sh >> pack.log 2>&1 || status=$?
+          grep -E ": error |^== |packages checked|\.nupkg: " pack.log | sort -u | head -40
+          exit $status
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: pack-log
+          path: pack.log
+      - uses: actions/upload-artifact@v7
+        with:
+          name: packages
+          path: ${{ runner.temp }}/packages/*.nupkg
+          if-no-files-found: error
+
+  test:
+    needs: packages
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: windows-latest, rid: win-x64, msvc: x64 }
+          - { os: windows-11-arm, rid: win-arm64, msvc: arm64 }
+          - { os: ubuntu-22.04, rid: linux-x64 }
+          - { os: ubuntu-22.04-arm, rid: linux-arm64 }
+          - { os: macos-latest, rid: osx-arm64 }
+    runs-on: ${{ matrix.os }}
+    name: test ${{ matrix.rid }}
+    steps:
+      - uses: actions/checkout@v7
+      - name: Check out the framework
+        uses: actions/checkout@v7
+        with:
+          repository: hotchaipro/DotGame.Framework
+          path: DotGame.Framework
+      - name: Find the framework
+        shell: bash
+        run: |
+          fw=$(cd DotGame.Framework && pwd); if command -v cygpath > /dev/null; then fw=$(cygpath -m "$fw"); fi
+          echo "DotGameFrameworkDir=$fw/" >> "$GITHUB_ENV"
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: '11.0.x'
+      - name: Set up MSVC
+        if: runner.os == 'Windows'
+        uses: ./.github/actions/msvc
+        with:
+          arch: ${{ matrix.msvc }}
+      - name: Install the web workload
+        run: dotnet workload install wasm-tools
+      # This machine's tool package, from the framework's pinned sources
+      - name: Pack the tools
+        shell: bash
+        run: |
+          python "${DotGameFrameworkDir}packaging/fetch-tools.py" ${{ matrix.rid }} "${DotGameFrameworkDir}artifacts/tools/${{ matrix.rid }}"
+          "${DotGameFrameworkDir}packaging/pack-tools.sh" ${{ matrix.rid }}
+      - uses: actions/download-artifact@v8
+        with:
+          name: packages
+          path: ${{ runner.temp }}/packages
+      - name: Build the samples from packages
+        shell: bash
+        run: |
+          feed=$RUNNER_TEMP/packages; if command -v cygpath > /dev/null; then feed=$(cygpath -m "$feed"); fi
+          FEEDS="$feed ${DotGameFrameworkDir}artifacts/packages" packaging/test-packages.sh desktop webgl

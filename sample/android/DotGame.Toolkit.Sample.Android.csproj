@@ -1,0 +1,41 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <!-- Android: OpenGL ES 3. Needs the android workload. -->
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>net11.0-android</TargetFramework>
+        <RootNamespace>Sample</RootNamespace>
+        <ApplicationId>com.dotgame.toolkit.sample</ApplicationId>
+        <ApplicationTitle>DotGame Toolkit Sample</ApplicationTitle>
+        <ApplicationVersion>1</ApplicationVersion>
+        <ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
+        <!-- The theme the launch screen's theme (DotGame.LaunchScreen) derives from -->
+        <LaunchScreenAndroidThemeParent>@android:style/Theme.DeviceDefault.NoActionBar</LaunchScreenAndroidThemeParent>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+        <AndroidStripNativeLibraries>true</AndroidStripNativeLibraries>
+    </PropertyGroup>
+
+    <!-- The game's code, shared by every platform: a shared project, compiled into each platform's -->
+    <Import Project="..\shared\DotGame.Toolkit.Sample.projitems" Label="Shared" />
+
+    <!-- The launch screen, which the content pipeline makes into this platform's form -->
+    <ItemGroup Label="Launch screen">
+        <LaunchScreen Include="..\Content\LaunchScreen\logo.png" Background="#1f0841" LogoSize="140" />
+    </ItemGroup>
+
+    <ItemGroup Label="Content">
+        <!-- PxRange: room in the distance field for the outlines, shadows and glows the sample draws (an effect reaches at most half of it) -->
+        <SpriteFontContent Include="..\Content\Fonts\*.ttf" PxRange="12">
+            <LinkBase>Content\Fonts</LinkBase>
+        </SpriteFontContent>
+        <TextureAtlasContent Include="..\Content\Sprites\*.png">
+            <LinkBase>Content\Sprites</LinkBase>
+        </TextureAtlasContent>
+        <SoundBankContent Include="..\Content\Sounds\*.wav">
+            <LinkBase>Content\Sounds</LinkBase>
+        </SoundBankContent>
+    </ItemGroup>
+
+</Project>

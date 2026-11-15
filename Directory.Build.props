@@ -1,0 +1,29 @@
+<Project>
+    <!-- The versions of the packages this repository's projects reference -->
+    <Import Project="$(MSBuildThisFileDirectory)eng\Versions.props" />
+
+    <!--
+        Shared settings for the toolkit's projects. The toolkit builds on the framework's source, in a
+        clone of DotGame.Framework that DotGameFrameworkDir names.
+    -->
+    <Import Project="$(MSBuildThisFileDirectory)eng\DotGame.FrameworkDir.props" Condition="'$(_DotGameFrameworkDirImported)' != 'true'" />
+
+    <!-- Built for a game: output in the game's folder, as in DotGame's Directory.Build.props -->
+    <Import Project="$(MSBuildThisFileDirectory)eng\DotGame.BuildRoot.props" />
+
+    <PropertyGroup>
+        <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+        <!-- The compiler reports unneeded usings (IDE0005) only with a documentation file; doc comments are required only of the public projects (eng/DotGame.PublicApi.props) -->
+        <GenerateDocumentationFile>true</GenerateDocumentationFile>
+        <NoWarn>$(NoWarn);CS1591;CS1573</NoWarn>
+        <Nullable>enable</Nullable>
+        <ImplicitUsings>disable</ImplicitUsings>
+        <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+        <AnalysisLevel>latest-recommended</AnalysisLevel>
+    </PropertyGroup>
+
+    <!-- The framework's build rules, as in its Directory.Build.props; not for the content pipeline's build-time tools, the tests or the analyzers -->
+    <Import Project="$(DotGameFrameworkDir)eng\DotGame.BuildPolicy.props"
+            Condition="'$(DotGameFrameworkDir)' != '' And '$(DotGameBuildPolicyImported)' != 'true' And !$(MSBuildProjectName.Contains('ContentPipeline')) And !$(MSBuildProjectName.EndsWith('.Tests')) And !$(MSBuildProjectName.EndsWith('.Analyzers')) And !$(MSBuildProjectDirectory.Contains('\native\'))" />
+
+</Project>

@@ -1,0 +1,66 @@
+name: glyphgen
+
+# Rebuilds the toolkit's native tools (native/build.ps1) and commits
+# the binaries. glyphgen cross-compiles every platform with Zig, so one Linux
+# job builds them all. Runs only when the native sources or build scripts
+# change (a submodule update changes the submodule path), or manually.
+# The committed binaries are outside the trigger paths, and pushes made with
+# GITHUB_TOKEN don't trigger workflows, so the commit doesn't re-run this.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'native/glyphgen/src/**'
+      - 'native/**/*.ps1'
+      - '.github/workflows/native-glyphgen.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-26.04
+    name: Build and commit
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Checkout glyphgen submodules
+        run: |
+          git submodule update --init --depth 1 \
+            native/glyphgen/src/msdfgen \
+            native/glyphgen/src/freetype \
+            native/glyphgen/src/clipper2
+
+      - name: Cache Zig
+        uses: actions/cache@v6
+        with:
+          path: native/glyphgen/build/zig
+          key: zig-${{ runner.os }}-${{ hashFiles('native/glyphgen/build.ps1') }}
+
+      - name: Build native tools
+        shell: pwsh
+        run: ./native/build.ps1 -Platform all
+
+      # Only binaries that run on the oldest supported Linux are committed (glibc 2.35, no libstdc++)
+      - name: Check the glibc floor
+        run: python3 native/check-linux-floor.py native/glyphgen/linux-x64/glyphgen native/glyphgen/linux-arm64/glyphgen
+
+      - name: Commit and push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          for rid in win-x64 win-arm64 linux-x64 linux-arm64 osx-x64 osx-arm64; do
+            git add "native/glyphgen/$rid"
+          done
+          git diff --cached --quiet && echo "No changes to commit" && exit 0
+          git commit -m "Update toolkit native binaries"
+          git pull --rebase
+          git push

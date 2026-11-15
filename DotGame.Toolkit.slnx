@@ -1,0 +1,36 @@
+<Solution>
+    <Folder Name="/DotGame.Framework/">
+        <Project Path="../DotGame.Framework/analyzers/DotGame.Analyzers.csproj" />
+        <Project Path="../DotGame.Framework/framework/DotGame.Framework.csproj" />
+        <Project Path="../DotGame.Framework/pipeline/DotGame.Framework.ContentPipeline.csproj" />
+        <Project Path="../DotGame.Framework/pipeline/tool/DotGame.Framework.ContentPipeline.BuildTool.csproj" />
+        <Project Path="../DotGame.Framework/platform/android/DotGame.Framework.Android.csproj" />
+        <Project Path="../DotGame.Framework/platform/desktop/DotGame.Framework.Desktop.csproj" />
+        <Project Path="../DotGame.Framework/platform/ios/DotGame.Framework.iOS.csproj" />
+        <Project Path="../DotGame.Framework/platform/shared/DotGame.Framework.Platform.Common.shproj" />
+        <Project Path="../DotGame.Framework/platform/webgl/DotGame.Framework.WebGL.csproj" />
+        <Project Path="../DotGame.Framework/test/DotGame.ContentPipeline.FakeTool/DotGame.ContentPipeline.FakeTool.csproj" />
+        <Project Path="../DotGame.Framework/test/DotGame.Framework.Testing/DotGame.Framework.Testing.csproj" />
+    </Folder>
+    <Folder Name="/pipeline/">
+        <Project Path="pipeline/DotGame.Toolkit.ContentPipeline.csproj" />
+        <Project Path="pipeline/tasks/DotGame.Toolkit.ContentPipeline.Tasks.csproj" />
+        <Project Path="pipeline/tool/DotGame.Toolkit.ContentPipeline.BuildTool.csproj" />
+    </Folder>
+    <Folder Name="/sample/">
+        <Project Path="sample/android/DotGame.Toolkit.Sample.Android.csproj">
+            <Deploy Solution="Debug|*" />
+        </Project>
+        <Project Path="sample/desktop/DotGame.Toolkit.Sample.Desktop.csproj" />
+        <Project Path="sample/ios/DotGame.Toolkit.Sample.iOS.csproj" />
+        <Project Path="sample/shared/DotGame.Toolkit.Sample.shproj" />
+        <Project Path="sample/webgl/DotGame.Toolkit.Sample.WebGL.csproj" />
+    </Folder>
+    <Folder Name="/test/">
+        <Project Path="test/DotGame.Toolkit.ContentPipeline.Tests/DotGame.Toolkit.ContentPipeline.Tests.csproj" />
+        <Project Path="test/DotGame.Toolkit.Tests/DotGame.Toolkit.Tests.csproj" />
+    </Folder>
+    <Folder Name="/toolkit/">
+        <Project Path="toolkit/DotGame.Toolkit.csproj" />
+    </Folder>
+</Solution>

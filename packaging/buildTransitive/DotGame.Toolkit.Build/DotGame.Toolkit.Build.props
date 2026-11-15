@@ -1,0 +1,14 @@
+<Project>
+
+    <!--
+        DotGame.Toolkit.Build, the toolkit's content pipeline, from a package: the same targets as from
+        source, with its build tool and tasks prebuilt, glyphgen for each build machine, and the font
+        shader compiled for every platform, so fonts need no shader tools.
+    -->
+    <PropertyGroup>
+        <ToolkitPrecompiledShadersDir Condition="'$(ToolkitPrecompiledShadersDir)' == ''">$(MSBuildThisFileDirectory)..\pipeline\Shaders\precompiled\</ToolkitPrecompiledShadersDir>
+        <ToolkitContentPipelineBuildTool Condition="'$(ToolkitContentPipelineBuildTool)' == ''">$(MSBuildThisFileDirectory)..\pipeline\tool\DotGame.Toolkit.ContentPipeline.BuildTool.dll</ToolkitContentPipelineBuildTool>
+        <ToolkitContentPipelineTasksAssembly Condition="'$(ToolkitContentPipelineTasksAssembly)' == ''">$(MSBuildThisFileDirectory)..\pipeline\tasks\DotGame.Toolkit.ContentPipeline.Tasks.dll</ToolkitContentPipelineTasksAssembly>
+    </PropertyGroup>
+
+</Project>

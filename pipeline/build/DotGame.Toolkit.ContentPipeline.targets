@@ -1,0 +1,22 @@
+<Project>
+
+    <!--
+        DotGame.Toolkit.ContentPipeline.targets
+
+        Entry point for the toolkit content pipeline (TextureAtlasContent,
+        SoundBankContent, SpriteFontContent).  Imports the framework content pipeline
+        first (it publishes the processor commands the toolkit reuses), then the
+        toolkit content types.
+
+        Games don't import this directly: the toolkit's include
+        (packaging\build\DotGame.Toolkit.targets) imports this file, and the
+        engine's include imports the toolkit's.
+    -->
+
+    <!-- The framework's pipeline, in the clone DotGameFrameworkDir names, if the framework's include hasn't imported it -->
+    <Import Project="$(DotGameFrameworkDir)pipeline\build\DotGame.Framework.ContentPipeline.targets"
+                    Condition="'$(DotGameFrameworkDir)' != '' and '$(_FrameworkContentPipelineImported)' != 'true'" />
+    <Import Project="$(MSBuildThisFileDirectory)..\ContentPipeline.Toolkit.targets" />
+
+
+</Project>
