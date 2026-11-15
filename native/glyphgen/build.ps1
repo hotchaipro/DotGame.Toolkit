@@ -9,11 +9,11 @@
 
     Every platform is cross-compiled from any host with Zig (a self-contained
     clang + libc toolchain), so all six binaries can be produced on one machine.
-    Zig is downloaded on first use into toolkit/native/glyphgen/build/zig (gitignored)
+    Zig is downloaded on first use into native/glyphgen/build/zig (gitignored)
     unless -ZigExe is given or 'zig' is on PATH.
 
-    Sources come from the git submodules under toolkit/native/glyphgen/src
-    (msdfgen, freetype). Binaries are written to toolkit/native/glyphgen/<rid>/.
+    Sources come from the git submodules under native/glyphgen/src
+    (msdfgen, freetype, clipper2). Binaries are written to native/glyphgen/<rid>/.
 
 .PARAMETER Platform
     Target platform(s): win-x64, win-arm64, linux-x64, linux-arm64, osx-x64,
@@ -23,11 +23,11 @@
     Path to a zig executable. Defaults to 'zig' on PATH, else a downloaded copy.
 
 .EXAMPLE
-    ./toolkit/native/glyphgen/build.ps1
+    ./native/glyphgen/build.ps1
     Builds for the current host platform.
 
 .EXAMPLE
-    ./toolkit/native/glyphgen/build.ps1 -Platform all
+    ./native/glyphgen/build.ps1 -Platform all
     Cross-compiles all six desktop platforms.
 #>
 param(

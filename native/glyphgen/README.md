@@ -19,7 +19,7 @@ extra install:
 | linux-x64, linux-arm64 | `<rid>/glyphgen` (glibc 2.17+, static libc++) |
 | osx-x64, osx-arm64 | `<rid>/glyphgen` (macOS 11+, ad-hoc signed on arm64) |
 
-`toolkit/pipeline/ContentPipeline.Toolkit.targets` picks the host binary (`GlyphGenExe`;
+`pipeline/ContentPipeline.Toolkit.targets` picks the host binary (`GlyphGenExe`;
 override it to use your own build).
 
 ## Usage
@@ -64,10 +64,10 @@ The FreeType module list is reduced by `src/config/freetype/config/ftmodule.h`
 ## Building
 
 ```powershell
-git submodule update --init toolkit/native/glyphgen/src/msdfgen toolkit/native/glyphgen/src/freetype toolkit/native/glyphgen/src/clipper2
-pwsh toolkit/native/glyphgen/build.ps1                      # host RID
-pwsh toolkit/native/glyphgen/build.ps1 -Platform linux-x64  # one RID
-pwsh toolkit/native/glyphgen/build.ps1 -Platform all        # all RIDs
+git submodule update --init native/glyphgen/src/msdfgen native/glyphgen/src/freetype native/glyphgen/src/clipper2
+pwsh native/glyphgen/build.ps1                      # host RID
+pwsh native/glyphgen/build.ps1 -Platform linux-x64  # one RID
+pwsh native/glyphgen/build.ps1 -Platform all        # all RIDs
 ```
 
 The build uses [Zig](https://ziglang.org) 0.16.0 as a self-contained C/C++
@@ -78,12 +78,12 @@ verifying the archive against the SHA-256 published in
 `https://ziglang.org/download/index.json`.
 
 The `native-glyphgen` GitHub workflow (`.github/workflows/native-glyphgen.yml`)
-runs `toolkit/native/build.ps1 -Platform all` on Linux and commits the binaries
+runs `native/build.ps1 -Platform all` on Linux and commits the binaries
 whenever the submodules or build scripts change on `main`, so you normally only
 update a submodule and push.
 
 After rebuilding on Windows, keep the Unix executable bit in git:
 
 ```
-git update-index --chmod=+x toolkit/native/glyphgen/linux-x64/glyphgen toolkit/native/glyphgen/linux-arm64/glyphgen toolkit/native/glyphgen/osx-x64/glyphgen toolkit/native/glyphgen/osx-arm64/glyphgen
+git update-index --chmod=+x native/glyphgen/linux-x64/glyphgen native/glyphgen/linux-arm64/glyphgen native/glyphgen/osx-x64/glyphgen native/glyphgen/osx-arm64/glyphgen
 ```

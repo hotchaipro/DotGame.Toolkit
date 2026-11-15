@@ -4,10 +4,10 @@
     Builds the toolkit's native tools.
 
 .DESCRIPTION
-    Runs the build script of each native component under toolkit/native/
-    (currently glyphgen, toolkit/native/glyphgen/build.ps1, used by the
+    Runs the build script of each native component under native/
+    (currently glyphgen, native/glyphgen/build.ps1, used by the
     SpriteFontContent pipeline item). Built binaries are written to
-    toolkit/native/<component>/<rid>/ and are checked in, so this is only needed
+    native/<component>/<rid>/ and are checked in, so this is only needed
     when updating a native dependency. The native-glyphgen GitHub workflow
     runs this script for every platform when the native sources change.
 
@@ -22,11 +22,11 @@
     Path to a zig executable. Defaults to 'zig' on PATH, else a downloaded copy.
 
 .EXAMPLE
-    ./toolkit/native/build.ps1
+    ./native/build.ps1
     Builds for the current host platform.
 
 .EXAMPLE
-    ./toolkit/native/build.ps1 -Platform all
+    ./native/build.ps1 -Platform all
     Builds every platform.
 #>
 param(
