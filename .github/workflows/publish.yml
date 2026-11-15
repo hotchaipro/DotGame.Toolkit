@@ -72,7 +72,10 @@ jobs:
           path: DotGame.Framework
       - name: Find the framework
         shell: bash
-        run: echo "DotGameFrameworkDir=$(cd DotGame.Framework && pwd)/" >> "$GITHUB_ENV"
+        run: |
+          # Moved out of the toolkit's folder: the package test counts any path under it as built from the toolkit
+          mv DotGame.Framework "$RUNNER_TEMP/DotGame.Framework"
+          echo "DotGameFrameworkDir=$RUNNER_TEMP/DotGame.Framework/" >> "$GITHUB_ENV"
       - uses: actions/setup-python@v7
         with:
           python-version: '3.12'
@@ -123,7 +126,9 @@ jobs:
       - name: Find the framework
         shell: bash
         run: |
-          fw=$(cd DotGame.Framework && pwd); if command -v cygpath > /dev/null; then fw=$(cygpath -m "$fw"); fi
+          # Moved out of the toolkit's folder: the package test counts any path under it as built from the toolkit
+          fw=$RUNNER_TEMP/DotGame.Framework; if command -v cygpath > /dev/null; then fw=$(cygpath -m "$fw"); fi
+          mv DotGame.Framework "$fw"
           echo "DotGameFrameworkDir=$fw/" >> "$GITHUB_ENV"
       - uses: actions/setup-dotnet@v6
         with:

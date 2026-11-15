@@ -40,7 +40,9 @@ jobs:
       - name: Find the framework
         shell: bash
         run: |
-          echo "DotGameFrameworkDir=$(cd DotGame.Framework && pwd)/" >> "$GITHUB_ENV"
+          # Moved out of the toolkit's folder: the package test counts any path under it as built from the toolkit
+          mv DotGame.Framework "$RUNNER_TEMP/DotGame.Framework"
+          echo "DotGameFrameworkDir=$RUNNER_TEMP/DotGame.Framework/" >> "$GITHUB_ENV"
       - uses: actions/setup-python@v7
         with:
           python-version: '3.12'
@@ -93,7 +95,9 @@ jobs:
       - name: Find the framework
         shell: bash
         run: |
-          fw=$(cd DotGame.Framework && pwd); if command -v cygpath > /dev/null; then fw=$(cygpath -m "$fw"); fi
+          # Moved out of the toolkit's folder: the package test counts any path under it as built from the toolkit
+          fw=$RUNNER_TEMP/DotGame.Framework; if command -v cygpath > /dev/null; then fw=$(cygpath -m "$fw"); fi
+          mv DotGame.Framework "$fw"
           echo "DotGameFrameworkDir=$fw/" >> "$GITHUB_ENV"
       - uses: actions/setup-python@v7
         with:
@@ -122,4 +126,7 @@ jobs:
         shell: bash
         run: |
           feed=$RUNNER_TEMP/packages; if command -v cygpath > /dev/null; then feed=$(cygpath -m "$feed"); fi
+          # Without the Platform the MSVC setup sets for the native tools, which MSBuild would take
+          # for the samples' platform target, which the web's can't have
+          unset Platform
           FEEDS="$feed ${DotGameFrameworkDir}artifacts/packages" packaging/test-packages.sh desktop webgl

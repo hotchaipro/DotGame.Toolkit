@@ -114,6 +114,9 @@ jobs:
   # so it's left to a local run.
   docs:
     runs-on: ubuntu-22.04
+    # The generator and the docs checker build on the framework's source
+    env:
+      DotGameFrameworkDir: ${{ github.workspace }}/siblings/DotGame.Framework/
     steps:
       - uses: actions/checkout@v7
       # The generator reads the framework's and DotGame.Imaging's source for links to their types
@@ -132,7 +135,6 @@ jobs:
           dotnet-version: '11.0.x'
       - name: Check the API reference
         env:
-          DotGameFrameworkDir: ${{ github.workspace }}/siblings/DotGame.Framework/
           DotGameImagingDir: ${{ github.workspace }}/siblings/DotGame.Imaging
         run: dotnet run tools/api-docs/generate.cs -- --check
       - name: Check the links
