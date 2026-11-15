@@ -109,6 +109,12 @@ projects don't import the framework and the icons don't apply:
 
 `bin\Debug\net48\DotGame.Toolkit.VisualStudio.vsix` installs it in Visual Studio itself.
 
+## Releasing
+
+Raise the version in `source.extension.vsixmanifest` (and the assembly's), then run the `VSIX`
+workflow (`.github/workflows/vsix.yml`), which tests the extension and builds it in Release. Upload
+the `.vsix` from its run on the Marketplace's page for the `HotChaiGames` publisher.
+
 The tests of `ContentFolder` evaluate projects with MSBuild and need no Visual Studio:
 
 ```bash

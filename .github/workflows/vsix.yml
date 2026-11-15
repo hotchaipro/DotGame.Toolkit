@@ -1,0 +1,43 @@
+name: VSIX
+
+# Builds the Visual Studio extension (vs/src/DotGame.Toolkit.VisualStudio) in Release, with Visual
+# Studio's MSBuild, as the VSSDK's build tasks run on .NET Framework, after its tests. The .vsix is
+# this run's artifact, for the Visual Studio Marketplace: its page for the HotChaiGames publisher
+# takes it as an upload, so no Marketplace token is kept here. Run by hand, for a release.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+
+jobs:
+  vsix:
+    runs-on: windows-2025
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: '11.0.x'
+      # The tests evaluate projects with MSBuild, and need no Visual Studio
+      - name: Test
+        run: dotnet test vs/test/DotGame.Toolkit.VisualStudio.Tests
+      - name: Build
+        shell: pwsh
+        run: |
+          $vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio\Installer\vswhere.exe'
+          $msbuild = & $vswhere -latest -products * -requires Microsoft.Component.MSBuild -find 'MSBuild\**\Bin\amd64\MSBuild.exe' | Select-Object -First 1
+          if (-not $msbuild) { throw "No Visual Studio MSBuild on this runner" }
+          Write-Host "MSBuild: $msbuild"
+          & $msbuild -restore -nologo -verbosity:minimal -property:Configuration=Release vs/src/DotGame.Toolkit.VisualStudio/DotGame.Toolkit.VisualStudio.csproj
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          Get-ChildItem vs/src/DotGame.Toolkit.VisualStudio/bin/Release/net48/*.vsix | ForEach-Object { "$($_.Name): $($_.Length) bytes" }
+      - uses: actions/upload-artifact@v7
+        with:
+          name: vsix
+          path: vs/src/DotGame.Toolkit.VisualStudio/bin/Release/net48/*.vsix
+          if-no-files-found: error
