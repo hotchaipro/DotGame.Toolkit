@@ -90,11 +90,13 @@ jobs:
           echo "$tools" >> "$GITHUB_PATH"
       # macOS builds every project. Windows builds all but the iOS sample, whose AAC sounds only macOS's
       # encoder makes, and Linux, which has no iOS workload, all but the iOS projects.
+      # Each machine builds the projects one at a time: a whole-solution build reached the framework's
+      # web project from two projects at once, and both wrote its compressed files.
       # Without the Platform that the MSVC setup sets for the native tools (x64), which would pick a
       # solution configuration that doesn't exist
       - name: Build
         if: runner.os == 'macOS'
-        run: dotnet build DotGame.Toolkit.slnx
+        run: dotnet sln DotGame.Toolkit.slnx list | grep '\.csproj$' | xargs -n1 dotnet build
       - name: Build
         if: runner.os == 'Windows'
         shell: bash
