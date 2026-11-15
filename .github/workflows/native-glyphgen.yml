@@ -1,11 +1,11 @@
 name: glyphgen
 
-# Rebuilds the toolkit's native tools (native/build.ps1) and commits
-# the binaries. glyphgen cross-compiles every platform with Zig, so one Linux
-# job builds them all. Runs only when the native sources or build scripts
-# change (a submodule update changes the submodule path), or manually.
-# The committed binaries are outside the trigger paths, and pushes made with
-# GITHUB_TOKEN don't trigger workflows, so the commit doesn't re-run this.
+# Rebuilds the toolkit's native tools (native/build.ps1) and commits the binaries. glyphgen
+# cross-compiles every platform with Zig, so one Linux job builds them all. Runs only when the
+# native sources or build scripts change (a submodule update changes the submodule path), or
+# manually. It pushes the binaries to main with BINARIES_DEPLOY_KEY, a deploy key that the main
+# ruleset lets past its pull request rule. Such a push starts other workflows, but not this one: the
+# binaries are outside its trigger paths. The token it's given only reads.
 
 on:
   push:
@@ -17,7 +17,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -29,8 +29,11 @@ jobs:
     name: Build and commit
 
     steps:
+      # With the deploy key, the push below gets past the main ruleset's pull request rule
       - name: Checkout
         uses: actions/checkout@v7
+        with:
+          ssh-key: ${{ secrets.BINARIES_DEPLOY_KEY }}
 
       - name: Checkout glyphgen submodules
         run: |
