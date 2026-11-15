@@ -21,7 +21,7 @@ name: Publish
 #   - Linux and Windows machines with only the .NET SDK follow the guide: the template's game with the
 #     toolkit added, a font, an atlas and a sound bank, built and published for the desktop, and built for
 #     the web and Android (packaging/test-clean.ps1).
-#   - Then, if "Publish" is ticked, the push, in the nuget environment, and a draft GitHub release for
+#   - Then, if "Publish" is ticked, the push and a draft GitHub release for
 #     the version, tagged vVERSION at the commit it published, a prerelease if the version has a suffix.
 #     Write its notes and publish it by hand: the tag is made when the draft is published. If the push
 #     fails partway, re-run the failed job: packages already on nuget.org are skipped.
@@ -187,7 +187,6 @@ jobs:
     needs: [packages, test, clean-linux, clean-windows]
     if: inputs.publish
     runs-on: ubuntu-26.04
-    environment: nuget
     permissions:
       contents: write
       id-token: write
@@ -229,5 +228,10 @@ jobs:
 
           NuGet: https://www.nuget.org/packages/DotGame.Toolkit/$VERSION
           EOF
-          gh release create "$TAG" --draft $PRERELEASE --target "$GITHUB_SHA" \
-            --title "DotGame.Toolkit $VERSION" --notes-file notes.md
+          create() {
+            gh release create "$TAG" --draft $PRERELEASE --target "$GITHUB_SHA" \
+              --title "DotGame.Toolkit $VERSION" --notes-file notes.md
+          }
+          create && exit 0
+          # Once more with the GitHub API exchange shown (gh hides the token), so a failure says why
+          GH_DEBUG=api create
