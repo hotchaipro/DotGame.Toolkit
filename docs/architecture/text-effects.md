@@ -38,6 +38,7 @@ no effects.
 |---|---|
 | `TextEffects` | A record: `Shadow`, `Glow`, `Outline` (each optional), and the face's `Gradient`, `Embolden` and `Softness`. `TextEffects.None` is text with none. |
 | `TextGradient(Top, Bottom)` | Two colors for the face, in place of its one. |
+| `TextSheen(Color, Position, Width, Slant, Strength)` | A slanted band of light across the face. |
 | `TextShadow(Color, Offset, Spread = 0, Softness = 0)` | Drawn behind everything else. |
 | `TextGlow(Color, Width, Softness)` | A soft outline with round corners, drawn behind the outline. |
 | `TextOutline(Color, Width, Corners = Sharp, MiterLimit = 4, Softness = 0)` | Drawn behind the face. |
@@ -98,6 +99,16 @@ down the rectangle, each two triangles (`SpriteBatch.DrawTriangles`, with the fa
 above the gradient in the top color, the gradient itself, and what's below it in the bottom color. The
 bands' corners go through the same move, turn, scale and rotation as a sprite's would, so the face
 stays on its outline.
+
+**A sheen cuts the glyphs it falls on.** The band of light is strongest along its middle and fades in
+a straight line to each edge, measured along the line from where the middle crosses the baseline, the
+middle leaning with height. A glyph whose rectangle the band misses is drawn as it would be without
+one: a sprite, or the gradient's bands. One it falls on is cut along the band's two edges and its
+middle (and across where a gradient begins and ends), and each piece is a fan of triangles whose
+corners carry the face's color there blended toward the light's. Within a piece both change evenly, so
+the corners' colors draw them; the blend of the two is not quite even where a gradient and the light
+overlap, and the difference isn't seen. The band is in the line's own space, before a character's move
+and turn, so it follows text set along an arch.
 
 **One call, one batch.** Every layer's quads are sprites in the batch the caller already has, in order,
 so the text keeps its place in the draw order. `DrawString` opens one `UseShader` scope with the font's
@@ -204,6 +215,8 @@ Each effect draws the string's glyphs once more: an outline doubles the quads, a
 triple them. Draws don't increase, since effects are quads in the same batch with the same shader and
 texture: the draw count is set by atlas page changes, however many fonts and effects are on screen.
 A gradient's face costs up to six triangles a glyph, each as much as a sprite, where a plain face is one.
+A sheen costs only on the glyphs under its band (up to some thirty triangles each, with a gradient), and
+nothing on the rest of the text or on text without one.
 Drawing allocates nothing per frame: layers live on the stack, and a `StringBuilder`'s text is copied to
 the stack, or to a pooled array when it's long.
 

@@ -13,7 +13,7 @@ namespace Sample.Pages;
 
 /// <summary>
 /// Text with <see cref="SpriteFont"/>: drawing at any size, effects (outlines, shadows, glows,
-/// emboldening, softness and gradients), characters colored, moved and turned one by one,
+/// emboldening, softness, gradients and a sheen), characters colored, moved and turned one by one,
 /// wrapping, measuring, tracking and rotation.
 /// </summary>
 /// <remarks>
@@ -249,12 +249,19 @@ internal sealed class TextPage : SamplePage
         y += 50;
 
         // Characters moved and turned onto an arch, which breathes; the gradient is measured on
-        // the line, so it turns with each character
+        // the line, so it turns with each character. A sheen crosses it every couple of seconds:
+        // a slanted band of light whose position along the line is all that changes
         var arched = "Along an arch";
         var archScale = new Vector2(34 / font.EmSize);
         var archWidth = font.MeasureString(arched).X;
         var arch = new ArchAttributes(archWidth / 2, archWidth * (1.1f + (0.35f * MathF.Sin(time))));
-        spriteBatch.DrawString(font, arched.AsSpan(), arch, CharacterCursor.Start, new Vector2(x, y), Color.White, 1, Angle.Zero, Vector2.Zero, archScale, effects: Sunset);
+        const float SheenWidth = 46;
+        var crossing = (time % 2.4f) / 0.9f;
+        var lit = Sunset with
+        {
+            Sheen = new TextSheen(Color.White, -SheenWidth + (crossing * (archWidth + (2 * SheenWidth))), SheenWidth, Strength: 0.85f),
+        };
+        spriteBatch.DrawString(font, arched.AsSpan(), arch, CharacterCursor.Start, new Vector2(x, y), Color.White, 1, Angle.Zero, Vector2.Zero, archScale, effects: lit);
 
         y += 66;
 

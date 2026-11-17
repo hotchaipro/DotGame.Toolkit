@@ -585,6 +585,9 @@ public sealed class SpriteFontDrawTests
         batch.Batch.DrawString(font, "A", Vector2.Zero, Color.White, opacity: 0.5f, effects: TwoColors);
 
         Assert.All(Corners(batch), c => Assert.Equal(0.5f, c.Color.A, 3));
+
+        // (Its colors fade as a sprite's would, and no further: they were faded twice)
+        Assert.All(Corners(batch).Where(c => c.Position.Y >= TestFonts.Ascender), c => Assert.Equal(Color.Blue * 0.5f, c.Color));
     }
 
     [Fact]
@@ -614,6 +617,158 @@ public sealed class SpriteFontDrawTests
         for (int i = 0; i < plain.Triangles.Count; i++)
         {
             Assert.Equal(plain.Triangles[i].A.Position + new Vector2(7, 9), moved.Triangles[i].A.Position);
+        }
+    }
+
+    // The band of light across the face
+    //
+    // The test glyph's rectangle is 8 wide from 1 along its advance of 10, and 12 high from 10
+    // above the baseline to 2 below it.
+
+    private static float Area(
+        RecordingBatch batch)
+    {
+        return batch.Triangles.Sum(t =>
+            MathF.Abs(((t.B.Position.X - t.A.Position.X) * (t.C.Position.Y - t.A.Position.Y))
+                - ((t.C.Position.X - t.A.Position.X) * (t.B.Position.Y - t.A.Position.Y))) / 2);
+    }
+
+    [Theory]
+    [InlineData(-1000f, 8f, 1f)]    // off the start of the line
+    [InlineData(1000f, 8f, 1f)]     // off its end
+    [InlineData(5f, 0f, 1f)]        // of no width
+    [InlineData(5f, 8f, 0f)]        // of no strength
+    [InlineData(float.NaN, 8f, 1f)]
+    public void ASheenThatFallsOnNothing_DrawsTheTextAsItIsWithoutOne(
+        float position,
+        float width,
+        float strength)
+    {
+        var font = new TestFonts().Glyphs("AB").Build();
+        var plain = new RecordingBatch();
+        var batch = new RecordingBatch();
+        var outline = new TextEffects { Outline = new TextOutline(Color.Blue, Width: 1) };
+
+        plain.Batch.DrawString(font, "AB", new Vector2(100, 200), Color.Red, effects: outline);
+        batch.Batch.DrawString(font, "AB", new Vector2(100, 200), Color.Red,
+            effects: outline with { Sheen = new TextSheen(Color.White, position, width, Strength: strength) });
+
+        Assert.Empty(batch.Triangles);
+        Assert.Equal(plain.Calls, batch.Calls);
+    }
+
+    [Fact]
+    public void ASheen_CutsOnlyTheCharactersItFallsOn_AndLeavesTheEffectsAsSprites()
+    {
+        var font = new TestFonts().Glyphs("AB").Build();
+        var plain = new RecordingBatch();
+        var batch = new RecordingBatch();
+        var outline = new TextEffects { Outline = new TextOutline(Color.Blue, Width: 1) };
+
+        // The band is over the second character alone: 12 to 18 along the line
+        plain.Batch.DrawString(font, "AB", Vector2.Zero, Color.Red, effects: outline);
+        batch.Batch.DrawString(font, "AB", Vector2.Zero, Color.Red,
+            effects: outline with { Sheen = new TextSheen(Color.White, 15, 6, Slant: 0) });
+
+        // Both outlines and the first face are the sprites they were; the second face is triangles
+        Assert.Equal(plain.Calls.Take(3), batch.Calls);
+        Assert.NotEmpty(batch.Triangles);
+        Assert.All(batch.Triangles, t => Assert.Equal(plain.Calls[3].CustomData, t.CustomData));
+        Assert.All(Corners(batch), c => Assert.InRange(c.Position.X, plain.Calls[3].Left - 0.001f, plain.Calls[3].Right + 0.001f));
+
+        // (and the triangles cover the rectangle of the glyph, once)
+        Assert.Equal(8f * 12f, Area(batch), 2);
+    }
+
+    [Fact]
+    public void ASheen_IsItsColorAlongItsMiddle_AndFadesToTheTextsColorAtItsEdges()
+    {
+        var font = new TestFonts().Glyphs("A").Build();
+        var batch = new RecordingBatch();
+
+        // Upright, 4 wide about 5 along the line: from 3 to 7 of a rectangle from 1 to 9
+        batch.Batch.DrawString(font, "A", Vector2.Zero, Color.Red,
+            effects: new TextEffects { Sheen = new TextSheen(Color.White, 5, 4, Slant: 0) });
+
+        var corners = Corners(batch);
+        Assert.Contains(corners, c => MathF.Abs(c.Position.X - 5) < 0.001f);
+        Assert.All(corners.Where(c => MathF.Abs(c.Position.X - 5) < 0.001f), c => Assert.Equal(Color.White, c.Color));
+        Assert.All(corners.Where(c => MathF.Abs(c.Position.X - 5) >= 2 - 0.001f), c => Assert.Equal(Color.Red, c.Color));
+        Assert.Equal(8f * 12f, Area(batch), 2);
+    }
+
+    [Fact]
+    public void TheStrengthOfASheen_IsHowFarItsMiddleGoesTowardItsColor()
+    {
+        var font = new TestFonts().Glyphs("A").Build();
+        var batch = new RecordingBatch();
+
+        batch.Batch.DrawString(font, "A", Vector2.Zero, Color.Black,
+            effects: new TextEffects { Sheen = new TextSheen(Color.White, 5, 4, Slant: 0, Strength: 0.5f) });
+
+        var brightest = Corners(batch).Max(c => c.Color.R);
+        Assert.Equal(0.5f, brightest, 3);
+    }
+
+    [Fact]
+    public void ASlantedSheen_LeansToTheRightAsItRises()
+    {
+        var font = new TestFonts().Glyphs("A").Build();
+        var batch = new RecordingBatch();
+
+        // Its middle crosses the baseline 3 along the line, and leans half a pixel a pixel
+        batch.Batch.DrawString(font, "A", Vector2.Zero, Color.Red,
+            effects: new TextEffects { Sheen = new TextSheen(Color.White, 3, 2, Slant: 0.5f) });
+
+        // Where its middle crosses the top and the bottom of the rectangle (10 above the
+        // baseline, and 2 below it)
+        var lit = Corners(batch).Where(c => c.Color == Color.White).ToArray();
+        var top = lit.Where(c => MathF.Abs(c.Position.Y - GlyphTop) < 0.001f).ToArray();
+        var bottom = lit.Where(c => MathF.Abs(c.Position.Y - (GlyphTop + 12)) < 0.001f).ToArray();
+        Assert.NotEmpty(top);
+        Assert.NotEmpty(bottom);
+        Assert.All(top, c => Assert.Equal(8f, c.Position.X, 3));
+        Assert.All(bottom, c => Assert.Equal(2f, c.Position.X, 3));
+    }
+
+    [Fact]
+    public void ASheen_LiesOverAGradient_AndFadesWithTheOpacityOfTheText()
+    {
+        var font = new TestFonts().Glyphs("A").Build();
+        var batch = new RecordingBatch();
+
+        batch.Batch.DrawString(font, "A", Vector2.Zero, Color.White, opacity: 0.5f,
+            effects: TwoColors with { Sheen = new TextSheen(Color.White, 5, 4, Slant: 0) });
+
+        var corners = Corners(batch);
+        Assert.All(corners, c => Assert.Equal(0.5f, c.Color.A, 3));
+
+        // Away from the band the gradient is as it is without it: its bottom color from the
+        // baseline down
+        Assert.All(corners.Where(c => (MathF.Abs(c.Position.X - 5) >= 2 - 0.001f) && (c.Position.Y >= TestFonts.Ascender)),
+            c => Assert.Equal(Color.Blue * 0.5f, c.Color));
+        Assert.All(corners.Where(c => MathF.Abs(c.Position.X - 5) < 0.001f), c => Assert.Equal(Color.White * 0.5f, c.Color));
+        Assert.Equal(8f * 12f, Area(batch), 2);
+    }
+
+    [Fact]
+    public void ASheen_LiesOverACharactersOwnColor_AndMovesWithTheCharacter()
+    {
+        var font = new TestFonts().Glyphs("A").Build();
+        var still = new RecordingBatch();
+        var moved = new RecordingBatch();
+        var effects = new TextEffects { Sheen = new TextSheen(Color.White, 5, 4, Slant: 0) };
+
+        still.Batch.DrawString(font, "A", new RecordingAttributes(_ => Color.Green), CharacterCursor.Start, Vector2.Zero, Color.Red, effects: effects);
+        moved.Batch.DrawString(font, "A", new MovedAttributes(new Vector2(7, 9), default), CharacterCursor.Start, Vector2.Zero, Color.Red, effects: effects);
+
+        Assert.Contains(Corners(still), c => c.Color == Color.Green);
+        Assert.DoesNotContain(Corners(still), c => c.Color == Color.Red);
+
+        Assert.Equal(still.Triangles.Count, moved.Triangles.Count);
+        for (int i = 0; i < still.Triangles.Count; i++)
+        {
+            Assert.Equal(still.Triangles[i].A.Position + new Vector2(7, 9), moved.Triangles[i].A.Position);
         }
     }
 
