@@ -59,6 +59,7 @@ Fonts, atlases, sprite animation, particles, sound banks, cameras, shapes and te
 | [TextLayoutLine](TextLayoutLine.md) | record struct | A line of a [`TextLayout`](TextLayout.md): which part of the text it shows, and how wide that is. |
 | [TextOutline](TextOutline.md) | record struct | An outline around text, drawn behind its face. |
 | [TextShadow](TextShadow.md) | record struct | A shadow of text, drawn behind everything else. |
+| [TextSheen](TextSheen.md) | record struct | A band of light across a text's face, upright or leaning: brightest along its middle, fading to nothing at its edges. |
 
 ## DotGame.Toolkit.Graphics
 

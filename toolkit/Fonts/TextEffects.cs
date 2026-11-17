@@ -64,6 +64,11 @@ public sealed record TextEffects
     public TextGradient? Gradient { get; init; }
 
     /// <summary>
+    /// Gets a slanted band of light across the face, or <c>null</c> for none.
+    /// </summary>
+    public TextSheen? Sheen { get; init; }
+
+    /// <summary>
     /// Gets how far the face's edges move outward, in pixels of the font's native size: positive
     /// is bolder, negative thinner. The other effects are measured from the face's edges.
     /// </summary>

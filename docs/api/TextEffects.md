@@ -86,6 +86,16 @@ Types: [`TextShadow`](TextShadow.md)
 
 Gets the shadow drawn behind everything else, or `null` for none.
 
+### Sheen
+
+```csharp
+public TextSheen? Sheen { get; init; }
+```
+
+Types: [`TextSheen`](TextSheen.md)
+
+Gets a slanted band of light across the face, or `null` for none.
+
 ### Softness
 
 ```csharp

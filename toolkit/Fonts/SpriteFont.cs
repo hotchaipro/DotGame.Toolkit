@@ -800,6 +800,13 @@ public sealed class SpriteFont : IContent
         // The face's two colors, if it has them (an effect has its own color)
         var gradient = layer.IsFace ? args.Effects?.Gradient : null;
 
+        // The band of light across the face, if it has one that shows
+        var sheen = layer.IsFace ? args.Effects?.Sheen : null;
+        if ((sheen is { } unlit) && (!(unlit.Width > 0) || !(unlit.Strength > 0) || float.IsNaN(unlit.Position)))
+        {
+            sheen = null;
+        }
+
         foreach (var codePoint in text.EnumerateCodePoints())
         {
             if (codePoint == '\n')
@@ -839,7 +846,11 @@ public sealed class SpriteFont : IContent
                     // to the glyph, so SpriteBatch rotates and scales the whole text as one.
                     var glyphOffset = new Vector2(state.PenX + glyph.Left, state.LineTop + baseline + glyph.Top);
 
-                    if ((gradient is { } colors) && (ownColor is null))
+                    if ((sheen is { } light) && SheenTouches(light, glyph, glyphOffset, state.LineTop + baseline))
+                    {
+                        this.DrawSheenGlyph(spriteBatch, glyph, glyphOffset, pivot, translation, turn, state.LineTop + baseline, glyphColor, (ownColor is null) ? gradient : null, light, layerOrigin, in layerData, in args);
+                    }
+                    else if ((gradient is { } colors) && (ownColor is null))
                     {
                         this.DrawGradientGlyph(spriteBatch, glyph, glyphOffset, pivot, translation, turn, state.LineTop + baseline, colors, layerOrigin, in layerData, in args);
                     }
@@ -919,8 +930,8 @@ public sealed class SpriteFont : IContent
 
         var topColor = colors.Top * args.Opacity;
         var bottomColor = colors.Bottom * args.Opacity;
-        var firstColor = Blend(topColor, bottomColor, (first - gradientTop) / rise);
-        var lastColor = Blend(topColor, bottomColor, (last - gradientTop) / rise);
+        var firstColor = Color.Lerp(topColor, bottomColor, (first - gradientTop) / rise);
+        var lastColor = Color.Lerp(topColor, bottomColor, (last - gradientTop) / rise);
 
         float invWidth = 1f / glyph.Texture.Size.X;
         float invHeight = 1f / glyph.Texture.Size.Y;
@@ -974,17 +985,262 @@ public sealed class SpriteFont : IContent
         spriteBatch.DrawTriangles(glyph.Texture, vertices[..count], in layerData);
     }
 
-    private static Color Blend(
-        Color from,
-        Color to,
-        float amount)
+    /// <summary>
+    /// Places a band of light on this text by how far across it the band has come: at 0 it is
+    /// just off the start of the text's widest line, touching no letter, and at 1 just off its
+    /// end. Draw the text each frame with <paramref name="progress"/> a little greater and the
+    /// light crosses it, with no measuring by the caller.
+    /// </summary>
+    /// <param name="text">The text the band will cross.</param>
+    /// <param name="progress">How far across: 0 to 1, and beyond either for further off.</param>
+    /// <param name="sheen">The band: its color, width, angle, strength and softness. Its position is replaced.</param>
+    /// <param name="tracking">The tracking the text is drawn with.</param>
+    /// <returns>The band at that place, for <see cref="TextEffects.Sheen"/>.</returns>
+    public TextSheen SheenAcross(
+        ReadOnlySpan<char> text,
+        float progress,
+        TextSheen sheen,
+        float tracking = 0)
     {
-        amount = Math.Clamp(amount, 0f, 1f);
-        return new Color(
-            from.R + ((to.R - from.R) * amount),
-            from.G + ((to.G - from.G) * amount),
-            from.B + ((to.B - from.B) * amount),
-            from.A + ((to.A - from.A) * amount));
+        return sheen.Across(progress, this.MeasureString(text, tracking).X, this.Ascender, Math.Max(this.LineHeight - this.Ascender, 0));
+    }
+
+    /// <summary>
+    /// How far a point of a line is from the middle of the band of light, along the line: the
+    /// band leans, so the middle is further along the higher the point is above the baseline.
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static float SheenDistance(
+        float slant,
+        float position,
+        float x,
+        float y,
+        float baselineY)
+    {
+        return x - (slant * (baselineY - y)) - position;
+    }
+
+    /// <summary>
+    /// Whether any of the band of light falls on a glyph's rectangle.
+    /// </summary>
+    private static bool SheenTouches(
+        in TextSheen sheen,
+        SpriteFontGlyph glyph,
+        Vector2 glyphOffset,
+        float baselineY)
+    {
+        float half = sheen.Width * 0.5f;
+        float slant = sheen.Slant;
+        float left = glyphOffset.X;
+        float right = left + glyph.SourceRectangle.Width;
+        float top = glyphOffset.Y;
+        float bottom = top + glyph.SourceRectangle.Height;
+
+        // (The distance is linear, so its least and greatest are at corners)
+        float a = SheenDistance(slant, sheen.Position, left, top, baselineY);
+        float b = SheenDistance(slant, sheen.Position, right, top, baselineY);
+        float c = SheenDistance(slant, sheen.Position, right, bottom, baselineY);
+        float d = SheenDistance(slant, sheen.Position, left, bottom, baselineY);
+        float least = Math.Min(Math.Min(a, b), Math.Min(c, d));
+        float greatest = Math.Max(Math.Max(a, b), Math.Max(c, d));
+        return (least < half) && (greatest > -half);
+    }
+
+    /// <summary>
+    /// Draws a glyph of the face that the band of light falls on. The light is strongest along
+    /// the band's middle and fades in a straight line to each edge, so the glyph's rectangle is
+    /// cut along the two edges and the middle (and, with a gradient, across where the gradient
+    /// begins and ends): within each piece the color changes evenly, which is what colors at
+    /// the corners of triangles can draw.
+    /// </summary>
+    private void DrawSheenGlyph(
+        SpriteBatch spriteBatch,
+        SpriteFontGlyph glyph,
+        Vector2 glyphOffset,
+        Vector2 pivot,
+        Vector2 translation,
+        Angle turn,
+        float baselineY,
+        Color glyphColor,
+        TextGradient? gradient,
+        TextSheen sheen,
+        Vector2 layerOrigin,
+        in ShaderCustomData layerData,
+        in TextDrawArgs args)
+    {
+        var source = glyph.SourceRectangle;
+        float left = glyphOffset.X;
+        float right = left + source.Width;
+        float top = glyphOffset.Y;
+        float bottom = top + source.Height;
+
+        // The face's own color at a height: the gradient's, or the one color it has
+        float rise = (this.CapHeight > 0) ? this.CapHeight : this.Ascender;
+        float gradientTop = baselineY - rise;
+        var topColor = glyphColor;
+        var bottomColor = glyphColor;
+        float first = top;
+        float last = top;
+        if (gradient is { } colors)
+        {
+            topColor = colors.Top * args.Opacity;
+            bottomColor = colors.Bottom * args.Opacity;
+            first = Math.Clamp(gradientTop, top, bottom);
+            last = Math.Clamp(baselineY, top, bottom);
+        }
+
+        var lightColor = sheen.Color * args.Opacity;
+        float slant = sheen.Slant;
+        float strength = Math.Clamp(sheen.Strength, 0f, 1f);
+        float half = sheen.Width * 0.5f;
+        float plateau = sheen.Plateau;
+        float fade = half - plateau;
+
+        float invWidth = 1f / glyph.Texture.Size.X;
+        float invHeight = 1f / glyph.Texture.Size.Y;
+
+        (float turnSin, float turnCos) = turn.SinCos;
+        (float sin, float cos) = args.Rotation.SinCos;
+        var position = args.Position;
+        var scale = args.Scale;
+
+        // A point of the glyph's rectangle, in the text's space, as a corner of a triangle:
+        // where it's drawn (turned about the pivot and moved, then scaled and rotated about
+        // the text's origin), its place in the atlas, and its color under the light
+        Vertex Corner(Vector2 point)
+        {
+            float dx = point.X - pivot.X;
+            float dy = point.Y - pivot.Y;
+            float px = (pivot.X + translation.X + (dx * turnCos) - (dy * turnSin) - layerOrigin.X) * scale.X;
+            float py = (pivot.Y + translation.Y + (dx * turnSin) + (dy * turnCos) - layerOrigin.Y) * scale.Y;
+            var place = new Vector2(position.X + (px * cos) - (py * sin), position.Y + (px * sin) + (py * cos));
+
+            var coordinate = new Vector2((source.X + (point.X - left)) * invWidth, (source.Y + (point.Y - top)) * invHeight);
+
+            var own = Color.Lerp(topColor, bottomColor, (point.Y - gradientTop) / rise);
+            float lit = Math.Clamp((half - MathF.Abs(SheenDistance(slant, sheen.Position, point.X, point.Y, baselineY))) / fade, 0f, 1f) * strength;
+            return new Vertex(place, coordinate, Color.Lerp(own, lightColor, lit));
+        }
+
+        // The rows of the rectangle (above the gradient, the gradient, below it), each cut into
+        // what's before the band, its rising edge, its middle at full strength (which a band
+        // that fades all the way from its middle hasn't), its falling edge and what's after it
+        Span<float> rows = [top, first, last, bottom];
+        Span<float> cuts = [float.NegativeInfinity, -half, -plateau, plateau, half, float.PositiveInfinity];
+        Span<Vector2> piece = stackalloc Vector2[8];
+        Span<Vector2> spare = stackalloc Vector2[8];
+        Span<Vertex> vertices = stackalloc Vertex[18];
+
+        for (int row = 0; row < 3; row++)
+        {
+            float from = rows[row];
+            float to = rows[row + 1];
+            if (to <= from)
+            {
+                continue;
+            }
+
+            for (int cut = 0; cut < 5; cut++)
+            {
+                if (cuts[cut] >= cuts[cut + 1])
+                {
+                    continue;
+                }
+
+                piece[0] = new Vector2(left, from);
+                piece[1] = new Vector2(right, from);
+                piece[2] = new Vector2(right, to);
+                piece[3] = new Vector2(left, to);
+                int corners = 4;
+
+                if (!float.IsInfinity(cuts[cut]))
+                {
+                    corners = ClipToSheen(piece[..corners], spare, sheen, baselineY, cuts[cut], keepBeyond: true);
+                    spare[..corners].CopyTo(piece);
+                }
+
+                if (!float.IsInfinity(cuts[cut + 1]))
+                {
+                    corners = ClipToSheen(piece[..corners], spare, sheen, baselineY, cuts[cut + 1], keepBeyond: false);
+                    spare[..corners].CopyTo(piece);
+                }
+
+                if (corners < 3)
+                {
+                    continue;
+                }
+
+                // A fan of triangles from the piece's first corner (it has no hollows)
+                var hub = Corner(piece[0]);
+                var previous = Corner(piece[1]);
+                int count = 0;
+                for (int i = 2; i < corners; i++)
+                {
+                    var next = Corner(piece[i]);
+                    vertices[count++] = hub;
+                    vertices[count++] = previous;
+                    vertices[count++] = next;
+                    previous = next;
+                }
+
+                spriteBatch.DrawTriangles(glyph.Texture, vertices[..count], in layerData);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Keeps the part of a shape that is on one side of a line parallel to the band of light:
+    /// at <paramref name="distance"/> from the band's middle or beyond it, or up to it. Returns
+    /// how many corners the part has.
+    /// </summary>
+    private static int ClipToSheen(
+        ReadOnlySpan<Vector2> shape,
+        Span<Vector2> into,
+        in TextSheen sheen,
+        float baselineY,
+        float distance,
+        bool keepBeyond)
+    {
+        // (Nothing is left of a shape that an earlier line cut away altogether)
+        if (shape.IsEmpty)
+        {
+            return 0;
+        }
+
+        float slant = sheen.Slant;
+
+        int count = 0;
+        var from = shape[^1];
+        float fromSide = SheenDistance(slant, sheen.Position, from.X, from.Y, baselineY) - distance;
+        if (!keepBeyond)
+        {
+            fromSide = -fromSide;
+        }
+
+        foreach (var to in shape)
+        {
+            float toSide = SheenDistance(slant, sheen.Position, to.X, to.Y, baselineY) - distance;
+            if (!keepBeyond)
+            {
+                toSide = -toSide;
+            }
+
+            // (An edge that crosses the line adds the point where it does)
+            if ((fromSide >= 0) != (toSide >= 0))
+            {
+                into[count++] = from + ((to - from) * (fromSide / (fromSide - toSide)));
+            }
+
+            if (toSide >= 0)
+            {
+                into[count++] = to;
+            }
+
+            from = to;
+            fromSide = toSide;
+        }
+
+        return count;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

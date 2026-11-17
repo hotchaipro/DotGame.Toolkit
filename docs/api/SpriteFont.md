@@ -160,3 +160,22 @@ Measures the width of the widest line of the specified text and the total height
 |---|---|
 | `tracking` | The additional spacing applied after each character, in unscaled font units. Zero uses the spacing defined by the font; positive values loosen it and negative values tighten it. This is uniform spacing, unlike the pair-specific adjustment of kerning. |
 | `text` | The text. |
+
+### SheenAcross
+
+```csharp
+public TextSheen SheenAcross(ReadOnlySpan<char> text, float progress, TextSheen sheen, float tracking = 0)
+```
+
+Types: [`TextSheen`](TextSheen.md)
+
+Places a band of light on this text by how far across it the band has come: at 0 it is just off the start of the text's widest line, touching no letter, and at 1 just off its end. Draw the text each frame with `progress` a little greater and the light crosses it, with no measuring by the caller.
+
+| Parameter | |
+|---|---|
+| `text` | The text the band will cross. |
+| `progress` | How far across: 0 to 1, and beyond either for further off. |
+| `sheen` | The band: its color, width, angle, strength and softness. Its position is replaced. |
+| `tracking` | The tracking the text is drawn with. |
+
+**Returns:** The band at that place, for [`TextEffects.Sheen`](TextEffects.md#sheen).
