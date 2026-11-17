@@ -32,6 +32,26 @@ Gets the color that replaces the color passed to the draw method for the current
 
 The color of the text belongs to the caller of the draw method, so an implementation that describes something other than color (a per-glyph translation, for example) leaves this alone and the text keeps the color it was drawn with.
 
+### Rotation
+
+```csharp
+Angle Rotation { get; }
+```
+
+Types: [`Angle`](https://github.com/hotchaipro/DotGame.Framework/blob/main/docs/api/Framework/Angle.md)
+
+Gets how far the current character is turned, about the middle of its advance on the baseline (see [`CharacterCursor.X`](CharacterCursor.md#x)). With [`Translation`](#translation) this is what sets text along a curve: each character moved onto the curve and turned to its slope.
+
+### Translation
+
+```csharp
+Vector2 Translation { get; }
+```
+
+Gets how far the current character is moved from where the text puts it, in pixels of the font's native size, in the text's own space (before the text's scale and rotation).
+
+Geometry, unlike color, applies to every layer: a character's shadow, glow, outline and face move as one. It takes no part in layout: text is measured and wrapped from the font's metrics alone, so a character moved far enough is outside the bounds measured for the text.
+
 ## Methods
 
 ### MoveTo

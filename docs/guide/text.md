@@ -138,6 +138,7 @@ private void DrawTitle(SpriteBatch spriteBatch)
 | `Shadow` | Color, offset, spread, softness |
 | `Glow` | Color, width, softness; round corners |
 | `Outline` | Color, width, corners (`Sharp` with a miter limit, as SVG's `stroke-miterlimit`, or `Round`), softness |
+| `Gradient` | Two colors for the face, one at the top of the capitals and one at the baseline |
 | `Embolden`, `Softness` | The face's own: positive emboldening is bolder, negative thinner |
 
 - **Every distance is in pixels of the font's native size** (`EmSize`), so effects scale with the text.
@@ -145,11 +146,65 @@ private void DrawTitle(SpriteBatch spriteBatch)
 - **A string's effects are drawn behind all of its faces:** every glyph's shadow, then glow, then
   outline, then face. So one glyph's outline can't cover its neighbor's face.
 - **Colors:** the color passed to `DrawString`, and per-character colors, apply to the face. Each effect
-  keeps its own color.
+  keeps its own color. A `Gradient` replaces the face's color with two, blended down the height of the
+  capitals, the same for every character of a line; a character with a color of its own keeps that.
 - **Effects are values:** share one `TextEffects` between strings, and derive others with `with`
   (`Title with { Outline = null }`). `GetExtent` reports how far they reach beyond the glyphs, for
   layouts that make room. Measuring text ignores them.
 - **Cost:** each effect draws the glyphs once more, in the same batch.
+
+## Moving and turning characters
+
+Each character of a string can be given a color, a move and a turn of its own, by an
+[`ICharacterAttributes`](../api/ICharacterAttributes.md) passed to `DrawString`. For each character it
+draws, the text calls `MoveTo` with a [`CharacterCursor`](../api/CharacterCursor.md) (the character's
+index, and `X`, how far along its line the middle of its advance is), then reads the attributes:
+
+| Attribute | |
+|---|---|
+| `Color` | Replaces the face's color for this character; `null` keeps the text's |
+| `Translation` | Moves the character, in pixels of the font's native size, in the text's own space |
+| `Rotation` | Turns it about the middle of its advance on the baseline |
+
+A move and a turn apply to every layer, so a character's shadow, outline and face stay together. They
+take no part in measuring or wrapping.
+
+Text along an arch moves each character down by how far it is from the middle, and turns it to the
+arch's slope there:
+
+```csharp
+private sealed class Arched(float middle, float radius) : ICharacterAttributes
+{
+    private float angle;
+
+    public void MoveTo(in CharacterCursor cursor)
+    {
+        this.angle = (cursor.X - middle) / radius;
+    }
+
+    public Vector2 Translation
+    {
+        get
+        {
+            float x = middle + (radius * MathF.Sin(this.angle));
+            float distanceAlong = middle + (radius * this.angle);
+            return new Vector2(x - distanceAlong, radius * (1 - MathF.Cos(this.angle)));
+        }
+    }
+
+    public Angle Rotation => Angle.FromRadians(this.angle);
+}
+
+private void DrawArched(SpriteBatch spriteBatch, string text, Vector2 position)
+{
+    float width = this.font.MeasureString(text).X;
+    spriteBatch.DrawString(this.font, text, new Arched(width / 2, radius: 400), CharacterCursor.Start, position, Color.White);
+}
+```
+
+A class is the simple way to write one. A `struct` draws without allocating, and has to implement
+every attribute, the ones it leaves alone too (returning `null`, `Vector2.Zero` and `default`): the
+interface's own would box it on every call.
 
 ## Sizing the distance range
 

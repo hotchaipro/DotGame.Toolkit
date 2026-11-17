@@ -1,5 +1,6 @@
 // Copyright (c) 2026 Hot Chai Games LLC. Licensed under the MIT License.
 
+using System.Numerics;
 using DotGame.Framework;
 
 namespace DotGame.Toolkit.Fonts;
@@ -61,24 +62,34 @@ public interface ICharacterAttributes
         }
     }
 
-    // Additional per-character attributes belong here, declared with a default
-    // implementation that returns the identity value. Each one falls into one of two
-    // categories, and which category it belongs to decides how a caller that draws the
-    // same text more than once has to treat it:
-    //
-    //   Appearance (Color, and for example Opacity) describes how a glyph is painted. A
-    //   caller may legitimately override it for a single pass, which is what lets a drop
-    //   shadow or an outline be drawn in one solid color beneath text that is not.
-    //
-    //   Geometry (for example Translation, Rotation, Scale) describes where a glyph is
-    //   placed. Every pass that draws the same text MUST apply it identically, or the
-    //   passes come apart and a glyph separates from its own shadow or outline.
-    //
-    //     float Opacity => 1.0f;                 // appearance
-    //     Vector2 Translation => Vector2.Zero;   // geometry
-    //     Angle Rotation => Angle.Zero;          // geometry
-    //
-    // NOTE: Geometry attributes take no part in layout. Text is measured and wrapped from
-    // the font metrics alone, so a glyph that these attributes displace may fall outside
-    // the bounds that were measured for it.
+    /// <summary>
+    /// Gets how far the current character is moved from where the text puts it, in pixels of
+    /// the font's native size, in the text's own space (before the text's scale and rotation).
+    /// </summary>
+    /// <remarks>
+    /// Geometry, unlike color, applies to every layer: a character's shadow, glow, outline and
+    /// face move as one. It takes no part in layout: text is measured and wrapped from the
+    /// font's metrics alone, so a character moved far enough is outside the bounds measured
+    /// for the text.
+    /// </remarks>
+    Vector2 Translation
+    {
+        get
+        {
+            return Vector2.Zero;
+        }
+    }
+
+    /// <summary>
+    /// Gets how far the current character is turned, about the middle of its advance on the
+    /// baseline (see <see cref="CharacterCursor.X"/>). With <see cref="Translation"/> this is
+    /// what sets text along a curve: each character moved onto the curve and turned to its slope.
+    /// </summary>
+    Angle Rotation
+    {
+        get
+        {
+            return default;
+        }
+    }
 }

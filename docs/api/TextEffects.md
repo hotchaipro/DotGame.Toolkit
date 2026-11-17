@@ -40,6 +40,16 @@ Types: [`TextGlow`](TextGlow.md)
 
 Gets the glow drawn behind the outline and the face, or `null` for none.
 
+### Gradient
+
+```csharp
+public TextGradient? Gradient { get; init; }
+```
+
+Types: [`TextGradient`](TextGradient.md)
+
+Gets the two colors the face is drawn in, top to bottom of each line, or `null` to draw it in the text's color. A character given a color of its own ([`ICharacterAttributes.Color`](ICharacterAttributes.md#color)) keeps that color.
+
 ### HasBackgroundEffects
 
 ```csharp

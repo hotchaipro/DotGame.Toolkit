@@ -37,6 +37,17 @@ public readonly record struct CharacterCursor
         this.GlyphIndex = glyphIndex;
     }
 
+    /// <summary>Makes a cursor at these positions, on a character at <paramref name="x"/> along its line.</summary>
+    public CharacterCursor(
+        int charIndex,
+        int glyphIndex,
+        float x)
+    {
+        this.CharIndex = charIndex;
+        this.GlyphIndex = glyphIndex;
+        this.X = x;
+    }
+
     /// <summary>
     /// Gets the UTF-16 index of the character within the original text.
     /// </summary>
@@ -63,4 +74,15 @@ public readonly record struct CharacterCursor
     /// </para>
     /// </remarks>
     public int GlyphIndex { get; }
+
+    /// <summary>
+    /// Gets how far along its line the middle of the character's advance is, from the start of
+    /// the piece of text being drawn, in pixels of the font's native size.
+    /// </summary>
+    /// <remarks>
+    /// What attributes that place characters by where they are need: text along a curve turns
+    /// and moves each character by how far it is from the line's middle. It's also the point a
+    /// character's <see cref="ICharacterAttributes.Rotation"/> turns it about, on the baseline.
+    /// </remarks>
+    public float X { get; }
 }

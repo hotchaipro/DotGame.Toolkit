@@ -112,6 +112,12 @@ internal sealed class TextPage : SamplePage
 
         public readonly Color? Color => this._color;
 
+        // (A struct spells out every attribute, the ones it leaves alone too: the interface's
+        // own would box it on every call)
+        public readonly Vector2 Translation => Vector2.Zero;
+
+        public readonly Angle Rotation => default;
+
         public void MoveTo(
             in CharacterCursor cursor)
         {
