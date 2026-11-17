@@ -50,6 +50,34 @@ public sealed class SoundPoolTests
     }
 
     [Fact]
+    public void Play_AtARate_SetsItOnTheVoice_AndTheNextPlayHasItsOwn()
+    {
+        var audio = new FakeAudio();
+        var pool = new SoundPool(audio.Service, FakeAudio.CreateSound(), voiceLimit: 1);
+
+        pool.Play(1f, 1.5f);
+        var voice = Assert.Single(audio.Voices);
+        Assert.Equal(1.5f, voice.PlaybackRate);
+
+        // The same voice, played as recorded
+        pool.Play();
+        Assert.Equal(1f, voice.PlaybackRate);
+
+        pool.Play(0.5f, 99f);
+        Assert.Equal(SoundVoice.MaxPlaybackRate, voice.PlaybackRate);
+    }
+
+    [Fact]
+    public void Play_AtARateThatIsNotANumber_ThrowsAndPlaysNothing()
+    {
+        var audio = new FakeAudio();
+        var pool = new SoundPool(audio.Service, FakeAudio.CreateSound());
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => pool.Play(1f, float.NaN));
+        Assert.Equal(0, Assert.Single(audio.Voices).Plays);
+    }
+
+    [Fact]
     public void Constructor_RejectsNullArguments()
     {
         var audio = new FakeAudio();

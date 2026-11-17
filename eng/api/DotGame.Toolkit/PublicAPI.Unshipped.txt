@@ -84,6 +84,7 @@ DotGame.Toolkit.Audio.SoundPool.Dispose() -> void
 DotGame.Toolkit.Audio.SoundPool.FadeOutAll(System.TimeSpan duration, DotGame.Framework.Time.TimeService! time) -> void
 DotGame.Toolkit.Audio.SoundPool.IsPlaying.get -> bool
 DotGame.Toolkit.Audio.SoundPool.Play(float volume = 1) -> void
+DotGame.Toolkit.Audio.SoundPool.Play(float volume, float playbackRate) -> void
 DotGame.Toolkit.Audio.SoundPool.Prepare(int voices) -> void
 DotGame.Toolkit.Audio.SoundPool.Segment.get -> DotGame.Toolkit.Audio.SoundSegment
 DotGame.Toolkit.Audio.SoundPool.SoundPool(DotGame.Framework.Audio.AudioService! audioService, DotGame.Framework.Audio.Sound! sound, int voiceLimit = 8, DotGame.Framework.Audio.VolumeControl? volumeControl = null) -> void
