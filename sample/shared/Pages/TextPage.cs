@@ -13,7 +13,8 @@ namespace Sample.Pages;
 
 /// <summary>
 /// Text with <see cref="SpriteFont"/>: drawing at any size, effects (outlines, shadows, glows,
-/// emboldening and softness), colors per character, wrapping, measuring, tracking and rotation.
+/// emboldening, softness and gradients), characters colored, moved and turned one by one,
+/// wrapping, measuring, tracking and rotation.
 /// </summary>
 /// <remarks>
 /// Every font, size and effect draws with one shader, which the fonts switch to themselves, so the
@@ -48,6 +49,17 @@ internal sealed class TextPage : SamplePage
         Embolden = 0.5f,
     };
 
+    // A gradient is the face's two colors, from the top of the capitals to the baseline
+    private static readonly TextEffects GoldTitle = TitleText with
+    {
+        Gradient = new TextGradient(Color.FromRgb(0xFFF0A0), Color.FromRgb(0xF08C1E)),
+    };
+
+    private static readonly TextEffects Sunset = Outlined with
+    {
+        Gradient = new TextGradient(Color.FromRgb(0xFFD25A), Color.FromRgb(0xDC4678)),
+    };
+
     private static readonly TextEffects RoundOutline = new()
     {
         Outline = new TextOutline(Color.FromRgb(0xC83C50), Width: 3, Corners: TextCorners.Round),
@@ -68,6 +80,7 @@ internal sealed class TextPage : SamplePage
         ("Bold", Bold, Color.FromRgb(0x3C465A)),
         ("Thin", Thin, Color.FromRgb(0x3C465A)),
         ("Soft", Soft, Color.FromRgb(0x3C465A)),
+        ("Gradient", Sunset, Color.White),
     ];
 
     private readonly List<(int Start, int Length)> _lines = new();
@@ -86,7 +99,8 @@ internal sealed class TextPage : SamplePage
     public override string Hint => "Tap to count: the counter is a StringBuilder, drawn without allocating.";
 
     /// <summary>
-    /// Colors each character from a rainbow that moves with time, and one word in the paragraph.
+    /// Colors each character from a rainbow that moves with time, bobbing on a wave, and one word
+    /// in the paragraph.
     /// </summary>
     /// <remarks>
     /// Character attributes are a struct, so drawing calls them without allocating or boxing.
@@ -98,6 +112,7 @@ internal sealed class TextPage : SamplePage
         private readonly int _highlightStart;
         private readonly int _highlightLength;
         private Color? _color;
+        private float _lift;
 
         public RainbowAttributes(
             float time,
@@ -108,13 +123,16 @@ internal sealed class TextPage : SamplePage
             this._highlightStart = highlightStart;
             this._highlightLength = highlightLength;
             this._color = null;
+            this._lift = 0;
         }
 
         public readonly Color? Color => this._color;
 
+        // A character's move is in the font's own pixels, and every layer of it moves together
+        public readonly Vector2 Translation => new Vector2(0, this._lift);
+
         // (A struct spells out every attribute, the ones it leaves alone too: the interface's
         // own would box it on every call)
-        public readonly Vector2 Translation => Vector2.Zero;
 
         public readonly Angle Rotation => default;
 
@@ -133,7 +151,47 @@ internal sealed class TextPage : SamplePage
             {
                 var hue = (cursor.GlyphIndex * 0.07f) + this._time;
                 this._color = new DotGame.Framework.Color(0.5f + (0.5f * MathF.Sin(hue * 6.28f)), 0.5f + (0.5f * MathF.Sin((hue + 0.33f) * 6.28f)), 0.5f + (0.5f * MathF.Sin((hue + 0.67f) * 6.28f)));
+                this._lift = 5 * MathF.Sin((cursor.GlyphIndex * 0.6f) - (this._time * 8));
             }
+        }
+    }
+
+    /// <summary>
+    /// Sets a line of text along an arch: each character is moved onto a circle and turned to
+    /// the circle's slope there.
+    /// </summary>
+    /// <remarks>
+    /// <see cref="CharacterCursor.X"/> is how far along the line the middle of the character is,
+    /// so the arch needs nothing but the line's middle and the circle's radius, both in the
+    /// font's own pixels. Measuring and wrapping take no notice of a character's move or turn.
+    /// </remarks>
+    private struct ArchAttributes : ICharacterAttributes
+    {
+        private readonly float _middle;
+        private readonly float _radius;
+        private float _angle;
+
+        public ArchAttributes(
+            float middle,
+            float radius)
+        {
+            this._middle = middle;
+            this._radius = radius;
+            this._angle = 0;
+        }
+
+        public readonly Color? Color => null;
+
+        public readonly Vector2 Translation => new Vector2(
+            this._radius * (MathF.Sin(this._angle) - this._angle),
+            this._radius * (1 - MathF.Cos(this._angle)));
+
+        public readonly Angle Rotation => Angle.FromRadians(this._angle);
+
+        public void MoveTo(
+            in CharacterCursor cursor)
+        {
+            this._angle = (cursor.X - this._middle) / this._radius;
         }
     }
 
@@ -159,8 +217,8 @@ internal sealed class TextPage : SamplePage
         float x = bounds.X + 20;
         float y = bounds.Y + 8;
 
-        // A title, with several effects drawn in order: shadow, outline, face
-        game.DrawText(spriteBatch, "Sprite fonts", new Vector2(x, y), 46, Color.FromRgb(0xFAD25A), TitleText);
+        // A title, with several effects drawn in order: shadow, outline, and a face in two colors
+        game.DrawText(spriteBatch, "Sprite fonts", new Vector2(x, y), 46, Color.FromRgb(0xFAD25A), GoldTitle);
         y += 64;
 
         // A gallery of effects, each with its name
@@ -180,15 +238,25 @@ internal sealed class TextPage : SamplePage
         var spinCell = new Vector2(x + ((gallery.Length % 4) * columnWidth), y + ((gallery.Length / 4) * 52));
         spriteBatch.DrawString(font, spinText, spinCell + (spinHalf * spinScale), Color.FromRgb(0x3C465A), 1, Angle.FromRadians(time), spinHalf, spinScale, effects: Shadowed);
 
-        y += 112;
+        y += 8 + (((gallery.Length / 4) + 1) * 52);
 
-        // Colors per character, with attributes
+        // Colors and moves per character, with attributes: a rainbow on a wave
         var rainbow = new RainbowAttributes(time * 0.5f);
         var wave = "Colors per character";
         var waveScale = new Vector2(30 / font.EmSize);
         spriteBatch.DrawString(font, wave.AsSpan(), rainbow, CharacterCursor.Start, new Vector2(x, y), Color.White, 1, Angle.Zero, Vector2.Zero, waveScale, effects: Outlined);
 
         y += 50;
+
+        // Characters moved and turned onto an arch, which breathes; the gradient is measured on
+        // the line, so it turns with each character
+        var arched = "Along an arch";
+        var archScale = new Vector2(34 / font.EmSize);
+        var archWidth = font.MeasureString(arched).X;
+        var arch = new ArchAttributes(archWidth / 2, archWidth * (1.1f + (0.35f * MathF.Sin(time))));
+        spriteBatch.DrawString(font, arched.AsSpan(), arch, CharacterCursor.Start, new Vector2(x, y), Color.White, 1, Angle.Zero, Vector2.Zero, archScale, effects: Sunset);
+
+        y += 66;
 
         // Tracking: extra space after each character, in font units, scaled with the text
         float[] trackings = [-1.5f, 0, 4];
