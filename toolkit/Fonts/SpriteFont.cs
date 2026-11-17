@@ -1170,6 +1170,12 @@ public sealed class SpriteFont : IContent
         float distance,
         bool keepBeyond)
     {
+        // (Nothing is left of a shape that an earlier line cut away altogether)
+        if (shape.IsEmpty)
+        {
+            return 0;
+        }
+
         int count = 0;
         var from = shape[^1];
         float fromSide = SheenDistance(sheen, from.X, from.Y, baselineY) - distance;

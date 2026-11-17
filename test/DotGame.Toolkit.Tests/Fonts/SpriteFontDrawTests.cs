@@ -697,6 +697,25 @@ public sealed class SpriteFontDrawTests
         Assert.Equal(8f * 12f, Area(batch), 2);
     }
 
+    [Theory]
+    [InlineData(0f)]    // only the band's falling half reaches the glyph, from before it
+    [InlineData(0.5f)]
+    [InlineData(9.5f)]  // only its rising half, from after it
+    [InlineData(10f)]
+    public void ASheenThatFallsOnPartOfAGlyph_StillCoversTheGlyphOnce(
+        float position)
+    {
+        var font = new TestFonts().Glyphs("A").Build();
+        var batch = new RecordingBatch();
+
+        // 4 wide: at these places one edge of it is on the rectangle (1 to 9) and its middle isn't
+        batch.Batch.DrawString(font, "A", Vector2.Zero, Color.Red,
+            effects: new TextEffects { Sheen = new TextSheen(Color.White, position, 4, Slant: 0) });
+
+        Assert.NotEmpty(batch.Triangles);
+        Assert.Equal(8f * 12f, Area(batch), 2);
+    }
+
     [Fact]
     public void TheStrengthOfASheen_IsHowFarItsMiddleGoesTowardItsColor()
     {
