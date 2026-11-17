@@ -59,7 +59,7 @@ public static class SpriteBatchShapeExtensions
 
     /// <summary>
     /// Fills triangles, three vertices each, with their vertices' colors, blended across each one.
-    /// It's <see cref="SpriteBatch.DrawTriangles(Texture, ReadOnlySpan{Vertex})"/> without a texture,
+    /// It's <see cref="SpriteBatch.DrawTriangles(Texture, ReadOnlySpan{Vertex}, in ShaderCustomData)"/> without a texture,
     /// so vertices' texture coordinates don't matter.
     /// </summary>
     /// <exception cref="ArgumentException">The number of vertices isn't a multiple of three.</exception>
@@ -73,7 +73,7 @@ public static class SpriteBatchShapeExtensions
     /// <summary>
     /// Fills triangles from a list of vertices that they share, three indices each, with their
     /// vertices' colors, blended across each one. It's
-    /// <see cref="SpriteBatch.DrawTriangles(Texture, ReadOnlySpan{Vertex}, ReadOnlySpan{ushort})"/>
+    /// <see cref="SpriteBatch.DrawTriangles(Texture, ReadOnlySpan{Vertex}, ReadOnlySpan{ushort}, in ShaderCustomData)"/>
     /// without a texture, so vertices' texture coordinates don't matter.
     /// </summary>
     /// <exception cref="ArgumentException">The number of indices isn't a multiple of three.</exception>

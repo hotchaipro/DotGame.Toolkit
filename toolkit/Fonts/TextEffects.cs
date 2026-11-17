@@ -57,6 +57,13 @@ public sealed record TextEffects
     public TextOutline? Outline { get; init; }
 
     /// <summary>
+    /// Gets the two colors the face is drawn in, top to bottom of each line, or <c>null</c> to
+    /// draw it in the text's color. A character given a color of its own
+    /// (<see cref="ICharacterAttributes.Color"/>) keeps that color.
+    /// </summary>
+    public TextGradient? Gradient { get; init; }
+
+    /// <summary>
     /// Gets how far the face's edges move outward, in pixels of the font's native size: positive
     /// is bolder, negative thinner. The other effects are measured from the face's edges.
     /// </summary>

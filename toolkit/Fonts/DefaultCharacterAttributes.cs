@@ -1,5 +1,6 @@
 // Copyright (c) 2026 Hot Chai Games LLC. Licensed under the MIT License.
 
+using System.Numerics;
 using DotGame.Framework;
 
 namespace DotGame.Toolkit.Fonts;
@@ -24,6 +25,22 @@ internal readonly struct DefaultCharacterAttributes : ICharacterAttributes
         get
         {
             return null;
+        }
+    }
+
+    public Vector2 Translation
+    {
+        get
+        {
+            return Vector2.Zero;
+        }
+    }
+
+    public Angle Rotation
+    {
+        get
+        {
+            return default;
         }
     }
 

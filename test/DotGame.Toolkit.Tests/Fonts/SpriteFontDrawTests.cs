@@ -3,6 +3,7 @@
 using System.Numerics;
 using System.Text;
 using DotGame.Framework;
+using DotGame.Framework.Graphics;
 using DotGame.Toolkit.Fonts;
 using Xunit;
 
@@ -434,6 +435,187 @@ public sealed class SpriteFontDrawTests
     }
 
     // Character attributes
+
+    // Attributes that move and turn every character the same way
+    private sealed class MovedAttributes(Vector2 translation, Angle rotation) : ICharacterAttributes
+    {
+        public void MoveTo(
+            in CharacterCursor cursor)
+        {
+        }
+
+        public Vector2 Translation => translation;
+
+        public Angle Rotation => rotation;
+    }
+
+    [Fact]
+    public void Attributes_AreToldTheMiddleOfEachCharactersAdvance()
+    {
+        var font = new TestFonts().Glyphs("AB", advance: 10).Build();
+        var attributes = new RecordingAttributes();
+
+        new RecordingBatch().Batch.DrawString(font, "AB", attributes, CharacterCursor.Start, Vector2.Zero, Color.White);
+
+        Assert.Equal([5f, 15f], attributes.Cursors.Select(c => c.X));
+    }
+
+    [Fact]
+    public void ATranslation_MovesTheCharacter_InEveryLayerAlike()
+    {
+        var font = new TestFonts().Glyphs("A").Build();
+        var plain = new RecordingBatch();
+        var moved = new RecordingBatch();
+        var effects = new TextEffects { Outline = new TextOutline(Color.Blue, Width: 1) };
+
+        plain.Batch.DrawString(font, "A", new Vector2(100, 200), Color.Red, effects: effects);
+        moved.Batch.DrawString(font, "A", new MovedAttributes(new Vector2(3, -4), default), CharacterCursor.Start, new Vector2(100, 200), Color.Red, effects: effects);
+
+        Assert.Equal(2, moved.Calls.Count);
+        for (int i = 0; i < 2; i++)
+        {
+            Assert.Equal(plain.Calls[i].Left + 3, moved.Calls[i].Left, 3);
+            Assert.Equal(plain.Calls[i].Top - 4, moved.Calls[i].Top, 3);
+            Assert.Equal(plain.Calls[i].Color, moved.Calls[i].Color);
+        }
+    }
+
+    [Fact]
+    public void ATranslation_IsInTheTextsOwnSpace_SoItScalesAndTurnsWithTheText()
+    {
+        var font = new TestFonts().Glyphs("A").Build();
+        var still = new RecordingBatch();
+        var moved = new RecordingBatch();
+
+        // Twice the size and a quarter turn: 3 along the text is 6 down the screen
+        still.Batch.DrawString(font, "A", new MovedAttributes(new Vector2(0.001f, 0), default), CharacterCursor.Start, Vector2.Zero, Color.White,
+            rotation: Angle.FromDegrees(90), scale: new Vector2(2));
+        moved.Batch.DrawString(font, "A", new MovedAttributes(new Vector2(3.001f, 0), default), CharacterCursor.Start, Vector2.Zero, Color.White,
+            rotation: Angle.FromDegrees(90), scale: new Vector2(2));
+
+        var from = Assert.Single(still.Calls);
+        var to = Assert.Single(moved.Calls);
+        Assert.Equal(from.Position.X, to.Position.X, 2);
+        Assert.Equal(from.Position.Y + 6, to.Position.Y, 2);
+    }
+
+    [Fact]
+    public void ARotation_TurnsTheCharacter_AboutTheMiddleOfItsAdvanceOnTheBaseline()
+    {
+        var font = new TestFonts().Glyphs("A", advance: 10).Build();
+        var batch = new RecordingBatch();
+
+        batch.Batch.DrawString(font, "A", new MovedAttributes(Vector2.Zero, Angle.FromDegrees(30)), CharacterCursor.Start, new Vector2(100, 200), Color.White);
+
+        var call = Assert.Single(batch.Calls);
+        Assert.Equal(30, call.Rotation.Degrees, 3);
+
+        // The origin of the sprite is that point of the glyph, and it is drawn where that point is
+        Assert.Equal(new Vector2(5 - GlyphLeft, TestFonts.Ascender - GlyphTop), call.Origin);
+        Assert.Equal(new Vector2(105, 200 + TestFonts.Ascender), call.Position);
+    }
+
+    // The gradient of the face
+
+    private static readonly TextEffects TwoColors = new()
+    {
+        Gradient = new TextGradient(Color.Red, Color.Blue),
+    };
+
+    private static Vertex[] Corners(
+        RecordingBatch batch)
+    {
+        return batch.Triangles.SelectMany(t => new[] { t.A, t.B, t.C }).ToArray();
+    }
+
+    [Fact]
+    public void AGradient_DrawsTheFaceAsTriangles_InItsTwoColors_AndTheEffectsAsSprites()
+    {
+        var font = new TestFonts().Glyphs("A").Build();
+        var batch = new RecordingBatch();
+        var effects = TwoColors with { Outline = new TextOutline(Color.Green, Width: 1) };
+
+        batch.Batch.DrawString(font, "A", Vector2.Zero, Color.White, effects: effects);
+
+        // The outline is a sprite in its own color; the face is triangles
+        Assert.Equal(Color.Green, Assert.Single(batch.Calls).Color);
+        Assert.NotEmpty(batch.Triangles);
+
+        // The rectangle of the glyph runs from 10 above the baseline to 2 below it. The gradient
+        // runs down the ascent of the font (it has no cap height) to the baseline, so the
+        // rectangle begins two thirds of the way down it and ends in the bottom color.
+        var corners = Corners(batch);
+        float top = corners.Min(c => c.Position.Y);
+        float bottom = corners.Max(c => c.Position.Y);
+        Assert.Equal(GlyphTop, top, 3);
+        Assert.Equal(GlyphTop + 12, bottom, 3);
+
+        var atTop = corners.First(c => c.Position.Y == top).Color;
+        Assert.Equal(1f / 3, atTop.R, 3);
+        Assert.Equal(2f / 3, atTop.B, 3);
+        Assert.All(corners.Where(c => c.Position.Y >= TestFonts.Ascender), c => Assert.Equal(Color.Blue, c.Color));
+    }
+
+    [Fact]
+    public void TheTrianglesOfAGradient_CoverTheRectangleOfTheGlyph_AndCarryTheShaderDataOfTheFace()
+    {
+        var font = new TestFonts().Glyphs("A").Build();
+        var plain = new RecordingBatch();
+        var batch = new RecordingBatch();
+
+        plain.Batch.DrawString(font, "A", new Vector2(100, 200), Color.White, effects: new TextEffects { Embolden = 0.5f });
+        batch.Batch.DrawString(font, "A", new Vector2(100, 200), Color.White, effects: TwoColors with { Embolden = 0.5f });
+
+        var sprite = Assert.Single(plain.Calls);
+        var corners = Corners(batch);
+        Assert.Equal(sprite.Left, corners.Min(c => c.Position.X), 3);
+        Assert.Equal(sprite.Right, corners.Max(c => c.Position.X), 3);
+        Assert.Equal(sprite.Top, corners.Min(c => c.Position.Y), 3);
+        Assert.Equal(sprite.Bottom, corners.Max(c => c.Position.Y), 3);
+        Assert.All(batch.Triangles, t => Assert.Equal(sprite.CustomData, t.CustomData));
+        Assert.All(batch.Triangles, t => Assert.Same(sprite.Texture, t.Texture));
+    }
+
+    [Fact]
+    public void AGradient_FadesWithTheOpacityOfTheText()
+    {
+        var font = new TestFonts().Glyphs("A").Build();
+        var batch = new RecordingBatch();
+
+        batch.Batch.DrawString(font, "A", Vector2.Zero, Color.White, opacity: 0.5f, effects: TwoColors);
+
+        Assert.All(Corners(batch), c => Assert.Equal(0.5f, c.Color.A, 3));
+    }
+
+    [Fact]
+    public void ACharacterWithAColorOfItsOwn_KeepsIt_InAGradient()
+    {
+        var font = new TestFonts().Glyphs("AB").Build();
+        var batch = new RecordingBatch();
+        var attributes = new RecordingAttributes(c => (c.GlyphIndex == 1) ? Color.Green : null);
+
+        batch.Batch.DrawString(font, "AB", attributes, CharacterCursor.Start, Vector2.Zero, Color.White, effects: TwoColors);
+
+        Assert.Equal(Color.Green, Assert.Single(batch.Calls).Color);
+        Assert.NotEmpty(batch.Triangles);
+    }
+
+    [Fact]
+    public void AGradient_MovesWithItsCharacter()
+    {
+        var font = new TestFonts().Glyphs("A").Build();
+        var plain = new RecordingBatch();
+        var moved = new RecordingBatch();
+
+        plain.Batch.DrawString(font, "A", Vector2.Zero, Color.White, effects: TwoColors);
+        moved.Batch.DrawString(font, "A", new MovedAttributes(new Vector2(7, 9), default), CharacterCursor.Start, Vector2.Zero, Color.White, effects: TwoColors);
+
+        Assert.Equal(plain.Triangles.Count, moved.Triangles.Count);
+        for (int i = 0; i < plain.Triangles.Count; i++)
+        {
+            Assert.Equal(plain.Triangles[i].A.Position + new Vector2(7, 9), moved.Triangles[i].A.Position);
+        }
+    }
 
     private sealed class RecordingAttributes(Func<CharacterCursor, Color?>? color = null) : ICharacterAttributes
     {

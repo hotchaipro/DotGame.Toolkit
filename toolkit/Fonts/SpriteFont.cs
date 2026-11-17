@@ -797,6 +797,9 @@ public sealed class SpriteFont : IContent
         var layerData = layer.Data;
         var effectColor = layer.Color * opacity;
 
+        // The face's two colors, if it has them (an effect has its own color)
+        var gradient = layer.IsFace ? args.Effects?.Gradient : null;
+
         foreach (var codePoint in text.EnumerateCodePoints())
         {
             if (codePoint == '\n')
@@ -816,25 +819,61 @@ public sealed class SpriteFont : IContent
                 {
                     // NOTE: The cursor is absolute, so characters that draw nothing can be
                     // skipped without the attributes losing track of their position.
-                    characterAttributes.MoveTo(new CharacterCursor(state.CharIndex, state.GlyphIndex));
+                    // (The middle of its advance, on the baseline: where it's turned about)
+                    var pivot = new Vector2(state.PenX + (glyph.Advance * 0.5f), state.LineTop + baseline);
+                    characterAttributes.MoveTo(new CharacterCursor(state.CharIndex, state.GlyphIndex, pivot.X));
 
                     // The face's color belongs to the caller unless the attributes override it,
                     // so attributes that describe something else leave the text as it was drawn.
                     // An effect keeps its own color, so a highlighted word keeps its outline.
-                    var glyphColor = layer.IsFace ? (characterAttributes.Color ?? color) * opacity : effectColor;
+                    var ownColor = characterAttributes.Color;
+                    var glyphColor = layer.IsFace ? (ownColor ?? color) * opacity : effectColor;
+
+                    // Where the attributes put the character. Every layer applies it alike, so
+                    // a character's shadow, outline and face move and turn as one.
+                    var translation = characterAttributes.Translation;
+                    var turn = characterAttributes.Rotation;
+                    bool isMoved = (translation != Vector2.Zero) || (turn.Radians != 0);
 
                     // Each glyph is drawn at the text's position with the text's origin moved
                     // to the glyph, so SpriteBatch rotates and scales the whole text as one.
                     var glyphOffset = new Vector2(state.PenX + glyph.Left, state.LineTop + baseline + glyph.Top);
 
-                    spriteBatch.Draw(glyph.Texture,
-                    position,
-                    glyphColor,
-                    rotation,
-                    layerOrigin - glyphOffset,
-                    scale,
-                    glyph.SourceRectangle,
-                    customData: in layerData);
+                    if ((gradient is { } colors) && (ownColor is null))
+                    {
+                        this.DrawGradientGlyph(spriteBatch, glyph, glyphOffset, pivot, translation, turn, state.LineTop + baseline, colors, layerOrigin, in layerData, in args);
+                    }
+                    else if (isMoved)
+                    {
+                        // The glyph turns about its pivot, so the pivot is its origin, and is
+                        // put where the text's own rotation and scale carry the moved pivot
+                        var place = (pivot + translation - layerOrigin) * scale;
+                        if (rotation.Radians != 0)
+                        {
+                            (float sin, float cos) = rotation.SinCos;
+                            place = new Vector2((place.X * cos) - (place.Y * sin), (place.X * sin) + (place.Y * cos));
+                        }
+
+                        spriteBatch.Draw(glyph.Texture,
+                        position + place,
+                        glyphColor,
+                        rotation + turn,
+                        pivot - glyphOffset,
+                        scale,
+                        glyph.SourceRectangle,
+                        customData: in layerData);
+                    }
+                    else
+                    {
+                        spriteBatch.Draw(glyph.Texture,
+                        position,
+                        glyphColor,
+                        rotation,
+                        layerOrigin - glyphOffset,
+                        scale,
+                        glyph.SourceRectangle,
+                        customData: in layerData);
+                    }
                 }
 
                 state.PenX += glyph.Advance + tracking;
@@ -844,6 +883,108 @@ public sealed class SpriteFont : IContent
             state.CharIndex += codePoint.Utf16SequenceLength();
             state.GlyphIndex++;
         }
+    }
+
+    /// <summary>
+    /// Draws a glyph of the face in the gradient's two colors. A sprite has one color, so the
+    /// glyph is drawn as triangles, in up to three bands down its rectangle: what's above the
+    /// gradient in the top color, the gradient itself, and what's below it in the bottom color.
+    /// (A glyph's rectangle is larger than the glyph by the distance range, so blending between
+    /// its own corners would squeeze the gradient into the middle of every letter.)
+    /// </summary>
+    private void DrawGradientGlyph(
+        SpriteBatch spriteBatch,
+        SpriteFontGlyph glyph,
+        Vector2 glyphOffset,
+        Vector2 pivot,
+        Vector2 translation,
+        Angle turn,
+        float baselineY,
+        TextGradient colors,
+        Vector2 layerOrigin,
+        in ShaderCustomData layerData,
+        in TextDrawArgs args)
+    {
+        var source = glyph.SourceRectangle;
+        float left = glyphOffset.X;
+        float right = left + source.Width;
+        float top = glyphOffset.Y;
+        float bottom = top + source.Height;
+
+        // Where the gradient begins and ends on this line, and so within this rectangle
+        float rise = (this.CapHeight > 0) ? this.CapHeight : this.Ascender;
+        float gradientTop = baselineY - rise;
+        float first = Math.Clamp(gradientTop, top, bottom);
+        float last = Math.Clamp(baselineY, top, bottom);
+
+        var topColor = colors.Top * args.Opacity;
+        var bottomColor = colors.Bottom * args.Opacity;
+        var firstColor = Blend(topColor, bottomColor, (first - gradientTop) / rise);
+        var lastColor = Blend(topColor, bottomColor, (last - gradientTop) / rise);
+
+        float invWidth = 1f / glyph.Texture.Size.X;
+        float invHeight = 1f / glyph.Texture.Size.Y;
+        float u0 = source.X * invWidth;
+        float u1 = (source.X + source.Width) * invWidth;
+
+        (float turnSin, float turnCos) = turn.SinCos;
+        (float sin, float cos) = args.Rotation.SinCos;
+        var position = args.Position;
+        var scale = args.Scale;
+
+        // A point of the glyph's rectangle, in the text's space, to where it's drawn: turned
+        // about the pivot and moved, then scaled and rotated about the text's origin
+        Vector2 Place(float x, float y)
+        {
+            float dx = x - pivot.X;
+            float dy = y - pivot.Y;
+            float px = (pivot.X + translation.X + (dx * turnCos) - (dy * turnSin) - layerOrigin.X) * scale.X;
+            float py = (pivot.Y + translation.Y + (dx * turnSin) + (dy * turnCos) - layerOrigin.Y) * scale.Y;
+            return new Vector2(position.X + (px * cos) - (py * sin), position.Y + (px * sin) + (py * cos));
+        }
+
+        Span<Vertex> vertices = stackalloc Vertex[18];
+        int count = 0;
+
+        void Band(Span<Vertex> into, float from, float to, Color fromColor, Color toColor)
+        {
+            if (to <= from)
+            {
+                return;
+            }
+
+            float v0 = (source.Y + (from - top)) * invHeight;
+            float v1 = (source.Y + (to - top)) * invHeight;
+            var a = new Vertex(Place(left, from), new Vector2(u0, v0), fromColor);
+            var b = new Vertex(Place(right, from), new Vector2(u1, v0), fromColor);
+            var c = new Vertex(Place(right, to), new Vector2(u1, v1), toColor);
+            var d = new Vertex(Place(left, to), new Vector2(u0, v1), toColor);
+            into[count++] = a;
+            into[count++] = b;
+            into[count++] = c;
+            into[count++] = a;
+            into[count++] = c;
+            into[count++] = d;
+        }
+
+        Band(vertices, top, first, topColor, topColor);
+        Band(vertices, first, last, firstColor, lastColor);
+        Band(vertices, last, bottom, bottomColor, bottomColor);
+
+        spriteBatch.DrawTriangles(glyph.Texture, vertices[..count], in layerData);
+    }
+
+    private static Color Blend(
+        Color from,
+        Color to,
+        float amount)
+    {
+        amount = Math.Clamp(amount, 0f, 1f);
+        return new Color(
+            from.R + ((to.R - from.R) * amount),
+            from.G + ((to.G - from.G) * amount),
+            from.B + ((to.B - from.B) * amount),
+            from.A + ((to.A - from.A) * amount));
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

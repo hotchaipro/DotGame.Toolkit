@@ -36,7 +36,8 @@ no effects.
 
 | Type | Role |
 |---|---|
-| `TextEffects` | A record: `Shadow`, `Glow`, `Outline` (each optional), and the face's `Embolden` and `Softness`. `TextEffects.None` is text with none. |
+| `TextEffects` | A record: `Shadow`, `Glow`, `Outline` (each optional), and the face's `Gradient`, `Embolden` and `Softness`. `TextEffects.None` is text with none. |
+| `TextGradient(Top, Bottom)` | Two colors for the face, in place of its one. |
 | `TextShadow(Color, Offset, Spread = 0, Softness = 0)` | Drawn behind everything else. |
 | `TextGlow(Color, Width, Softness)` | A soft outline with round corners, drawn behind the outline. |
 | `TextOutline(Color, Width, Corners = Sharp, MiterLimit = 4, Softness = 0)` | Drawn behind the face. |
@@ -52,6 +53,14 @@ no effects.
 - **Colors.** The color passed to `DrawString`, and per-character colors from `ICharacterAttributes`,
   apply to the face. Each effect has its own color, so a highlighted word keeps the same outline as the
   rest of the line. The call's opacity fades the face and the effects alike.
+- **A gradient** blends from its top color at the top of the line's capitals (`SpriteFont.CapHeight`
+  above the baseline, or the ascent where the font gives none) to its bottom color at the baseline.
+  It's measured on the line and not on each glyph, so a word is one sweep of color. A character that
+  `ICharacterAttributes` gives a color of its own keeps that color.
+- **A character's move and turn** (`ICharacterAttributes.Translation` and `Rotation`) are geometry:
+  every layer applies them alike, so a character's shadow, glow, outline and face stay together. A
+  character turns about the middle of its advance on the baseline (`CharacterCursor.X`). They're in the
+  text's own space, before its scale and rotation, and take no part in measuring.
 - **Effects are values.** One `TextEffects` is shared by many strings, compared, and derived with
   `with` (`title with { Outline = null }`).
 - **Measuring ignores effects:** they don't change advances or line heights.
@@ -77,6 +86,18 @@ Text drawn in several calls, such as lines aligned one at a time or runs in diff
 same order across the calls. `TextLayers` provides it: draw every call with `TextLayers.Effects`, then
 every call again with `TextLayers.Face`. `TextEffects.HasBackgroundEffects` says whether the second
 pass is needed at all. `TextLayout.Draw` draws its lines this way.
+
+**A moved or turned character** is still one sprite a layer: its pivot becomes the sprite's origin, the
+sprite is drawn where the text's own rotation and scale carry the moved pivot, and its rotation is the
+text's plus its own. A character that isn't moved is drawn exactly as before.
+
+**A gradient's glyphs are triangles.** A sprite has one color, and blending between the corners of a
+glyph's rectangle wouldn't do either: the rectangle is larger than the glyph by the distance range, so
+the gradient would be squeezed into the middle of every letter. The face is drawn in up to three bands
+down the rectangle, each two triangles (`SpriteBatch.DrawTriangles`, with the face's shader data): what's
+above the gradient in the top color, the gradient itself, and what's below it in the bottom color. The
+bands' corners go through the same move, turn, scale and rotation as a sprite's would, so the face
+stays on its outline.
 
 **One call, one batch.** Every layer's quads are sprites in the batch the caller already has, in order,
 so the text keeps its place in the draw order. `DrawString` opens one `UseShader` scope with the font's
@@ -182,13 +203,15 @@ A sharp outline's corners are likewise cut back no further out than half the ran
 Each effect draws the string's glyphs once more: an outline doubles the quads, an outline and a shadow
 triple them. Draws don't increase, since effects are quads in the same batch with the same shader and
 texture: the draw count is set by atlas page changes, however many fonts and effects are on screen.
+A gradient's face costs up to six triangles a glyph, each as much as a sprite, where a plain face is one.
 Drawing allocates nothing per frame: layers live on the stack, and a `StringBuilder`'s text is copied to
 the stack, or to a pooled array when it's long.
 
 ## Not supported
 
-- **Bevels, lighting, textured fills and gradients** (TextMeshPro has them): a custom shader reading
-  the documented per-quad data covers them.
+- **Bevels, lighting and textured fills** (TextMeshPro has them): a custom shader reading the
+  documented per-quad data covers them. A gradient is two colors, top to bottom; one at an angle, or
+  of more colors, isn't.
 - **Arbitrary effect stacks** (two outlines, several shadows): none of the engines above offer them as
   properties. Drawing the string twice with different effects covers the rare case.
 - **Inner glows and inner shadows**, which need the face as a mask.

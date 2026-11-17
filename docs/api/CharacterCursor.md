@@ -26,6 +26,12 @@ public CharacterCursor(int charIndex, int glyphIndex)
 
 Makes a cursor at these positions.
 
+```csharp
+public CharacterCursor(int charIndex, int glyphIndex, float x)
+```
+
+Makes a cursor at these positions, on a character at `x` along its line.
+
 ## Properties
 
 ### CharIndex
@@ -57,3 +63,13 @@ public static CharacterCursor Start { get; }
 ```
 
 The start of a text.
+
+### X
+
+```csharp
+public float X { get; }
+```
+
+Gets how far along its line the middle of the character's advance is, from the start of the piece of text being drawn, in pixels of the font's native size.
+
+What attributes that place characters by where they are need: text along a curve turns and moves each character by how far it is from the line's middle. It's also the point a character's [`ICharacterAttributes.Rotation`](ICharacterAttributes.md#rotation) turns it about, on the baseline.

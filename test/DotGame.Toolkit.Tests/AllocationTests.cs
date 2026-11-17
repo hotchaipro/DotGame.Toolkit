@@ -119,6 +119,11 @@ public sealed class AllocationTests
         }
 
         public readonly Color? Color => ((this._glyph & 1) != 0) ? DotGame.Framework.Color.Red : null;
+
+        // (Spelled out, as a struct's must be: the interface's own would box it)
+        public readonly Vector2 Translation => Vector2.Zero;
+
+        public readonly Angle Rotation => default;
     }
 
     [Fact]
