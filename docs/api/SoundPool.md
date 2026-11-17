@@ -137,6 +137,21 @@ Starts a new instance of the cue at a volume from 0 (silent) to 1 (full), clampe
 
 **Throws `ArgumentOutOfRangeException`:** The volume is not a number.
 
+```csharp
+public void Play(float volume, float playbackRate)
+```
+
+Starts a new instance of the cue, as [`Play`](#play) does, at a volume and at a rate: a multiple of the recorded speed, where 1 is as recorded, 2 is twice as fast and an octave higher, and 0.5 is half as fast and an octave lower ([`SoundVoice.PlaybackRate`](https://github.com/hotchaipro/DotGame.Framework/blob/main/docs/api/Framework/SoundVoice.md#playbackrate), which clamps it to its range). A few percent of difference from one play to the next keeps a sound that repeats from tiring; a step of `n` semitones is a rate of `MathF.Pow(2f, n / 12f)`.
+
+| Parameter | |
+|---|---|
+| `volume` | The volume, from 0 (silent) to 1 (full), clamped to that. |
+| `playbackRate` | The rate. The instance keeps it until it ends: the next play of the cue has its own. |
+
+**Throws `ObjectDisposedException`:** The pool or its sound has been disposed.
+
+**Throws `ArgumentOutOfRangeException`:** The volume or the rate is not a number.
+
 ### Prepare
 
 ```csharp

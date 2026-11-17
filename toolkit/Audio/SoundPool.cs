@@ -229,10 +229,37 @@ public sealed class SoundPool : IDisposable
         this.PlayVoice(volume);
     }
 
+    /// <summary>
+    /// Starts a new instance of the cue, as <see cref="Play(float)"/> does, at a volume and at a
+    /// rate: a multiple of the recorded speed, where 1 is as recorded, 2 is twice as fast and an
+    /// octave higher, and 0.5 is half as fast and an octave lower
+    /// (<see cref="SoundVoice.PlaybackRate"/>, which clamps it to its range). A few percent of
+    /// difference from one play to the next keeps a sound that repeats from tiring; a step of
+    /// <c>n</c> semitones is a rate of <c>MathF.Pow(2f, n / 12f)</c>.
+    /// </summary>
+    /// <param name="volume">The volume, from 0 (silent) to 1 (full), clamped to that.</param>
+    /// <param name="playbackRate">The rate. The instance keeps it until it ends: the next play of
+    /// the cue has its own.</param>
+    /// <exception cref="ObjectDisposedException">The pool or its sound has been disposed.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">The volume or the rate is not a number.</exception>
+    public void Play(
+        float volume,
+        float playbackRate)
+    {
+        this.PlayVoice(volume, playbackRate);
+    }
+
     internal SoundVoice PlayVoice(
-        float volume = 1f)
+        float volume = 1f,
+        float playbackRate = 1f)
     {
         this.ThrowIfDisposed();
+
+        if (float.IsNaN(playbackRate))
+        {
+            throw new ArgumentOutOfRangeException(nameof(playbackRate), playbackRate, "The playback rate must be a number.");
+        }
+
         ObjectDisposedException.ThrowIf(((IContent)this._segment.Sound).IsDisposed, this._segment.Sound);
 
         int index = this.TakeVoice(out bool isStolen);
@@ -254,6 +281,9 @@ public sealed class SoundPool : IDisposable
         }
 
         volumeControl?.Volume = volume;
+
+        // (Every time: a voice keeps the rate its last play gave it)
+        voice.PlaybackRate = playbackRate;
 
         this._startedAt[index] = ++this._plays;
         voice.Play();
