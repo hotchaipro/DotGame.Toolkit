@@ -1,18 +1,19 @@
 // Copyright (c) 2026 Hot Chai Games LLC. Licensed under the MIT License.
 
+using System;
 using DotGame.Framework;
 
 namespace DotGame.Toolkit.Fonts;
 
 /// <summary>
-/// A slanted band of light across a text's face: brightest along its middle, fading to nothing
-/// at its edges. Move <see cref="Position"/> along the line from frame to frame and the light
-/// crosses the letters.
+/// A band of light across a text's face, upright or leaning: brightest along its middle, fading
+/// to nothing at its edges. Move <see cref="Position"/> along the line from frame to frame and
+/// the light crosses the letters.
 /// </summary>
 /// <param name="Color">The color of the light, which the face is blended toward.</param>
 /// <param name="Position">Where the middle of the band crosses the baseline, along the line from its start, in pixels of the font's native size.</param>
 /// <param name="Width">How wide the band is, along the line, in pixels of the font's native size.</param>
-/// <param name="Slant">How far the band leans to the right for each pixel it rises: 0 is upright, negative leans left.</param>
+/// <param name="Angle">How far the band leans from upright: positive leans to the right as it rises, negative to the left. Upright by default; it can lean up to 80 degrees either way.</param>
 /// <param name="Strength">How far the face is blended toward <paramref name="Color"/> along the middle of the band, from 0 to 1.</param>
 /// <remarks>
 /// The band is in the line's own space, the same on every line of the text: it lies over a
@@ -25,5 +26,14 @@ public readonly record struct TextSheen(
     Color Color,
     float Position,
     float Width,
-    float Slant = 0.35f,
-    float Strength = 1);
+    Angle Angle = default,
+    float Strength = 1)
+{
+    // The most it leans: beyond this it would lie along the line
+    private const float MaximumLean = 80f * MathF.PI / 180f;
+
+    /// <summary>
+    /// How far the band's middle moves along the line for each pixel it rises.
+    /// </summary>
+    internal float Slant => MathF.Tan(Math.Clamp(this.Angle.Radians, -MaximumLean, MaximumLean));
+}

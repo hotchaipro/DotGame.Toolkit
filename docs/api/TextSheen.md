@@ -5,18 +5,28 @@
 [Toolkit](README.md) · `DotGame.Toolkit.Fonts` · record struct
 
 ```csharp
-public readonly record struct TextSheen(Color Color, float Position, float Width, float Slant = 0.35f, float Strength = 1)
+public readonly record struct TextSheen(Color Color, float Position, float Width, Angle Angle = default, float Strength = 1)
 ```
 
-Types: [`Color`](https://github.com/hotchaipro/DotGame.Framework/blob/main/docs/api/Framework/Color.md)
+Types: [`Color`](https://github.com/hotchaipro/DotGame.Framework/blob/main/docs/api/Framework/Color.md), [`Angle`](https://github.com/hotchaipro/DotGame.Framework/blob/main/docs/api/Framework/Angle.md)
 
-A slanted band of light across a text's face: brightest along its middle, fading to nothing at its edges. Move [`Position`](#position) along the line from frame to frame and the light crosses the letters.
+A band of light across a text's face, upright or leaning: brightest along its middle, fading to nothing at its edges. Move [`Position`](#position) along the line from frame to frame and the light crosses the letters.
 
 ## Remarks
 
 The band is in the line's own space, the same on every line of the text: it lies over a gradient or a character's own color, moves and turns with characters that do ([`ICharacterAttributes`](ICharacterAttributes.md)), and leaves the outline, glow and shadow alone. Only the characters the band touches cost more to draw; a band that is off either end of the line, or of no width or strength, costs nothing.
 
 ## Properties
+
+### Angle
+
+```csharp
+public Angle Angle { get; init; }
+```
+
+Types: [`Angle`](https://github.com/hotchaipro/DotGame.Framework/blob/main/docs/api/Framework/Angle.md)
+
+How far the band leans from upright: positive leans to the right as it rises, negative to the left. Upright by default; it can lean up to 80 degrees either way.
 
 ### Color
 
@@ -35,14 +45,6 @@ public float Position { get; init; }
 ```
 
 Where the middle of the band crosses the baseline, along the line from its start, in pixels of the font's native size.
-
-### Slant
-
-```csharp
-public float Slant { get; init; }
-```
-
-How far the band leans to the right for each pixel it rises: 0 is upright, negative leans left.
 
 ### Strength
 

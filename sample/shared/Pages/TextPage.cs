@@ -259,7 +259,7 @@ internal sealed class TextPage : SamplePage
         var crossing = (time % 2.4f) / 0.9f;
         var lit = Sunset with
         {
-            Sheen = new TextSheen(Color.White, -SheenWidth + (crossing * (archWidth + (2 * SheenWidth))), SheenWidth, Strength: 0.85f),
+            Sheen = new TextSheen(Color.White, -SheenWidth + (crossing * (archWidth + (2 * SheenWidth))), SheenWidth, Angle.FromDegrees(35), Strength: 0.85f),
         };
         spriteBatch.DrawString(font, arched.AsSpan(), arch, CharacterCursor.Start, new Vector2(x, y), Color.White, 1, Angle.Zero, Vector2.Zero, archScale, effects: lit);
 

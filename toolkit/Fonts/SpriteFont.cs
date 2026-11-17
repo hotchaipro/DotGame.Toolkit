@@ -991,12 +991,13 @@ public sealed class SpriteFont : IContent
     /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static float SheenDistance(
-        in TextSheen sheen,
+        float slant,
+        float position,
         float x,
         float y,
         float baselineY)
     {
-        return x - (sheen.Slant * (baselineY - y)) - sheen.Position;
+        return x - (slant * (baselineY - y)) - position;
     }
 
     /// <summary>
@@ -1009,16 +1010,17 @@ public sealed class SpriteFont : IContent
         float baselineY)
     {
         float half = sheen.Width * 0.5f;
+        float slant = sheen.Slant;
         float left = glyphOffset.X;
         float right = left + glyph.SourceRectangle.Width;
         float top = glyphOffset.Y;
         float bottom = top + glyph.SourceRectangle.Height;
 
         // (The distance is linear, so its least and greatest are at corners)
-        float a = SheenDistance(sheen, left, top, baselineY);
-        float b = SheenDistance(sheen, right, top, baselineY);
-        float c = SheenDistance(sheen, right, bottom, baselineY);
-        float d = SheenDistance(sheen, left, bottom, baselineY);
+        float a = SheenDistance(slant, sheen.Position, left, top, baselineY);
+        float b = SheenDistance(slant, sheen.Position, right, top, baselineY);
+        float c = SheenDistance(slant, sheen.Position, right, bottom, baselineY);
+        float d = SheenDistance(slant, sheen.Position, left, bottom, baselineY);
         float least = Math.Min(Math.Min(a, b), Math.Min(c, d));
         float greatest = Math.Max(Math.Max(a, b), Math.Max(c, d));
         return (least < half) && (greatest > -half);
@@ -1068,6 +1070,7 @@ public sealed class SpriteFont : IContent
         }
 
         var lightColor = sheen.Color * args.Opacity;
+        float slant = sheen.Slant;
         float strength = Math.Clamp(sheen.Strength, 0f, 1f);
         float half = sheen.Width * 0.5f;
 
@@ -1093,7 +1096,7 @@ public sealed class SpriteFont : IContent
             var coordinate = new Vector2((source.X + (point.X - left)) * invWidth, (source.Y + (point.Y - top)) * invHeight);
 
             var own = Color.Lerp(topColor, bottomColor, (point.Y - gradientTop) / rise);
-            float lit = Math.Max(1 - (MathF.Abs(SheenDistance(sheen, point.X, point.Y, baselineY)) / half), 0f) * strength;
+            float lit = Math.Max(1 - (MathF.Abs(SheenDistance(slant, sheen.Position, point.X, point.Y, baselineY)) / half), 0f) * strength;
             return new Vertex(place, coordinate, Color.Lerp(own, lightColor, lit));
         }
 
@@ -1176,9 +1179,11 @@ public sealed class SpriteFont : IContent
             return 0;
         }
 
+        float slant = sheen.Slant;
+
         int count = 0;
         var from = shape[^1];
-        float fromSide = SheenDistance(sheen, from.X, from.Y, baselineY) - distance;
+        float fromSide = SheenDistance(slant, sheen.Position, from.X, from.Y, baselineY) - distance;
         if (!keepBeyond)
         {
             fromSide = -fromSide;
@@ -1186,7 +1191,7 @@ public sealed class SpriteFont : IContent
 
         foreach (var to in shape)
         {
-            float toSide = SheenDistance(sheen, to.X, to.Y, baselineY) - distance;
+            float toSide = SheenDistance(slant, sheen.Position, to.X, to.Y, baselineY) - distance;
             if (!keepBeyond)
             {
                 toSide = -toSide;

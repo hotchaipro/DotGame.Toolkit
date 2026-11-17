@@ -139,7 +139,7 @@ private void DrawTitle(SpriteBatch spriteBatch)
 | `Glow` | Color, width, softness; round corners |
 | `Outline` | Color, width, corners (`Sharp` with a miter limit, as SVG's `stroke-miterlimit`, or `Round`), softness |
 | `Gradient` | Two colors for the face, one at the top of the capitals and one at the baseline |
-| `Sheen` | A slanted band of light across the face: color, position along the line, width, slant, strength |
+| `Sheen` | A band of light across the face: color, position along the line, width, angle from upright, strength |
 | `Embolden`, `Softness` | The face's own: positive emboldening is bolder, negative thinner |
 
 - **Every distance is in pixels of the font's native size** (`EmSize`), so effects scale with the text.
