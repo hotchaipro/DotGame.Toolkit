@@ -986,6 +986,26 @@ public sealed class SpriteFont : IContent
     }
 
     /// <summary>
+    /// Places a band of light on this text by how far across it the band has come: at 0 it is
+    /// just off the start of the text's widest line, touching no letter, and at 1 just off its
+    /// end. Draw the text each frame with <paramref name="progress"/> a little greater and the
+    /// light crosses it, with no measuring by the caller.
+    /// </summary>
+    /// <param name="text">The text the band will cross.</param>
+    /// <param name="progress">How far across: 0 to 1, and beyond either for further off.</param>
+    /// <param name="sheen">The band: its color, width, angle, strength and softness. Its position is replaced.</param>
+    /// <param name="tracking">The tracking the text is drawn with.</param>
+    /// <returns>The band at that place, for <see cref="TextEffects.Sheen"/>.</returns>
+    public TextSheen SheenAcross(
+        ReadOnlySpan<char> text,
+        float progress,
+        TextSheen sheen,
+        float tracking = 0)
+    {
+        return sheen.Across(progress, this.MeasureString(text, tracking).X, this.Ascender, Math.Max(this.LineHeight - this.Ascender, 0));
+    }
+
+    /// <summary>
     /// How far a point of a line is from the middle of the band of light, along the line: the
     /// band leans, so the middle is further along the higher the point is above the baseline.
     /// </summary>
@@ -1073,6 +1093,8 @@ public sealed class SpriteFont : IContent
         float slant = sheen.Slant;
         float strength = Math.Clamp(sheen.Strength, 0f, 1f);
         float half = sheen.Width * 0.5f;
+        float plateau = sheen.Plateau;
+        float fade = half - plateau;
 
         float invWidth = 1f / glyph.Texture.Size.X;
         float invHeight = 1f / glyph.Texture.Size.Y;
@@ -1096,14 +1118,15 @@ public sealed class SpriteFont : IContent
             var coordinate = new Vector2((source.X + (point.X - left)) * invWidth, (source.Y + (point.Y - top)) * invHeight);
 
             var own = Color.Lerp(topColor, bottomColor, (point.Y - gradientTop) / rise);
-            float lit = Math.Max(1 - (MathF.Abs(SheenDistance(slant, sheen.Position, point.X, point.Y, baselineY)) / half), 0f) * strength;
+            float lit = Math.Clamp((half - MathF.Abs(SheenDistance(slant, sheen.Position, point.X, point.Y, baselineY))) / fade, 0f, 1f) * strength;
             return new Vertex(place, coordinate, Color.Lerp(own, lightColor, lit));
         }
 
         // The rows of the rectangle (above the gradient, the gradient, below it), each cut into
-        // what's before the band, its rising half, its falling half and what's after it
+        // what's before the band, its rising edge, its middle at full strength (which a band
+        // that fades all the way from its middle hasn't), its falling edge and what's after it
         Span<float> rows = [top, first, last, bottom];
-        Span<float> cuts = [float.NegativeInfinity, -half, 0, half, float.PositiveInfinity];
+        Span<float> cuts = [float.NegativeInfinity, -half, -plateau, plateau, half, float.PositiveInfinity];
         Span<Vector2> piece = stackalloc Vector2[8];
         Span<Vector2> spare = stackalloc Vector2[8];
         Span<Vertex> vertices = stackalloc Vertex[18];
@@ -1117,8 +1140,13 @@ public sealed class SpriteFont : IContent
                 continue;
             }
 
-            for (int cut = 0; cut < 4; cut++)
+            for (int cut = 0; cut < 5; cut++)
             {
+                if (cuts[cut] >= cuts[cut + 1])
+                {
+                    continue;
+                }
+
                 piece[0] = new Vector2(left, from);
                 piece[1] = new Vector2(right, from);
                 piece[2] = new Vector2(right, to);

@@ -128,6 +128,7 @@ DotGame.Toolkit.Fonts.SpriteFont.MeasureString(System.Text.StringBuilder! text, 
 DotGame.Toolkit.Fonts.SpriteFont.Pages.get -> System.Collections.Generic.IReadOnlyList<DotGame.Framework.Graphics.Texture!>!
 DotGame.Toolkit.Fonts.SpriteFont.Shader.get -> DotGame.Framework.Graphics.Shader!
 DotGame.Toolkit.Fonts.SpriteFont.Shader.set -> void
+DotGame.Toolkit.Fonts.SpriteFont.SheenAcross(System.ReadOnlySpan<char> text, float progress, DotGame.Toolkit.Fonts.TextSheen sheen, float tracking = 0) -> DotGame.Toolkit.Fonts.TextSheen
 DotGame.Toolkit.Fonts.SpriteFont.TextureSize.get -> System.Numerics.Vector2
 DotGame.Toolkit.Fonts.SpriteFont.UnderlinePosition.get -> float
 DotGame.Toolkit.Fonts.SpriteFont.UnderlineThickness.get -> float
@@ -252,18 +253,21 @@ DotGame.Toolkit.Fonts.TextShadow.Spread.init -> void
 DotGame.Toolkit.Fonts.TextShadow.TextShadow() -> void
 DotGame.Toolkit.Fonts.TextShadow.TextShadow(DotGame.Framework.Color Color, System.Numerics.Vector2 Offset, float Spread = 0, float Softness = 0) -> void
 DotGame.Toolkit.Fonts.TextSheen
+DotGame.Toolkit.Fonts.TextSheen.Across(float progress, float lineWidth, float ascent, float descent) -> DotGame.Toolkit.Fonts.TextSheen
 DotGame.Toolkit.Fonts.TextSheen.Angle.get -> DotGame.Framework.Angle
 DotGame.Toolkit.Fonts.TextSheen.Angle.init -> void
 DotGame.Toolkit.Fonts.TextSheen.Color.get -> DotGame.Framework.Color
 DotGame.Toolkit.Fonts.TextSheen.Color.init -> void
-DotGame.Toolkit.Fonts.TextSheen.Deconstruct(out DotGame.Framework.Color Color, out float Position, out float Width, out DotGame.Framework.Angle Angle, out float Strength) -> void
+DotGame.Toolkit.Fonts.TextSheen.Deconstruct(out DotGame.Framework.Color Color, out float Position, out float Width, out DotGame.Framework.Angle Angle, out float Strength, out float Softness) -> void
 DotGame.Toolkit.Fonts.TextSheen.Equals(DotGame.Toolkit.Fonts.TextSheen other) -> bool
 DotGame.Toolkit.Fonts.TextSheen.Position.get -> float
 DotGame.Toolkit.Fonts.TextSheen.Position.init -> void
+DotGame.Toolkit.Fonts.TextSheen.Softness.get -> float
+DotGame.Toolkit.Fonts.TextSheen.Softness.init -> void
 DotGame.Toolkit.Fonts.TextSheen.Strength.get -> float
 DotGame.Toolkit.Fonts.TextSheen.Strength.init -> void
 DotGame.Toolkit.Fonts.TextSheen.TextSheen() -> void
-DotGame.Toolkit.Fonts.TextSheen.TextSheen(DotGame.Framework.Color Color, float Position, float Width, DotGame.Framework.Angle Angle = default(DotGame.Framework.Angle), float Strength = 1) -> void
+DotGame.Toolkit.Fonts.TextSheen.TextSheen(DotGame.Framework.Color Color, float Position, float Width, DotGame.Framework.Angle Angle = default(DotGame.Framework.Angle), float Strength = 1, float Softness = 1) -> void
 DotGame.Toolkit.Fonts.TextSheen.Width.get -> float
 DotGame.Toolkit.Fonts.TextSheen.Width.init -> void
 DotGame.Toolkit.GameExtensions

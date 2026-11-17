@@ -770,6 +770,80 @@ public sealed class SpriteFontDrawTests
     }
 
     [Fact]
+    public void TheSoftnessOfASheen_IsHowMuchOfItIsFadingEdge()
+    {
+        var font = new TestFonts().Glyphs("A").Build();
+        var batch = new RecordingBatch();
+
+        // 6 wide about 5, half of it fading: at full strength from 3.5 to 6.5, gone by 2 and 8
+        batch.Batch.DrawString(font, "A", Vector2.Zero, Color.Red,
+            effects: new TextEffects { Sheen = new TextSheen(Color.White, 5, 6, Softness: 0.5f) });
+
+        var corners = Corners(batch);
+        Assert.Contains(corners, c => MathF.Abs(c.Position.X - 3.5f) < 0.001f);
+        Assert.Contains(corners, c => MathF.Abs(c.Position.X - 6.5f) < 0.001f);
+        Assert.All(corners.Where(c => MathF.Abs(c.Position.X - 5) <= 1.5f + 0.001f), c => Assert.Equal(Color.White, c.Color));
+        Assert.All(corners.Where(c => MathF.Abs(c.Position.X - 5) >= 3 - 0.001f), c => Assert.Equal(Color.Red, c.Color));
+        Assert.Equal(8f * 12f, Area(batch), 2);
+    }
+
+    [Fact]
+    public void AHardEdgedSheen_StillCoversTheGlyphOnce()
+    {
+        var font = new TestFonts().Glyphs("A").Build();
+        var batch = new RecordingBatch();
+
+        batch.Batch.DrawString(font, "A", Vector2.Zero, Color.Red,
+            effects: new TextEffects { Sheen = new TextSheen(Color.White, 5, 4, Softness: 0) });
+
+        Assert.Equal(8f * 12f, Area(batch), 2);
+        Assert.Contains(Corners(batch), c => c.Color.G > 0.999f);
+    }
+
+    [Fact]
+    public void SheenAcross_PutsAnUprightBandJustOffTheStartAt0_AndJustOffTheEndAt1()
+    {
+        // Two characters, each advancing 10: a line 20 wide
+        var font = new TestFonts().Glyphs("AB").Build();
+        var band = new TextSheen(Color.White, 0, 6);
+
+        Assert.Equal(-3f, font.SheenAcross("AB", 0, band).Position, 3);
+        Assert.Equal(23f, font.SheenAcross("AB", 1, band).Position, 3);
+        Assert.Equal(10f, font.SheenAcross("AB", 0.5f, band).Position, 3);
+
+        // (and it keeps everything else about the band)
+        Assert.Equal(band with { Position = 10 }, font.SheenAcross("AB", 0.5f, band));
+    }
+
+    [Theory]
+    [InlineData(45f)]
+    [InlineData(-45f)]
+    public void SheenAcross_AllowsForTheLeanOfTheBand_SoNoLetterIsLitAtEitherEnd(
+        float degrees)
+    {
+        var font = new TestFonts().Glyphs("AB").Build();
+        var band = new TextSheen(Color.White, 0, 6, Angle.FromDegrees(degrees));
+        var plain = new RecordingBatch();
+
+        plain.Batch.DrawString(font, "AB", Vector2.Zero, Color.Red);
+
+        foreach (var progress in new[] { 0f, 1f })
+        {
+            var batch = new RecordingBatch();
+            batch.Batch.DrawString(font, "AB", Vector2.Zero, Color.Red, effects: new TextEffects { Sheen = font.SheenAcross("AB", progress, band) });
+
+            // Nothing is cut: the band is off the letters
+            Assert.Empty(batch.Triangles);
+            Assert.Equal(plain.Calls, batch.Calls);
+        }
+
+        // and it is on them half way across
+        var across = new RecordingBatch();
+        across.Batch.DrawString(font, "AB", Vector2.Zero, Color.Red, effects: new TextEffects { Sheen = font.SheenAcross("AB", 0.5f, band) });
+        Assert.NotEmpty(across.Triangles);
+    }
+
+    [Fact]
     public void ASheen_LiesOverAGradient_AndFadesWithTheOpacityOfTheText()
     {
         var font = new TestFonts().Glyphs("A").Build();

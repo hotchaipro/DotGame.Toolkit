@@ -139,7 +139,7 @@ private void DrawTitle(SpriteBatch spriteBatch)
 | `Glow` | Color, width, softness; round corners |
 | `Outline` | Color, width, corners (`Sharp` with a miter limit, as SVG's `stroke-miterlimit`, or `Round`), softness |
 | `Gradient` | Two colors for the face, one at the top of the capitals and one at the baseline |
-| `Sheen` | A band of light across the face: color, position along the line, width, angle from upright, strength |
+| `Sheen` | A band of light across the face: color, position along the line, width, angle from upright, strength, softness |
 | `Embolden`, `Softness` | The face's own: positive emboldening is bolder, negative thinner |
 
 - **Every distance is in pixels of the font's native size** (`EmSize`), so effects scale with the text.
@@ -150,9 +150,11 @@ private void DrawTitle(SpriteBatch spriteBatch)
   keeps its own color. A `Gradient` replaces the face's color with two, blended down the height of the
   capitals, the same for every character of a line; a character with a color of its own keeps that.
 - **A sheen is a glint to animate:** a `TextSheen` is a band of light at a place along the line, lying
-  over whatever color the face has. Draw the text each frame with the band a little further along
-  (`effects with { Sheen = sheen with { Position = x } }`, from before the line's start to past its
-  end) and the light crosses the letters. Text draws exactly as it would without one while the band is
+  over whatever color the face has. Draw the text each frame with the band a little further along and
+  the light crosses the letters: `effects with { Sheen = font.SheenAcross(text, progress, band) }`
+  places it by a progress from 0 (just off the start) to 1 (just off the end), allowing for the band's
+  lean, so nothing is measured by hand. Its `Softness` is how much of it is fading edge: 1 fades from
+  the middle, toward 0 is a hard-edged bar. Text draws exactly as it would without one while the band is
   off the line.
 - **Effects are values:** share one `TextEffects` between strings, and derive others with `with`
   (`Title with { Outline = null }`). `GetExtent` reports how far they reach beyond the glyphs, for

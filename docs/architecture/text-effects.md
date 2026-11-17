@@ -38,7 +38,7 @@ no effects.
 |---|---|
 | `TextEffects` | A record: `Shadow`, `Glow`, `Outline` (each optional), and the face's `Gradient`, `Embolden` and `Softness`. `TextEffects.None` is text with none. |
 | `TextGradient(Top, Bottom)` | Two colors for the face, in place of its one. |
-| `TextSheen(Color, Position, Width, Angle, Strength)` | A band of light across the face, leaning by an angle from upright. |
+| `TextSheen(Color, Position, Width, Angle, Strength, Softness)` | A band of light across the face, leaning by an angle from upright. `SpriteFont.SheenAcross` places one by a progress across the text. |
 | `TextShadow(Color, Offset, Spread = 0, Softness = 0)` | Drawn behind everything else. |
 | `TextGlow(Color, Width, Softness)` | A soft outline with round corners, drawn behind the outline. |
 | `TextOutline(Color, Width, Corners = Sharp, MiterLimit = 4, Softness = 0)` | Drawn behind the face. |
@@ -103,8 +103,8 @@ stays on its outline.
 **A sheen cuts the glyphs it falls on.** The band of light is strongest along its middle and fades in
 a straight line to each edge, measured along the line from where the middle crosses the baseline, the
 middle leaning with height by the tangent of its angle from upright. A glyph whose rectangle the band misses is drawn as it would be without
-one: a sprite, or the gradient's bands. One it falls on is cut along the band's two edges and its
-middle (and across where a gradient begins and ends), and each piece is a fan of triangles whose
+one: a sprite, or the gradient's bands. One it falls on is cut along the band's two edges and where
+its full strength begins and ends (its middle alone, for a band that fades all the way) (and across where a gradient begins and ends), and each piece is a fan of triangles whose
 corners carry the face's color there blended toward the light's. Within a piece both change evenly, so
 the corners' colors draw them; the blend of the two is not quite even where a gradient and the light
 overlap, and the difference isn't seen. The band is in the line's own space, before a character's move

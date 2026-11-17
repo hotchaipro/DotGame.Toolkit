@@ -5,7 +5,7 @@
 [Toolkit](README.md) · `DotGame.Toolkit.Fonts` · record struct
 
 ```csharp
-public readonly record struct TextSheen(Color Color, float Position, float Width, Angle Angle = default, float Strength = 1)
+public readonly record struct TextSheen(Color Color, float Position, float Width, Angle Angle = default, float Strength = 1, float Softness = 1)
 ```
 
 Types: [`Color`](https://github.com/hotchaipro/DotGame.Framework/blob/main/docs/api/Framework/Color.md), [`Angle`](https://github.com/hotchaipro/DotGame.Framework/blob/main/docs/api/Framework/Angle.md)
@@ -15,6 +15,8 @@ A band of light across a text's face, upright or leaning: brightest along its mi
 ## Remarks
 
 The band is in the line's own space, the same on every line of the text: it lies over a gradient or a character's own color, moves and turns with characters that do ([`ICharacterAttributes`](ICharacterAttributes.md)), and leaves the outline, glow and shadow alone. Only the characters the band touches cost more to draw; a band that is off either end of the line, or of no width or strength, costs nothing.
+
+To cross a line of text without measuring it, give the band a progress from 0 to 1 with [`SpriteFont.SheenAcross`](SpriteFont.md#sheenacross).
 
 ## Properties
 
@@ -46,6 +48,14 @@ public float Position { get; init; }
 
 Where the middle of the band crosses the baseline, along the line from its start, in pixels of the font's native size.
 
+### Softness
+
+```csharp
+public float Softness { get; init; }
+```
+
+How much of the band is its fading edges, from 0 to 1: at 1 it fades all the way from its middle to its edges, at 0.5 the middle half of it is at full strength, and toward 0 it is a hard-edged bar.
+
 ### Strength
 
 ```csharp
@@ -61,3 +71,22 @@ public float Width { get; init; }
 ```
 
 How wide the band is, along the line, in pixels of the font's native size.
+
+## Methods
+
+### Across
+
+```csharp
+public TextSheen Across(float progress, float lineWidth, float ascent, float descent)
+```
+
+Places the band on a line by how far across it the band has come, without the caller working out where "just off the line" is for a band that leans: at 0 the band is just off the start of the line, touching no letter, and at 1 just off its end.
+
+| Parameter | |
+|---|---|
+| `progress` | How far across: 0 to 1, and beyond either for further off. |
+| `lineWidth` | The width of the line, in pixels of the font's native size. |
+| `ascent` | How far the letters rise above the baseline. |
+| `descent` | How far they hang below it, as a distance (not negative). |
+
+**Returns:** This band at that [`Position`](#position).

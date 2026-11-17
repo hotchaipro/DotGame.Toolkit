@@ -255,12 +255,10 @@ internal sealed class TextPage : SamplePage
         var archScale = new Vector2(34 / font.EmSize);
         var archWidth = font.MeasureString(arched).X;
         var arch = new ArchAttributes(archWidth / 2, archWidth * (1.1f + (0.35f * MathF.Sin(time))));
-        const float SheenWidth = 46;
-        var crossing = (time % 2.4f) / 0.9f;
-        var lit = Sunset with
-        {
-            Sheen = new TextSheen(Color.White, -SheenWidth + (crossing * (archWidth + (2 * SheenWidth))), SheenWidth, Angle.FromDegrees(35), Strength: 0.85f),
-        };
+        // (Progress past 1 is off the end of the line, where the band costs nothing: a rest
+        // between crossings)
+        var band = new TextSheen(Color.White, 0, Width: 46, Angle.FromDegrees(35), Strength: 0.85f, Softness: 0.7f);
+        var lit = Sunset with { Sheen = font.SheenAcross(arched, (time % 2.4f) / 0.9f, band) };
         spriteBatch.DrawString(font, arched.AsSpan(), arch, CharacterCursor.Start, new Vector2(x, y), Color.White, 1, Angle.Zero, Vector2.Zero, archScale, effects: lit);
 
         y += 66;
