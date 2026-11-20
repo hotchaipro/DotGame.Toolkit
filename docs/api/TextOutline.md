@@ -12,6 +12,10 @@ Types: [`Color`](https://github.com/hotchaipro/DotGame.Framework/blob/main/docs/
 
 An outline around text, drawn behind its face.
 
+## Remarks
+
+Text can have several, one round another ([`TextEffects.Outlines`](TextEffects.md#outlines)): a dark line round the letters, a wider band of another color round that, and each moved down a little ([`Offset`](#offset)) as the depth under it.
+
 ## Properties
 
 ### Color
@@ -34,6 +38,16 @@ Types: [`TextCorners`](TextCorners.md)
 
 How the outline's corners are drawn.
 
+### Gradient
+
+```csharp
+public TextGradient? Gradient { get; init; }
+```
+
+Types: [`TextGradient`](TextGradient.md)
+
+Gets the two colors the outline is drawn in, top to bottom of each line as a face's gradient is ([`TextEffects.Gradient`](TextEffects.md#gradient)), or `null` to draw it in [`Color`](https://github.com/hotchaipro/DotGame.Framework/blob/main/docs/api/Framework/Color.md).
+
 ### MiterLimit
 
 ```csharp
@@ -41,6 +55,14 @@ public float MiterLimit { get; init; }
 ```
 
 For [`TextCorners.Sharp`](TextCorners.md#sharp) corners, how many times the width a corner may extend before it's cut back, as SVG's `stroke-miterlimit`; `float.PositiveInfinity` never cuts them.
+
+### Offset
+
+```csharp
+public Vector2 Offset { get; init; }
+```
+
+Gets where the outline is drawn relative to the text, in pixels of the font's native size: moved down, an outline is the depth under the text or under another outline.
 
 ### Softness
 

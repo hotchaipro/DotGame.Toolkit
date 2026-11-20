@@ -33,7 +33,7 @@ foreach (var line in lines) { spriteBatch.DrawString(font, line.Text, ..., effec
 | <a name="none"></a>`None = 0` | Nothing. |
 | <a name="shadow"></a>`Shadow = 1` | The shadow ([`TextEffects.Shadow`](TextEffects.md#shadow)). |
 | <a name="glow"></a>`Glow = 2` | The glow ([`TextEffects.Glow`](TextEffects.md#glow)). |
-| <a name="outline"></a>`Outline = 4` | The outline ([`TextEffects.Outline`](TextEffects.md#outline)). |
+| <a name="outline"></a>`Outline = 4` | The outlines ([`TextEffects.Outlines`](TextEffects.md#outlines) and [`TextEffects.Outline`](TextEffects.md#outline)). |
 | <a name="face"></a>`Face = 8` | The glyphs themselves, with the face's emboldening and softness. |
 | <a name="effects"></a>`Effects = Shadow \| Glow \| Outline` | Every effect behind the face: shadow, glow and outline. |
 | <a name="all"></a>`All = Effects \| Face` | Everything: the effects, then the face. |

@@ -51,7 +51,7 @@ Fonts, atlases, sprite animation, particles, sound banks, cameras, shapes and te
 | [SpriteFontLoader](SpriteFontLoader.md) | class | Loads [`SpriteFont`](SpriteFont.md) content (`.spritefont` files built by the toolkit SpriteFontContent pipeline) together with all of its atlas pages. |
 | [TextAlignment](TextAlignment.md) | enum | How lines sit in a [`TextLayout`](TextLayout.md)'s width. |
 | [TextCorners](TextCorners.md) | enum | How the corners of an outline are drawn. |
-| [TextEffects](TextEffects.md) | record | The visual effects of a piece of text: a shadow, a glow and an outline behind it, and the emboldening and softness of its face. |
+| [TextEffects](TextEffects.md) | record | The visual effects of a piece of text: a shadow, a glow and outlines behind it, and the emboldening and softness of its face. |
 | [TextGlow](TextGlow.md) | record struct | A glow around text: a soft outline with round corners, drawn behind the outline and the face. |
 | [TextGradient](TextGradient.md) | record struct | Two colors a text's face is drawn in, one blending into the other down each line. |
 | [TextLayers](TextLayers.md) | enum | The layers of text with [`TextEffects`](TextEffects.md) that a `DrawString` call draws. |

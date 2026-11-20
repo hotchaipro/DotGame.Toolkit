@@ -13,20 +13,29 @@ namespace DotGame.Toolkit.Fonts;
 internal readonly struct TextLayer
 {
     /// <summary>
-    /// The most layers a string draws: shadow, glow, outline and face.
+    /// The most layers a string draws without <see cref="TextEffects.Outlines"/>: shadow, glow,
+    /// outline and face.
     /// </summary>
     internal const int MaxCount = 4;
+
+    /// <summary>
+    /// How many layers there can be for these effects: room for every one of them.
+    /// </summary>
+    internal static int GetMaxCount(
+        TextEffects? effects) => MaxCount + (effects?.Outlines?.Count ?? 0);
 
     internal TextLayer(
         bool isFace,
         Color color,
         Vector2 offset,
-        in ShaderCustomData data)
+        in ShaderCustomData data,
+        TextGradient? gradient = null)
     {
         this.IsFace = isFace;
         this.Color = color;
         this.Offset = offset;
         this.Data = data;
+        this.Gradient = gradient;
     }
 
     /// <summary>
@@ -48,4 +57,10 @@ internal readonly struct TextLayer
     /// Gets the settings each quad of the layer carries to the text shader.
     /// </summary>
     internal ShaderCustomData Data { get; }
+
+    /// <summary>
+    /// Gets the effect's two colors, top to bottom, in place of <see cref="Color"/>, or
+    /// <c>null</c>. Unused for the face, whose gradient is the effects' own.
+    /// </summary>
+    internal TextGradient? Gradient { get; }
 }

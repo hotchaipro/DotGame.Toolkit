@@ -1268,4 +1268,99 @@ public sealed class SpriteFontDrawTests
         Assert.Equal(30, font.MeasureString(text).X);
         Assert.Equal(3, Draw(font, text).Count);
     }
+
+    // Outlines
+
+    [Fact]
+    public void Outlines_AreDrawnInTurn_EachAtItsOffset()
+    {
+        var font = new TestFonts().Glyphs("A").Build();
+        var batch = new RecordingBatch();
+        var effects = new TextEffects
+        {
+            Outlines = [new TextOutline(Color.Black, Width: 1) { Offset = new Vector2(0, 3) }, new TextOutline(Color.Yellow, Width: 1)],
+            Outline = new TextOutline(Color.Blue, Width: 1) { Offset = new Vector2(2, 0) },
+        };
+
+        batch.Batch.DrawString(font, "A", new Vector2(100, 200), Color.Red, effects: effects);
+
+        Assert.Equal(new[] { Color.Black, Color.Yellow, Color.Blue, Color.Red }, batch.Calls.Select(c => c.Color));
+        Assert.Equal(200 + GlyphTop + 3, batch.Calls[0].Top);
+        Assert.Equal(200 + GlyphTop, batch.Calls[1].Top);
+        Assert.Equal(100 + GlyphLeft + 2, batch.Calls[2].Left);
+        Assert.Equal(100 + GlyphLeft, batch.Calls[3].Left);
+    }
+
+    [Fact]
+    public void AnOutlinesGradient_DrawsItAsTriangles_InItsTwoColors_AndTheFaceAsASprite()
+    {
+        var font = new TestFonts().Glyphs("A").Build();
+        var batch = new RecordingBatch();
+        var effects = new TextEffects { Outline = new TextOutline(Color.Green, Width: 1) { Gradient = new TextGradient(Color.Red, Color.Blue) } };
+
+        batch.Batch.DrawString(font, "A", Vector2.Zero, Color.White, effects: effects);
+
+        // The face is a sprite in the text's color; the outline is triangles, as a face's
+        // gradient is: two thirds of the way down the ascent at the glyph's top, blue below
+        // the baseline
+        Assert.Equal(Color.White, Assert.Single(batch.Calls).Color);
+        var corners = Corners(batch);
+        float top = corners.Min(c => c.Position.Y);
+        var atTop = corners.First(c => c.Position.Y == top).Color;
+        Assert.Equal(1f / 3, atTop.R, 3);
+        Assert.Equal(2f / 3, atTop.B, 3);
+        Assert.All(corners.Where(c => c.Position.Y >= TestFonts.Ascender), c => Assert.Equal(Color.Blue, c.Color));
+    }
+
+    [Fact]
+    public void AnOutlinesGradient_IsDrawnAtItsOffset_WithItsShaderData()
+    {
+        var font = new TestFonts().Format(GlyphFormat.Mtsdf).DistanceRange(16).Glyphs("A").Build();
+        var plain = new RecordingBatch();
+        var batch = new RecordingBatch();
+        var outline = new TextOutline(Color.Green, Width: 2) { Offset = new Vector2(0, 4) };
+
+        plain.Batch.DrawString(font, "A", new Vector2(100, 200), Color.White, effects: new TextEffects { Outline = outline });
+        batch.Batch.DrawString(font, "A", new Vector2(100, 200), Color.White,
+            effects: new TextEffects { Outline = outline with { Gradient = new TextGradient(Color.Red, Color.Blue) } });
+
+        var sprite = plain.Calls[0];
+        var corners = Corners(batch);
+        Assert.Equal(sprite.Left, corners.Min(c => c.Position.X), 3);
+        Assert.Equal(sprite.Top, corners.Min(c => c.Position.Y), 3);
+        Assert.Equal(sprite.Bottom, corners.Max(c => c.Position.Y), 3);
+        Assert.All(batch.Triangles, t => Assert.Equal(sprite.CustomData, t.CustomData));
+    }
+
+    [Fact]
+    public void AnOutlinesGradient_FadesWithTheText_AndIgnoresACharactersOwnColor()
+    {
+        var font = new TestFonts().Glyphs("A").Build();
+        var batch = new RecordingBatch();
+        var attributes = new RecordingAttributes(_ => Color.Green);
+        var effects = new TextEffects { Outline = new TextOutline(Color.Black, Width: 1) { Gradient = new TextGradient(Color.Red, Color.Blue) } };
+
+        batch.Batch.DrawString(font, "A", attributes, CharacterCursor.Start, Vector2.Zero, Color.White, opacity: 0.5f, effects: effects);
+
+        // The face takes the character's color; the outline keeps its gradient, faded
+        Assert.Equal(Color.Green * 0.5f, Assert.Single(batch.Calls).Color);
+        Assert.All(Corners(batch).Where(c => c.Position.Y >= TestFonts.Ascender), c => Assert.Equal(Color.Blue * 0.5f, c.Color));
+    }
+
+    [Fact]
+    public void ManyOutlines_AreAllDrawn()
+    {
+        var font = new TestFonts().Glyphs("A").Build();
+        var batch = new RecordingBatch();
+        var outlines = new TextOutline[20];
+        for (int i = 0; i < outlines.Length; i++)
+        {
+            outlines[i] = new TextOutline(Color.FromRgb(0x080000u * (uint)(i + 1)), Width: 1);
+        }
+
+        batch.Batch.DrawString(font, "A", Vector2.Zero, Color.White, effects: new TextEffects { Outlines = outlines, Shadow = new TextShadow(Color.Black, Vector2.One) });
+
+        Assert.Equal(1 + 20 + 1, batch.Calls.Count);
+        Assert.Equal(Color.FromRgb(0x080000u * 20), batch.Calls[20].Color);
+    }
 }

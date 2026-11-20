@@ -610,7 +610,9 @@ public sealed class SpriteFont : IContent
         // NOTE: Once per call, never per glyph. Nothing draws until a sprite needs the change
         using var shader = spriteBatch.UseShader(this._shader);
 
-        Span<TextLayer> drawn = stackalloc TextLayer[TextLayer.MaxCount];
+        // (A few outlines fit on the stack; more than that is unusual)
+        int most = TextLayer.GetMaxCount(args.Effects);
+        Span<TextLayer> drawn = (most <= MaxStackLayers) ? stackalloc TextLayer[MaxStackLayers] : new TextLayer[most];
         var layerCount = this.GetLayers(args.Effects, drawn, args.Layers);
         for (int i = 0; i < layerCount; i++)
         {
@@ -622,6 +624,9 @@ public sealed class SpriteFont : IContent
     // The miter limit of the face and the shadow, which follow the glyphs' corners as an
     // outline's default does
     private const float FaceMiterLimit = 4;
+
+    // The most layers drawn without an array
+    private const int MaxStackLayers = 12;
 
     // A miter limit the shader treats as unlimited, kept within half-float range
     private const float UnlimitedMiterLimit = 1024;
@@ -683,11 +688,20 @@ public sealed class SpriteFont : IContent
                 this.GetLayerData(embolden + glow.Width, glow.Softness, 1));
         }
 
-        if ((effects.Outline is { } outline) && ((include & TextLayers.Outline) != 0))
+        if ((include & TextLayers.Outline) != 0)
         {
-            var miterLimit = (outline.Corners == TextCorners.Round) ? 1 : outline.MiterLimit;
-            layers[count++] = new TextLayer(isFace: false, outline.Color, Vector2.Zero,
-                this.GetLayerData(embolden + outline.Width, outline.Softness, miterLimit));
+            if (effects.Outlines is { } outlines)
+            {
+                for (int i = 0; i < outlines.Count; i++)
+                {
+                    layers[count++] = this.GetOutlineLayer(outlines[i], embolden);
+                }
+            }
+
+            if (effects.Outline is { } outline)
+            {
+                layers[count++] = this.GetOutlineLayer(outline, embolden);
+            }
         }
 
         if (drawFace)
@@ -697,6 +711,15 @@ public sealed class SpriteFont : IContent
         }
 
         return count;
+    }
+
+    private TextLayer GetOutlineLayer(
+        in TextOutline outline,
+        float embolden)
+    {
+        var miterLimit = (outline.Corners == TextCorners.Round) ? 1 : outline.MiterLimit;
+        return new TextLayer(isFace: false, outline.Color, outline.Offset,
+            this.GetLayerData(embolden + outline.Width, outline.Softness, miterLimit), outline.Gradient);
     }
 
     /// <summary>
@@ -797,8 +820,8 @@ public sealed class SpriteFont : IContent
         var layerData = layer.Data;
         var effectColor = layer.Color * opacity;
 
-        // The face's two colors, if it has them (an effect has its own color)
-        var gradient = layer.IsFace ? args.Effects?.Gradient : null;
+        // The layer's two colors, if it has them: the face's, or an outline's own
+        var gradient = layer.IsFace ? args.Effects?.Gradient : layer.Gradient;
 
         // The band of light across the face, if it has one that shows
         var sheen = layer.IsFace ? args.Effects?.Sheen : null;
@@ -850,7 +873,7 @@ public sealed class SpriteFont : IContent
                     {
                         this.DrawSheenGlyph(spriteBatch, glyph, glyphOffset, pivot, translation, turn, state.LineTop + baseline, glyphColor, (ownColor is null) ? gradient : null, light, layerOrigin, in layerData, in args);
                     }
-                    else if ((gradient is { } colors) && (ownColor is null))
+                    else if ((gradient is { } colors) && ((ownColor is null) || !layer.IsFace))
                     {
                         this.DrawGradientGlyph(spriteBatch, glyph, glyphOffset, pivot, translation, turn, state.LineTop + baseline, colors, layerOrigin, in layerData, in args);
                     }

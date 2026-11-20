@@ -8,13 +8,13 @@
 public sealed record TextEffects
 ```
 
-The visual effects of a piece of text: a shadow, a glow and an outline behind it, and the emboldening and softness of its face. `DrawString` draws them with the text, in one call.
+The visual effects of a piece of text: a shadow, a glow and outlines behind it, and the emboldening and softness of its face. `DrawString` draws them with the text, in one call.
 
 ## Remarks
 
 Every distance is in pixels of the font's native size ([`SpriteFont.EmSize`](SpriteFont.md#emsize)), so effects scale with the text and keep their proportions at every size. The shadow's offset is in the text's own space, so it rotates with rotated text.
 
-The effects of a string are drawn before its face, across all its glyphs: every glyph's shadow, then every glyph's glow, then every glyph's outline, then every glyph's face. Glyphs overlap (kerned pairs, tight tracking, outlines wider than the gap between glyphs), so drawing each glyph's outline and face together would let one glyph's outline cover its neighbor's face.
+The effects of a string are drawn before its face, across all its glyphs: every glyph's shadow, then every glyph's glow, then every glyph's outline (each of [`Outlines`](#outlines) in turn, then [`Outline`](#outline)), then every glyph's face. Glyphs overlap (kerned pairs, tight tracking, outlines wider than the gap between glyphs), so drawing each glyph's outline and face together would let one glyph's outline cover its neighbor's face.
 
 An effect reaches only as far from the glyphs' edges as the font's atlas encodes distances: half the distance range it was built with. Each effect's width (or spread) plus half its softness has to fit, and is limited to it when drawn. Build fonts with a distance range of at least twice the widest effect. Effects aren't drawn for bitmap fonts.
 
@@ -74,7 +74,35 @@ public TextOutline? Outline { get; init; }
 
 Types: [`TextOutline`](TextOutline.md)
 
-Gets the outline drawn behind the face, or `null` for none.
+Gets the outline drawn behind the face, or `null` for none. It's drawn after [`Outlines`](#outlines), over them.
+
+### Outlines
+
+```csharp
+public IReadOnlyList<TextOutline>? Outlines { get; init; }
+```
+
+Types: [`TextOutline`](TextOutline.md)
+
+Gets outlines drawn behind [`Outline`](#outline) and the face, in order, each over the one before (so the widest comes first), or `null` for none.
+
+Each is measured from the face's edges, so one round another is as wide as both: a band 3 wide round an outline 2 wide is an outline 5 wide drawn first. An outline moved down ([`TextOutline.Offset`](TextOutline.md#offset)) is the depth under the one after it.
+
+Effects with the same outlines are equal, whether or not they share the list.
+
+```csharp
+// Cream letters in a dark orange line, in a gold band, each with a depth under it
+var title = new TextEffects
+{
+    Outlines =
+    [
+        new TextOutline(deepBrown, Width: 6, TextCorners.Round) { Offset = new Vector2(0, 3) },
+        new TextOutline(gold, Width: 6, TextCorners.Round) { Gradient = new TextGradient(yellow, orange) },
+        new TextOutline(darkOrange, Width: 3, TextCorners.Round) { Offset = new Vector2(0, 3) },
+    ],
+    Outline = new TextOutline(orange, Width: 3, TextCorners.Round),
+};
+```
 
 ### Shadow
 

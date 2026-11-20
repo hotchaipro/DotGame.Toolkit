@@ -137,7 +137,8 @@ private void DrawTitle(SpriteBatch spriteBatch)
 |---|---|
 | `Shadow` | Color, offset, spread, softness |
 | `Glow` | Color, width, softness; round corners |
-| `Outline` | Color, width, corners (`Sharp` with a miter limit, as SVG's `stroke-miterlimit`, or `Round`), softness |
+| `Outline` | Color, width, corners (`Sharp` with a miter limit, as SVG's `stroke-miterlimit`, or `Round`), softness; an offset, and two colors in place of one (`Gradient`) |
+| `Outlines` | More outlines, each as `Outline`, drawn in turn before it |
 | `Gradient` | Two colors for the face, one at the top of the capitals and one at the baseline |
 | `Sheen` | A band of light across the face: color, position along the line, width, angle from upright, strength, softness |
 | `Embolden`, `Softness` | The face's own: positive emboldening is bolder, negative thinner |
@@ -145,10 +146,14 @@ private void DrawTitle(SpriteBatch spriteBatch)
 - **Every distance is in pixels of the font's native size** (`EmSize`), so effects scale with the text.
   The shadow's offset rotates with rotated text.
 - **A string's effects are drawn behind all of its faces:** every glyph's shadow, then glow, then
-  outline, then face. So one glyph's outline can't cover its neighbor's face.
+  outlines, then face. So one glyph's outline can't cover its neighbor's face.
+- **Outlines stack:** each of `Outlines` is drawn over the one before, then `Outline` over them all,
+  and each is measured from the face's edges. A band round an outline is the wider outline drawn
+  first; moved down by its `Offset`, an outline is the depth under the one after it (below).
 - **Colors:** the color passed to `DrawString`, and per-character colors, apply to the face. Each effect
   keeps its own color. A `Gradient` replaces the face's color with two, blended down the height of the
   capitals, the same for every character of a line; a character with a color of its own keeps that.
+  An outline's `Gradient` is blended the same way, and a character's own color leaves it alone.
 - **A sheen is a glint to animate:** a `TextSheen` is a band of light at a place along the line, lying
   over whatever color the face has. Draw the text each frame with the band a little further along and
   the light crosses the letters: `effects with { Sheen = font.SheenAcross(text, progress, band) }`
@@ -160,6 +165,25 @@ private void DrawTitle(SpriteBatch spriteBatch)
   (`Title with { Outline = null }`). `GetExtent` reports how far they reach beyond the glyphs, for
   layouts that make room. Measuring text ignores them.
 - **Cost:** each effect draws the glyphs once more, in the same batch.
+
+A title in cream letters, in a dark line, in a gold band shaded from yellow to orange, with a depth
+under the line and under the band:
+
+```csharp
+private static readonly TextEffects Banner = new()
+{
+    Outlines =
+    [
+        new TextOutline(Color.FromRgb(0x913601), Width: 6, TextCorners.Round) { Offset = new Vector2(0, 3) },
+        new TextOutline(Color.FromRgb(0xE3A000), Width: 6, TextCorners.Round)
+        {
+            Gradient = new TextGradient(Color.FromRgb(0xF0CC0A), Color.FromRgb(0xE88000)),
+        },
+        new TextOutline(Color.FromRgb(0x992F00), Width: 3, TextCorners.Round) { Offset = new Vector2(0, 3) },
+    ],
+    Outline = new TextOutline(Color.FromRgb(0xC56000), Width: 3, TextCorners.Round),
+};
+```
 
 ## Moving and turning characters
 

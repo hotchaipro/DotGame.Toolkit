@@ -45,7 +45,7 @@ public enum TextLayers
     /// <summary>The glow (<see cref="TextEffects.Glow"/>).</summary>
     Glow = 2,
 
-    /// <summary>The outline (<see cref="TextEffects.Outline"/>).</summary>
+    /// <summary>The outlines (<see cref="TextEffects.Outlines"/> and <see cref="TextEffects.Outline"/>).</summary>
     Outline = 4,
 
     /// <summary>The glyphs themselves, with the face's emboldening and softness.</summary>

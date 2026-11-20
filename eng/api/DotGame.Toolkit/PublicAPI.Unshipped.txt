@@ -155,6 +155,8 @@ DotGame.Toolkit.Fonts.TextEffects.Gradient.init -> void
 DotGame.Toolkit.Fonts.TextEffects.HasBackgroundEffects.get -> bool
 DotGame.Toolkit.Fonts.TextEffects.Outline.get -> DotGame.Toolkit.Fonts.TextOutline?
 DotGame.Toolkit.Fonts.TextEffects.Outline.init -> void
+DotGame.Toolkit.Fonts.TextEffects.Outlines.get -> System.Collections.Generic.IReadOnlyList<DotGame.Toolkit.Fonts.TextOutline>?
+DotGame.Toolkit.Fonts.TextEffects.Outlines.init -> void
 DotGame.Toolkit.Fonts.TextEffects.Shadow.get -> DotGame.Toolkit.Fonts.TextShadow?
 DotGame.Toolkit.Fonts.TextEffects.Shadow.init -> void
 DotGame.Toolkit.Fonts.TextEffects.Sheen.get -> DotGame.Toolkit.Fonts.TextSheen?
@@ -231,8 +233,12 @@ DotGame.Toolkit.Fonts.TextOutline.Corners.get -> DotGame.Toolkit.Fonts.TextCorne
 DotGame.Toolkit.Fonts.TextOutline.Corners.init -> void
 DotGame.Toolkit.Fonts.TextOutline.Deconstruct(out DotGame.Framework.Color Color, out float Width, out DotGame.Toolkit.Fonts.TextCorners Corners, out float MiterLimit, out float Softness) -> void
 DotGame.Toolkit.Fonts.TextOutline.Equals(DotGame.Toolkit.Fonts.TextOutline other) -> bool
+DotGame.Toolkit.Fonts.TextOutline.Gradient.get -> DotGame.Toolkit.Fonts.TextGradient?
+DotGame.Toolkit.Fonts.TextOutline.Gradient.init -> void
 DotGame.Toolkit.Fonts.TextOutline.MiterLimit.get -> float
 DotGame.Toolkit.Fonts.TextOutline.MiterLimit.init -> void
+DotGame.Toolkit.Fonts.TextOutline.Offset.get -> System.Numerics.Vector2
+DotGame.Toolkit.Fonts.TextOutline.Offset.init -> void
 DotGame.Toolkit.Fonts.TextOutline.Softness.get -> float
 DotGame.Toolkit.Fonts.TextOutline.Softness.init -> void
 DotGame.Toolkit.Fonts.TextOutline.TextOutline() -> void

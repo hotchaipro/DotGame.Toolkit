@@ -36,12 +36,12 @@ no effects.
 
 | Type | Role |
 |---|---|
-| `TextEffects` | A record: `Shadow`, `Glow`, `Outline` (each optional), and the face's `Gradient`, `Embolden` and `Softness`. `TextEffects.None` is text with none. |
+| `TextEffects` | A record: `Shadow`, `Glow`, `Outline` (each optional), `Outlines` (a list, drawn before `Outline`), and the face's `Gradient`, `Embolden` and `Softness`. `TextEffects.None` is text with none. Effects with the same outlines are equal whether or not they share the list. |
 | `TextGradient(Top, Bottom)` | Two colors for the face, in place of its one. |
 | `TextSheen(Color, Position, Width, Angle, Strength, Softness)` | A band of light across the face, leaning by an angle from upright. `SpriteFont.SheenAcross` places one by a progress across the text. |
 | `TextShadow(Color, Offset, Spread = 0, Softness = 0)` | Drawn behind everything else. |
 | `TextGlow(Color, Width, Softness)` | A soft outline with round corners, drawn behind the outline. |
-| `TextOutline(Color, Width, Corners = Sharp, MiterLimit = 4, Softness = 0)` | Drawn behind the face. |
+| `TextOutline(Color, Width, Corners = Sharp, MiterLimit = 4, Softness = 0)` | Drawn behind the face; `Offset` moves it, `Gradient` gives it two colors top to bottom in place of `Color`. |
 | `TextCorners` | `Sharp` (mitered, cut back at the miter limit) or `Round`. |
 | `TextLayers` | Flags for which layers a call draws: `Shadow`, `Glow`, `Outline`, `Face`; `Effects` and `All`. |
 | `SpriteBatchTextExtensions.DrawString` | Draws text in a font, with optional effects and layers, from a `ReadOnlySpan<char>` or a `StringBuilder`, with or without per-character attributes. |
@@ -72,9 +72,12 @@ no effects.
 
 ## Drawing
 
-`DrawString` turns the effects into up to four layers (`TextLayer`, internal), in drawing order. Each
-layer is a pass over every glyph of the string, and each holds a color, an offset (the shadow's) and
-the per-sprite shader data every quad of the pass carries. `SpriteFont.GetLayers` builds them, and
+`DrawString` turns the effects into layers (`TextLayer`, internal), in drawing order: shadow, glow,
+each of `Outlines`, `Outline`, face; four, and one more for each of `Outlines`. Each layer is a pass
+over every glyph of the string, and each holds a color (or an outline's gradient), an offset (the
+shadow's or an outline's) and the per-sprite shader data every quad of the pass carries. An outline's
+gradient is drawn as the face's is, as triangles in bands down the glyph's rectangle, with the
+outline's shader data. `SpriteFont.GetLayers` builds them, and
 text without effects uses a face layer the font builds once.
 
 **Every effect of a string is drawn before its faces, across all its glyphs:** every glyph's shadow,
@@ -217,7 +220,8 @@ texture: the draw count is set by atlas page changes, however many fonts and eff
 A gradient's face costs up to six triangles a glyph, each as much as a sprite, where a plain face is one.
 A sheen costs only on the glyphs under its band (up to some thirty triangles each, with a gradient), and
 nothing on the rest of the text or on text without one.
-Drawing allocates nothing per frame: layers live on the stack, and a `StringBuilder`'s text is copied to
+Drawing allocates nothing per frame: layers live on the stack (up to 12; text with more outlines than
+that, which is unusual, takes an array), and a `StringBuilder`'s text is copied to
 the stack, or to a pooled array when it's long.
 
 ## Not supported
