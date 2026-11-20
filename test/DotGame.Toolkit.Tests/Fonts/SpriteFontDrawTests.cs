@@ -349,9 +349,7 @@ public sealed class SpriteFontDrawTests
 
     private static readonly TextEffects Everything = new()
     {
-        Shadow = new TextShadow(Color.Black, new Vector2(2, 3)),
-        Glow = new TextGlow(Color.Yellow, Width: 1, Softness: 1),
-        Outline = new TextOutline(Color.Blue, Width: 1),
+        Underlays = [TextUnderlay.Outline(Color.Blue, 1), TextUnderlay.Glow(Color.Yellow, 1, softness: 1), TextUnderlay.Shadow(Color.Black, new Vector2(2, 3))],
     };
 
     [Fact]
@@ -386,7 +384,7 @@ public sealed class SpriteFontDrawTests
     {
         var font = new TestFonts().Format(GlyphFormat.Mtsdf).DistanceRange(16).Glyphs("A").Build();
         var batch = new RecordingBatch();
-        var effects = new TextEffects { Outline = new TextOutline(Color.Blue, Width: 2) };
+        var effects = new TextEffects { Underlays = [TextUnderlay.Outline(Color.Blue, 2)] };
 
         batch.Batch.DrawString(font, "A", Vector2.Zero, Color.White, effects: effects);
 
@@ -399,7 +397,7 @@ public sealed class SpriteFontDrawTests
     {
         var font = new TestFonts().Glyphs("A").Build();
         var batch = new RecordingBatch();
-        var effects = new TextEffects { Outline = new TextOutline(Color.Blue, Width: 1) };
+        var effects = new TextEffects { Underlays = [TextUnderlay.Outline(Color.Blue, 1)] };
 
         batch.Batch.DrawString(font, "A", Vector2.Zero, Color.Red, opacity: 0.5f, effects: effects);
 
@@ -413,7 +411,7 @@ public sealed class SpriteFontDrawTests
         var font = new TestFonts().Glyphs("A").Build();
         var batch = new RecordingBatch();
 
-        batch.Batch.DrawString(font, "A", Vector2.Zero, Color.Red, effects: Everything, layers: TextLayers.Effects);
+        batch.Batch.DrawString(font, "A", Vector2.Zero, Color.Red, effects: Everything, layers: TextLayers.Underlays);
         Assert.Equal(new[] { Color.Black, Color.Yellow, Color.Blue }, batch.Calls.Select(c => c.Color));
 
         batch.Calls.Clear();
@@ -466,7 +464,7 @@ public sealed class SpriteFontDrawTests
         var font = new TestFonts().Glyphs("A").Build();
         var plain = new RecordingBatch();
         var moved = new RecordingBatch();
-        var effects = new TextEffects { Outline = new TextOutline(Color.Blue, Width: 1) };
+        var effects = new TextEffects { Underlays = [TextUnderlay.Outline(Color.Blue, 1)] };
 
         plain.Batch.DrawString(font, "A", new Vector2(100, 200), Color.Red, effects: effects);
         moved.Batch.DrawString(font, "A", new MovedAttributes(new Vector2(3, -4), default), CharacterCursor.Start, new Vector2(100, 200), Color.Red, effects: effects);
@@ -533,7 +531,7 @@ public sealed class SpriteFontDrawTests
     {
         var font = new TestFonts().Glyphs("A").Build();
         var batch = new RecordingBatch();
-        var effects = TwoColors with { Outline = new TextOutline(Color.Green, Width: 1) };
+        var effects = TwoColors with { Underlays = [TextUnderlay.Outline(Color.Green, 1)] };
 
         batch.Batch.DrawString(font, "A", Vector2.Zero, Color.White, effects: effects);
 
@@ -647,7 +645,7 @@ public sealed class SpriteFontDrawTests
         var font = new TestFonts().Glyphs("AB").Build();
         var plain = new RecordingBatch();
         var batch = new RecordingBatch();
-        var outline = new TextEffects { Outline = new TextOutline(Color.Blue, Width: 1) };
+        var outline = new TextEffects { Underlays = [TextUnderlay.Outline(Color.Blue, 1)] };
 
         plain.Batch.DrawString(font, "AB", new Vector2(100, 200), Color.Red, effects: outline);
         batch.Batch.DrawString(font, "AB", new Vector2(100, 200), Color.Red,
@@ -663,7 +661,7 @@ public sealed class SpriteFontDrawTests
         var font = new TestFonts().Glyphs("AB").Build();
         var plain = new RecordingBatch();
         var batch = new RecordingBatch();
-        var outline = new TextEffects { Outline = new TextOutline(Color.Blue, Width: 1) };
+        var outline = new TextEffects { Underlays = [TextUnderlay.Outline(Color.Blue, 1)] };
 
         // The band is over the second character alone: 12 to 18 along the line
         plain.Batch.DrawString(font, "AB", Vector2.Zero, Color.Red, effects: outline);
@@ -943,7 +941,7 @@ public sealed class SpriteFontDrawTests
         var font = new TestFonts().Glyphs("AB").Build();
         var batch = new RecordingBatch();
         var attributes = new RecordingAttributes(cursor => cursor.CharIndex == 1 ? Color.Green : null);
-        var effects = new TextEffects { Outline = new TextOutline(Color.Blue, Width: 1) };
+        var effects = new TextEffects { Underlays = [TextUnderlay.Outline(Color.Blue, 1)] };
 
         batch.Batch.DrawString(font, "AB", attributes, CharacterCursor.Start, Vector2.Zero, Color.Red, opacity: 0.5f, effects: effects);
 
@@ -957,7 +955,7 @@ public sealed class SpriteFontDrawTests
     {
         var font = new TestFonts().Glyphs("AB").Build();
         var attributes = new RecordingAttributes();
-        var effects = new TextEffects { Outline = new TextOutline(Color.Blue, Width: 1) };
+        var effects = new TextEffects { Underlays = [TextUnderlay.Outline(Color.Blue, 1)] };
 
         new RecordingBatch().Batch.DrawString(font, "AB", attributes, new CharacterCursor(5, 5), Vector2.Zero, Color.White, effects: effects);
 
@@ -1020,7 +1018,7 @@ public sealed class SpriteFontDrawTests
     {
         var font = new TestFonts().Glyphs("AB").Build();
         var batch = new RecordingBatch();
-        var effects = new TextEffects { Outline = new TextOutline(Color.Blue, Width: 1) };
+        var effects = new TextEffects { Underlays = [TextUnderlay.Outline(Color.Blue, 1)] };
 
         batch.Batch.DrawString(font, Builder("A", "B"), Vector2.Zero, Color.Red, effects: effects);
 
@@ -1269,17 +1267,21 @@ public sealed class SpriteFontDrawTests
         Assert.Equal(3, Draw(font, text).Count);
     }
 
-    // Outlines
+    // Underlays
 
     [Fact]
-    public void Outlines_AreDrawnInTurn_EachAtItsOffset()
+    public void Underlays_AreDrawnFarthestFirst_EachAtItsOffset()
     {
         var font = new TestFonts().Glyphs("A").Build();
         var batch = new RecordingBatch();
         var effects = new TextEffects
         {
-            Outlines = [new TextOutline(Color.Black, Width: 1) { Offset = new Vector2(0, 3) }, new TextOutline(Color.Yellow, Width: 1)],
-            Outline = new TextOutline(Color.Blue, Width: 1) { Offset = new Vector2(2, 0) },
+            Underlays =
+            [
+                TextUnderlay.Outline(Color.Blue, 1) with { Offset = new Vector2(2, 0) },
+                TextUnderlay.Outline(Color.Yellow, 1),
+                TextUnderlay.Outline(Color.Black, 1) with { Offset = new Vector2(0, 3) },
+            ],
         };
 
         batch.Batch.DrawString(font, "A", new Vector2(100, 200), Color.Red, effects: effects);
@@ -1292,15 +1294,15 @@ public sealed class SpriteFontDrawTests
     }
 
     [Fact]
-    public void AnOutlinesGradient_DrawsItAsTriangles_InItsTwoColors_AndTheFaceAsASprite()
+    public void AnUnderlaysGradient_DrawsItAsTriangles_InItsTwoColors_AndTheFaceAsASprite()
     {
         var font = new TestFonts().Glyphs("A").Build();
         var batch = new RecordingBatch();
-        var effects = new TextEffects { Outline = new TextOutline(Color.Green, Width: 1) { Gradient = new TextGradient(Color.Red, Color.Blue) } };
+        var effects = new TextEffects { Underlays = [TextUnderlay.Outline(Color.Green, 1) with { Gradient = new TextGradient(Color.Red, Color.Blue) }] };
 
         batch.Batch.DrawString(font, "A", Vector2.Zero, Color.White, effects: effects);
 
-        // The face is a sprite in the text's color; the outline is triangles, as a face's
+        // The face is a sprite in the text's color; the underlay is triangles, as a face's
         // gradient is: two thirds of the way down the ascent at the glyph's top, blue below
         // the baseline
         Assert.Equal(Color.White, Assert.Single(batch.Calls).Color);
@@ -1313,16 +1315,16 @@ public sealed class SpriteFontDrawTests
     }
 
     [Fact]
-    public void AnOutlinesGradient_IsDrawnAtItsOffset_WithItsShaderData()
+    public void AnUnderlaysGradient_IsDrawnAtItsOffset_WithItsShaderData()
     {
         var font = new TestFonts().Format(GlyphFormat.Mtsdf).DistanceRange(16).Glyphs("A").Build();
         var plain = new RecordingBatch();
         var batch = new RecordingBatch();
-        var outline = new TextOutline(Color.Green, Width: 2) { Offset = new Vector2(0, 4) };
+        var underlay = TextUnderlay.Outline(Color.Green, 2) with { Offset = new Vector2(0, 4) };
 
-        plain.Batch.DrawString(font, "A", new Vector2(100, 200), Color.White, effects: new TextEffects { Outline = outline });
+        plain.Batch.DrawString(font, "A", new Vector2(100, 200), Color.White, effects: new TextEffects { Underlays = [underlay] });
         batch.Batch.DrawString(font, "A", new Vector2(100, 200), Color.White,
-            effects: new TextEffects { Outline = outline with { Gradient = new TextGradient(Color.Red, Color.Blue) } });
+            effects: new TextEffects { Underlays = [underlay with { Gradient = new TextGradient(Color.Red, Color.Blue) }] });
 
         var sprite = plain.Calls[0];
         var corners = Corners(batch);
@@ -1333,34 +1335,36 @@ public sealed class SpriteFontDrawTests
     }
 
     [Fact]
-    public void AnOutlinesGradient_FadesWithTheText_AndIgnoresACharactersOwnColor()
+    public void AnUnderlaysGradient_FadesWithTheText_AndIgnoresACharactersOwnColor()
     {
         var font = new TestFonts().Glyphs("A").Build();
         var batch = new RecordingBatch();
         var attributes = new RecordingAttributes(_ => Color.Green);
-        var effects = new TextEffects { Outline = new TextOutline(Color.Black, Width: 1) { Gradient = new TextGradient(Color.Red, Color.Blue) } };
+        var effects = new TextEffects { Underlays = [TextUnderlay.Outline(Color.Black, 1) with { Gradient = new TextGradient(Color.Red, Color.Blue) }] };
 
         batch.Batch.DrawString(font, "A", attributes, CharacterCursor.Start, Vector2.Zero, Color.White, opacity: 0.5f, effects: effects);
 
-        // The face takes the character's color; the outline keeps its gradient, faded
+        // The face takes the character's color; the underlay keeps its gradient, faded
         Assert.Equal(Color.Green * 0.5f, Assert.Single(batch.Calls).Color);
         Assert.All(Corners(batch).Where(c => c.Position.Y >= TestFonts.Ascender), c => Assert.Equal(Color.Blue * 0.5f, c.Color));
     }
 
     [Fact]
-    public void ManyOutlines_AreAllDrawn()
+    public void ManyUnderlays_AreAllDrawn()
     {
         var font = new TestFonts().Glyphs("A").Build();
         var batch = new RecordingBatch();
-        var outlines = new TextOutline[20];
-        for (int i = 0; i < outlines.Length; i++)
+        var underlays = new TextUnderlay[20];
+        for (int i = 0; i < underlays.Length; i++)
         {
-            outlines[i] = new TextOutline(Color.FromRgb(0x080000u * (uint)(i + 1)), Width: 1);
+            underlays[i] = TextUnderlay.Outline(Color.FromRgb(0x080000u * (uint)(i + 1)), 1);
         }
 
-        batch.Batch.DrawString(font, "A", Vector2.Zero, Color.White, effects: new TextEffects { Outlines = outlines, Shadow = new TextShadow(Color.Black, Vector2.One) });
+        batch.Batch.DrawString(font, "A", Vector2.Zero, Color.White, effects: new TextEffects { Underlays = underlays });
 
-        Assert.Equal(1 + 20 + 1, batch.Calls.Count);
-        Assert.Equal(Color.FromRgb(0x080000u * 20), batch.Calls[20].Color);
+        // The farthest, the last, first
+        Assert.Equal(20 + 1, batch.Calls.Count);
+        Assert.Equal(Color.FromRgb(0x080000u * 20), batch.Calls[0].Color);
+        Assert.Equal(Color.FromRgb(0x080000u), batch.Calls[19].Color);
     }
 }

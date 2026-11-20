@@ -21,14 +21,14 @@ public sealed class TextEffectsTests
         return new TestFonts().Format(format).DistanceRange(range, middle).Glyphs("AV").Build();
     }
 
-    private static TextLayer[] Layers(
+    private static TextPass[] Passes(
         SpriteFont font,
         TextEffects? effects,
         TextLayers include = TextLayers.All)
     {
-        var layers = new TextLayer[TextLayer.GetMaxCount(effects)];
-        var count = font.GetLayers(effects, layers, include);
-        return layers[..count];
+        var passes = new TextPass[TextPass.GetMaxCount(effects)];
+        var count = font.GetPasses(effects, passes, include);
+        return passes[..count];
     }
 
     private static void AssertData(
@@ -44,147 +44,183 @@ public sealed class TextEffectsTests
         Assert.Equal(signedRange, (float)data.Values.W, Precision);
     }
 
-    // Layers
+    private static readonly Color Brown = Color.FromRgb(0x902000);
+    private static readonly Color Gold = Color.FromRgb(0xFFCC00);
+    private static readonly Color Orange = Color.FromRgb(0xFF8000);
+    private static readonly Color DarkRed = Color.FromRgb(0x800000);
+    private static readonly Color OrangeRed = Color.FromRgb(0xFF4000);
+
+    // Passes
 
     [Fact]
     public void NoEffects_DrawsOnlyTheFace()
     {
         var font = Font(GlyphFormat.Msdf, range: 4, middle: 0.5f);
 
-        var layers = Layers(font, null);
+        var passes = Passes(font, null);
 
-        var face = Assert.Single(layers);
+        var face = Assert.Single(passes);
         Assert.True(face.IsFace);
         AssertData(face.Data, distanceOffset: 0.5f, softness: 0, miterLimit: 4, signedRange: 4);
-        Assert.Equal(Layers(font, TextEffects.None)[0].Data, face.Data);
+        Assert.Equal(Passes(font, TextEffects.None)[0].Data, face.Data);
+        Assert.Equal(Passes(font, new TextEffects())[0].Data, face.Data);
     }
 
     [Fact]
-    public void EveryEffect_DrawsShadowGlowOutlineThenFace()
+    public void Underlays_AreDrawnFarthestFirst_ThenTheFace()
     {
-        var font = Font();
         var effects = new TextEffects
         {
-            Shadow = new TextShadow(Color.Black, new Vector2(2, 3)),
-            Glow = new TextGlow(Color.Yellow, Width: 3, Softness: 2),
-            Outline = new TextOutline(Color.Red, Width: 2),
+            Underlays = [TextUnderlay.Outline(Color.Red, 2), TextUnderlay.Glow(Color.Yellow, 3, softness: 2), TextUnderlay.Shadow(Color.Black, new Vector2(2, 3))],
         };
 
-        var layers = Layers(font, effects);
+        var passes = Passes(Font(), effects);
 
-        Assert.Equal(4, layers.Length);
-        Assert.Equal(Color.Black, layers[0].Color);
-        Assert.Equal(new Vector2(2, 3), layers[0].Offset);
-        Assert.Equal(Color.Yellow, layers[1].Color);
-        Assert.Equal(Color.Red, layers[2].Color);
-        Assert.Equal(Vector2.Zero, layers[2].Offset);
-        Assert.Equal([false, false, false, true], layers.Select(l => l.IsFace));
+        Assert.Equal(4, passes.Length);
+        Assert.Equal(Color.Black, passes[0].Color);
+        Assert.Equal(new Vector2(2, 3), passes[0].Offset);
+        Assert.Equal(Color.Yellow, passes[1].Color);
+        Assert.Equal(Color.Red, passes[2].Color);
+        Assert.Equal(Vector2.Zero, passes[2].Offset);
+        Assert.Equal([false, false, false, true], passes.Select(l => l.IsFace));
+    }
+
+    // A title's: the line next to the face, the depth under it, a band in two colors, the depth under that
+    private static readonly TextEffects Banner = new()
+    {
+        Underlays =
+        [
+            TextUnderlay.Outline(OrangeRed, 3, TextCorners.Round),
+            TextUnderlay.Outline(DarkRed, 3) with { Offset = new Vector2(0, 2) },
+            TextUnderlay.Outline(Gold, 6, TextCorners.Round) with { Gradient = new TextGradient(Color.Yellow, Orange) },
+            TextUnderlay.Outline(Brown, 6, TextCorners.Round) with { Offset = new Vector2(0, 3) },
+        ],
+    };
+
+    [Fact]
+    public void Underlays_EachExtendFromTheEmboldenedFace_WithTheirOwnCornersOffsetsAndGradients()
+    {
+        var passes = Passes(Font(range: 32, middle: 0.5f), Banner with { Embolden = 1 });
+
+        Assert.Equal(new[] { Brown, Gold, DarkRed, OrangeRed }, passes[..4].Select(p => p.Color));
+        AssertData(passes[0].Data, distanceOffset: 0.5f + 1 + 6, softness: 0, miterLimit: 1, signedRange: -32);
+        AssertData(passes[1].Data, distanceOffset: 0.5f + 1 + 6, softness: 0, miterLimit: 1, signedRange: -32);
+        AssertData(passes[2].Data, distanceOffset: 0.5f + 1 + 3, softness: 0, miterLimit: 4, signedRange: -32);
+        AssertData(passes[3].Data, distanceOffset: 0.5f + 1 + 3, softness: 0, miterLimit: 1, signedRange: -32);
+        AssertData(passes[4].Data, distanceOffset: 0.5f + 1, softness: 0, miterLimit: 4, signedRange: -32);
+        Assert.Equal(new Vector2(0, 3), passes[0].Offset);
+        Assert.Equal(new Vector2(0, 2), passes[2].Offset);
+        Assert.Null(passes[0].Gradient);
+        Assert.Equal(new TextGradient(Color.Yellow, Orange), passes[1].Gradient);
     }
 
     // Layer selection
 
-    private static readonly TextEffects Everything = new()
-    {
-        Shadow = new TextShadow(Color.Black, Vector2.One),
-        Glow = new TextGlow(Color.Yellow, Width: 2, Softness: 1),
-        Outline = new TextOutline(Color.Red, Width: 1),
-    };
-
     [Fact]
-    public void Layers_Effects_DrawsEveryEffectButNotTheFace()
+    public void Layers_Underlays_DrawsEveryUnderlayButNotTheFace()
     {
-        var layers = Layers(Font(), Everything, TextLayers.Effects);
+        var passes = Passes(Font(range: 32), Banner, TextLayers.Underlays);
 
-        Assert.Equal(new[] { Color.Black, Color.Yellow, Color.Red }, layers.Select(l => l.Color));
-        Assert.DoesNotContain(layers, l => l.IsFace);
+        Assert.Equal(new[] { Brown, Gold, DarkRed, OrangeRed }, passes.Select(l => l.Color));
+        Assert.DoesNotContain(passes, l => l.IsFace);
     }
 
     [Fact]
     public void Layers_Face_DrawsOnlyTheFace()
     {
-        var face = Assert.Single(Layers(Font(), Everything, TextLayers.Face));
+        var face = Assert.Single(Passes(Font(), Banner, TextLayers.Face));
 
         Assert.True(face.IsFace);
     }
 
     [Fact]
-    public void Layers_Effects_ThenFace_DrawTheSameAsAll()
+    public void Layers_Underlays_ThenFace_DrawTheSameAsAll()
     {
-        var font = Font();
+        var font = Font(range: 32);
 
-        var split = Layers(font, Everything, TextLayers.Effects).Concat(Layers(font, Everything, TextLayers.Face));
+        var split = Passes(font, Banner, TextLayers.Underlays).Concat(Passes(font, Banner, TextLayers.Face));
 
-        Assert.Equal(Layers(font, Everything), split);
+        Assert.Equal(Passes(font, Banner), split);
     }
 
     [Fact]
-    public void Layers_OneEffect_DrawsOnlyIt()
+    public void Layers_Underlays_OfTextWithoutThem_DrawNothing()
     {
-        var outline = Assert.Single(Layers(Font(), Everything, TextLayers.Outline));
+        Assert.Empty(Passes(Font(), null, TextLayers.Underlays));
+        Assert.Empty(Passes(Font(), new TextEffects { Embolden = 1 }, TextLayers.Underlays));
+        Assert.Empty(Passes(Font(GlyphFormat.Bitmap), Banner, TextLayers.Underlays));
+        Assert.Empty(Passes(Font(), Banner, TextLayers.None));
+    }
 
-        Assert.Equal(Color.Red, outline.Color);
+    // The usual underlays
+
+    [Fact]
+    public void Outline_IsTheGlyphsGrown_InPlace()
+    {
+        var outline = TextUnderlay.Outline(Color.Black, 3);
+
+        Assert.Equal(new TextUnderlay(Color.Black, 3), outline);
+        Assert.Equal(TextCorners.Sharp, outline.Corners);
+        Assert.Equal(4, outline.MiterLimit);
+        Assert.Equal(TextCorners.Round, TextUnderlay.Outline(Color.Black, 3, TextCorners.Round).Corners);
     }
 
     [Fact]
-    public void Layers_Effects_OfTextWithoutEffects_DrawNothing()
+    public void Shadow_IsTheGlyphsMoved_SoftenedAndSpread()
     {
-        Assert.Empty(Layers(Font(), null, TextLayers.Effects));
-        Assert.Empty(Layers(Font(GlyphFormat.Bitmap), Everything, TextLayers.Effects));
+        var shadow = TextUnderlay.Shadow(Color.Black, new Vector2(2, 3), softness: 1, spread: 2);
+
+        Assert.Equal(new Vector2(2, 3), shadow.Offset);
+        Assert.Equal(1, shadow.Softness);
+        Assert.Equal(2, shadow.Width);
+        Assert.Equal(TextCorners.Sharp, shadow.Corners);
+    }
+
+    [Fact]
+    public void Glow_IsRoundAndSoft()
+    {
+        var passes = Passes(Font(), new TextEffects { Underlays = [TextUnderlay.Glow(Color.White, width: 2, softness: 3)] });
+
+        AssertData(passes[0].Data, distanceOffset: 2, softness: 3, miterLimit: 1, signedRange: -16);
     }
 
     // Per-quad settings
 
     [Fact]
-    public void Outline_ExtendsFromTheEmboldenedFace()
+    public void Underlay_ExtendsFromTheEmboldenedFace()
     {
         var font = Font(middle: 0.5f);
-        var effects = new TextEffects { Embolden = 1, Outline = new TextOutline(Color.Black, Width: 3, MiterLimit: 2, Softness: 1) };
+        var effects = new TextEffects { Embolden = 1, Underlays = [new TextUnderlay(Color.Black, 3) { MiterLimit = 2, Softness = 1 }] };
 
-        var layers = Layers(font, effects);
+        var passes = Passes(font, effects);
 
-        AssertData(layers[0].Data, distanceOffset: 0.5f + 1 + 3, softness: 1, miterLimit: 2, signedRange: -16);
-        AssertData(layers[1].Data, distanceOffset: 0.5f + 1, softness: 0, miterLimit: 4, signedRange: -16);
+        AssertData(passes[0].Data, distanceOffset: 0.5f + 1 + 3, softness: 1, miterLimit: 2, signedRange: -16);
+        AssertData(passes[1].Data, distanceOffset: 0.5f + 1, softness: 0, miterLimit: 4, signedRange: -16);
     }
 
     [Fact]
-    public void Outline_RoundCorners_HaveAMiterLimitOfOne()
+    public void Underlay_RoundCorners_HaveAMiterLimitOfOne()
     {
-        var font = Font();
+        var passes = Passes(Font(), new TextEffects { Underlays = [TextUnderlay.Outline(Color.Black, 2, TextCorners.Round) with { MiterLimit = 10 }] });
 
-        var layers = Layers(font, new TextEffects { Outline = new TextOutline(Color.Black, 2, TextCorners.Round, MiterLimit: 10) });
-
-        Assert.Equal(1, (float)layers[0].Data.Values.Z, Precision);
+        Assert.Equal(1, (float)passes[0].Data.Values.Z, Precision);
     }
 
     [Fact]
-    public void Outline_UnlimitedMiter_StaysWithinHalfFloats()
+    public void Underlay_UnlimitedMiter_StaysWithinHalfFloats()
     {
-        var font = Font();
+        var passes = Passes(Font(), new TextEffects { Underlays = [TextUnderlay.Outline(Color.Black, 2) with { MiterLimit = float.PositiveInfinity }] });
 
-        var layers = Layers(font, new TextEffects { Outline = new TextOutline(Color.Black, 2, MiterLimit: float.PositiveInfinity) });
-
-        Assert.True(float.IsFinite((float)layers[0].Data.Values.Z));
-        Assert.True((float)layers[0].Data.Values.Z >= 1000);
-    }
-
-    [Fact]
-    public void Glow_IsRound()
-    {
-        var font = Font();
-
-        var layers = Layers(font, new TextEffects { Glow = new TextGlow(Color.White, Width: 2, Softness: 3) });
-
-        AssertData(layers[0].Data, distanceOffset: 2, softness: 3, miterLimit: 1, signedRange: -16);
+        Assert.True(float.IsFinite((float)passes[0].Data.Values.Z));
+        Assert.True((float)passes[0].Data.Values.Z >= 1000);
     }
 
     [Fact]
     public void Shadow_SpreadsFromTheFace()
     {
-        var font = Font();
+        var passes = Passes(Font(), new TextEffects { Embolden = -1, Underlays = [TextUnderlay.Shadow(Color.Black, Vector2.One, softness: 1, spread: 2)] });
 
-        var layers = Layers(font, new TextEffects { Embolden = -1, Shadow = new TextShadow(Color.Black, Vector2.One, Spread: 2, Softness: 1) });
-
-        AssertData(layers[0].Data, distanceOffset: 1, softness: 1, miterLimit: 4, signedRange: -16);
+        AssertData(passes[0].Data, distanceOffset: 1, softness: 1, miterLimit: 4, signedRange: -16);
     }
 
     // Formats
@@ -199,16 +235,13 @@ public sealed class TextEffectsTests
     {
         var font = Font((GlyphFormat)format);
 
-        Assert.Equal(signedRange, (float)Layers(font, null)[0].Data.Values.W, Precision);
+        Assert.Equal(signedRange, (float)Passes(font, null)[0].Data.Values.W, Precision);
     }
 
     [Fact]
     public void BitmapFont_DrawsOnlyTheFace_WithNoDistanceSettings()
     {
-        var font = Font(GlyphFormat.Bitmap);
-        var effects = new TextEffects { Outline = new TextOutline(Color.Black, 2), Shadow = new TextShadow(Color.Black, Vector2.One) };
-
-        var face = Assert.Single(Layers(font, effects));
+        var face = Assert.Single(Passes(Font(GlyphFormat.Bitmap), Banner));
 
         Assert.True(face.IsFace);
         Assert.Equal(default, face.Data);
@@ -217,35 +250,29 @@ public sealed class TextEffectsTests
     // Distance range
 
     [Fact]
-    public void Effect_BeyondTheRange_IsClampedToIt()
+    public void Underlay_BeyondTheRange_IsClampedToIt()
     {
         // Half the range of 16, less a pixel for the anti-aliasing
-        var font = Font(range: 16);
+        var passes = Passes(Font(range: 16), new TextEffects { Underlays = [TextUnderlay.Outline(Color.Black, 10)] });
 
-        var layers = Layers(font, new TextEffects { Outline = new TextOutline(Color.Black, Width: 10) });
-
-        Assert.Equal(7, (float)layers[0].Data.Values.X, Precision);
+        Assert.Equal(7, (float)passes[0].Data.Values.X, Precision);
     }
 
     [Fact]
-    public void Effect_Softness_LeavesRoomForItsFade()
+    public void Underlay_Softness_LeavesRoomForItsFade()
     {
-        var font = Font(range: 16);
+        var passes = Passes(Font(range: 16), new TextEffects { Underlays = [TextUnderlay.Glow(Color.White, width: 10, softness: 4)] });
 
-        var layers = Layers(font, new TextEffects { Glow = new TextGlow(Color.White, Width: 10, Softness: 4) });
-
-        Assert.Equal(5, (float)layers[0].Data.Values.X, Precision);
-        Assert.Equal(4, (float)layers[0].Data.Values.Y, Precision);
+        Assert.Equal(5, (float)passes[0].Data.Values.X, Precision);
+        Assert.Equal(4, (float)passes[0].Data.Values.Y, Precision);
     }
 
     [Fact]
-    public void Effect_WithinTheRange_IsUnchanged()
+    public void Underlay_WithinTheRange_IsUnchanged()
     {
-        var font = Font(range: 16);
+        var passes = Passes(Font(range: 16), new TextEffects { Underlays = [TextUnderlay.Outline(Color.Black, 6)] });
 
-        var layers = Layers(font, new TextEffects { Outline = new TextOutline(Color.Black, Width: 6) });
-
-        Assert.Equal(6, (float)layers[0].Data.Values.X, Precision);
+        Assert.Equal(6, (float)passes[0].Data.Values.X, Precision);
     }
 
     // Extent
@@ -257,13 +284,12 @@ public sealed class TextEffectsTests
     }
 
     [Fact]
-    public void GetExtent_CoversTheWidestEffectOnEachSide()
+    public void GetExtent_CoversTheWidestUnderlayOnEachSide()
     {
         var effects = new TextEffects
         {
             Embolden = 1,
-            Outline = new TextOutline(Color.Black, Width: 2),
-            Shadow = new TextShadow(Color.Black, new Vector2(4, -1), Spread: 0, Softness: 2),
+            Underlays = [TextUnderlay.Outline(Color.Black, 2), TextUnderlay.Shadow(Color.Black, new Vector2(4, -1), softness: 2)],
         };
 
         var extent = effects.GetExtent();
@@ -275,98 +301,10 @@ public sealed class TextEffectsTests
         Assert.Equal(3, extent.Bottom, Precision);
     }
 
-    // Values
-
     [Fact]
-    public void Effects_AreValues()
+    public void GetExtent_CoversTheDepths_AtTheirOffsets()
     {
-        var a = new TextEffects { Outline = new TextOutline(Color.Black, 2) };
-        var b = new TextEffects { Outline = new TextOutline(Color.Black, 2) };
-
-        Assert.Equal(a, b);
-        Assert.Null((a with { Outline = null }).Outline);
-    }
-
-    // Outlines
-
-    private static readonly Color Brown = Color.FromRgb(0x902000);
-    private static readonly Color Gold = Color.FromRgb(0xFFCC00);
-    private static readonly Color Orange = Color.FromRgb(0xFF8000);
-    private static readonly Color DarkRed = Color.FromRgb(0x800000);
-    private static readonly Color OrangeRed = Color.FromRgb(0xFF4000);
-
-    // A title's: a depth, a band in two colors, a depth, then the outline round the face
-    private static readonly TextEffects Title = new()
-    {
-        Outlines =
-        [
-            new TextOutline(Brown, Width: 6, TextCorners.Round) { Offset = new Vector2(0, 3) },
-            new TextOutline(Gold, Width: 6, TextCorners.Round) { Gradient = new TextGradient(Color.Yellow, Orange) },
-            new TextOutline(DarkRed, Width: 3) { Offset = new Vector2(0, 2) },
-        ],
-        Outline = new TextOutline(OrangeRed, Width: 3, TextCorners.Round),
-    };
-
-    [Fact]
-    public void Outlines_AreDrawnInTurn_AfterTheGlow_AndBeforeTheOutline()
-    {
-        var effects = Title with
-        {
-            Shadow = new TextShadow(Color.Black, Vector2.One),
-            Glow = new TextGlow(Color.White, Width: 1, Softness: 0),
-        };
-
-        var layers = Layers(Font(range: 32), effects);
-
-        Assert.Equal(
-            new[] { Color.Black, Color.White, Brown, Gold, DarkRed, OrangeRed, default },
-            layers.Select(l => l.IsFace ? default : l.Color));
-        Assert.True(layers[^1].IsFace);
-    }
-
-    [Fact]
-    public void Outlines_EachExtendFromTheEmboldenedFace_WithTheirOwnCorners()
-    {
-        var layers = Layers(Font(range: 32, middle: 0.5f), Title with { Embolden = 1 });
-
-        AssertData(layers[0].Data, distanceOffset: 0.5f + 1 + 6, softness: 0, miterLimit: 1, signedRange: -32);
-        AssertData(layers[1].Data, distanceOffset: 0.5f + 1 + 6, softness: 0, miterLimit: 1, signedRange: -32);
-        AssertData(layers[2].Data, distanceOffset: 0.5f + 1 + 3, softness: 0, miterLimit: 4, signedRange: -32);
-        AssertData(layers[3].Data, distanceOffset: 0.5f + 1 + 3, softness: 0, miterLimit: 1, signedRange: -32);
-    }
-
-    [Fact]
-    public void AnOutline_IsDrawnAtItsOffset_InItsGradient()
-    {
-        var layers = Layers(Font(range: 32), Title);
-
-        Assert.Equal(new Vector2(0, 3), layers[0].Offset);
-        Assert.Equal(Vector2.Zero, layers[1].Offset);
-        Assert.Equal(new Vector2(0, 2), layers[2].Offset);
-        Assert.Null(layers[0].Gradient);
-        Assert.Equal(new TextGradient(Color.Yellow, Orange), layers[1].Gradient);
-    }
-
-    [Fact]
-    public void Layers_Outline_DrawsEveryOutline()
-    {
-        var layers = Layers(Font(range: 32), Title, TextLayers.Outline);
-
-        Assert.Equal(new[] { Brown, Gold, DarkRed, OrangeRed }, layers.Select(l => l.Color));
-        Assert.Empty(Layers(Font(range: 32), Title, TextLayers.Shadow | TextLayers.Glow));
-    }
-
-    [Fact]
-    public void Outlines_Alone_AreBackgroundEffects()
-    {
-        Assert.True(new TextEffects { Outlines = [new TextOutline(Color.Black, 1)] }.HasBackgroundEffects);
-        Assert.False(new TextEffects { Outlines = [] }.HasBackgroundEffects);
-    }
-
-    [Fact]
-    public void GetExtent_CoversTheOutlines_AtTheirOffsets()
-    {
-        var extent = Title.GetExtent();
+        var extent = Banner.GetExtent();
 
         // The widest reach 6 all round, and the deepest, 6 moved down 3, reaches 9 below
         Assert.Equal(6, extent.Left, Precision);
@@ -376,37 +314,51 @@ public sealed class TextEffectsTests
     }
 
     [Fact]
-    public void GetExtent_CoversTheOutlinesOffset()
+    public void HasUnderlays_OnlyWithSome()
     {
-        var effects = new TextEffects { Outline = new TextOutline(Color.Black, Width: 2) { Offset = new Vector2(-1, 4) } };
+        Assert.True(Banner.HasUnderlays);
+        Assert.False(new TextEffects { Underlays = [] }.HasUnderlays);
+        Assert.False(new TextEffects { Embolden = 1, Gradient = new TextGradient(Color.Red, Color.Blue) }.HasUnderlays);
+    }
 
-        var extent = effects.GetExtent();
+    // Values
 
-        Assert.Equal(3, extent.Left, Precision);
-        Assert.Equal(6, extent.Bottom, Precision);
+    [Fact]
+    public void Effects_AreValues()
+    {
+        var a = new TextEffects { Underlays = [TextUnderlay.Outline(Color.Black, 2)] };
+        var b = new TextEffects { Underlays = [TextUnderlay.Outline(Color.Black, 2)] };
+
+        Assert.Equal(a, b);
+        Assert.Null((a with { Underlays = null }).Underlays);
     }
 
     [Fact]
-    public void Effects_WithTheSameOutlines_AreEqual_WhetherOrNotTheyShareTheList()
+    public void Effects_WithTheSameUnderlays_AreEqual_WhetherOrNotTheyShareTheList()
     {
-        TextOutline[] outlines = [new TextOutline(Color.Black, 2) { Offset = Vector2.One }, new TextOutline(Color.Red, 1)];
-        var a = new TextEffects { Outlines = outlines };
-        var b = new TextEffects { Outlines = [new TextOutline(Color.Black, 2) { Offset = Vector2.One }, new TextOutline(Color.Red, 1)] };
+        TextUnderlay[] underlays = [TextUnderlay.Outline(Color.Black, 2) with { Offset = Vector2.One }, TextUnderlay.Outline(Color.Red, 1)];
+        var a = new TextEffects { Underlays = underlays };
+        var b = new TextEffects { Underlays = [TextUnderlay.Outline(Color.Black, 2) with { Offset = Vector2.One }, TextUnderlay.Outline(Color.Red, 1)] };
 
         Assert.Equal(a, b);
         Assert.Equal(a.GetHashCode(), b.GetHashCode());
-        Assert.NotEqual(a, b with { Outlines = [new TextOutline(Color.Red, 1), new TextOutline(Color.Black, 2) { Offset = Vector2.One }] });
-        Assert.NotEqual(a, a with { Outlines = [new TextOutline(Color.Black, 2), new TextOutline(Color.Red, 1)] });
-        Assert.Equal(new TextEffects(), new TextEffects { Outlines = [] });
+        Assert.NotEqual(a, b with { Underlays = [TextUnderlay.Outline(Color.Red, 1), TextUnderlay.Outline(Color.Black, 2) with { Offset = Vector2.One }] });
+        Assert.NotEqual(a, a with { Underlays = [TextUnderlay.Outline(Color.Black, 2), TextUnderlay.Outline(Color.Red, 1)] });
+        Assert.Equal(new TextEffects(), new TextEffects { Underlays = [] });
         Assert.NotEqual(a, a with { Embolden = 1 });
+        Assert.NotEqual(a, a with { Gradient = new TextGradient(Color.Red, Color.Blue) });
     }
 
     [Fact]
-    public void Outlines_DifferInTheirGradients()
+    public void Underlays_DifferInEverySetting()
     {
-        var plain = new TextOutline(Color.Black, 2);
+        var plain = TextUnderlay.Outline(Color.Black, 2);
 
         Assert.NotEqual(plain, plain with { Gradient = new TextGradient(Color.Red, Color.Blue) });
+        Assert.NotEqual(plain, plain with { Offset = Vector2.One });
+        Assert.NotEqual(plain, plain with { Softness = 1 });
+        Assert.NotEqual(plain, plain with { Corners = TextCorners.Round });
+        Assert.NotEqual(plain, plain with { MiterLimit = 2 });
         Assert.Equal(plain with { Gradient = new TextGradient(Color.Red, Color.Blue) }, plain with { Gradient = new TextGradient(Color.Red, Color.Blue) });
     }
 }

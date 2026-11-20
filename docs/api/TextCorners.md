@@ -8,11 +8,11 @@
 public enum TextCorners
 ```
 
-How the corners of an outline are drawn.
+How the corners of an underlay ([`TextUnderlay`](TextUnderlay.md)) are drawn.
 
 ## Values
 
 | Value | Summary |
 |---|---|
-| <a name="sharp"></a>`Sharp` | Mitered corners that follow the glyph's corners, cut back once they extend more than the outline's [`TextOutline.MiterLimit`](TextOutline.md#miterlimit) times its width, as SVG's `stroke-miterlimit` does. Fonts in `GlyphFormat.Msdf` can't cut corners back, and draw them unlimited; `GlyphFormat.Sdf` fonts draw them round. |
-| <a name="round"></a>`Round` | Round corners, at the outline's width from the glyph's corners. Fonts in `GlyphFormat.Msdf` can't draw them, and draw sharp corners instead. |
+| <a name="sharp"></a>`Sharp` | Mitered corners that follow the glyph's corners, cut back once they extend more than the underlay's [`TextUnderlay.MiterLimit`](TextUnderlay.md#miterlimit) times its width, as SVG's `stroke-miterlimit` does. Fonts in `GlyphFormat.Msdf` can't cut corners back, and draw them unlimited; `GlyphFormat.Sdf` fonts draw them round. |
+| <a name="round"></a>`Round` | Round corners, at the underlay's width from the glyph's corners. Fonts in `GlyphFormat.Msdf` can't draw them, and draw sharp corners instead. |

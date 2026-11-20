@@ -50,16 +50,14 @@ Fonts, atlases, sprite animation, particles, sound banks, cameras, shapes and te
 | [SpriteFont](SpriteFont.md) | class | A font drawn with [`SpriteBatch`](https://github.com/hotchaipro/DotGame.Framework/blob/main/docs/api/Framework/SpriteBatch.md) from glyphs packed into one or more atlas pages, built from a TTF/OTF font (and optional fallback fonts) by the toolkit SpriteFontContent pipeline. |
 | [SpriteFontLoader](SpriteFontLoader.md) | class | Loads [`SpriteFont`](SpriteFont.md) content (`.spritefont` files built by the toolkit SpriteFontContent pipeline) together with all of its atlas pages. |
 | [TextAlignment](TextAlignment.md) | enum | How lines sit in a [`TextLayout`](TextLayout.md)'s width. |
-| [TextCorners](TextCorners.md) | enum | How the corners of an outline are drawn. |
-| [TextEffects](TextEffects.md) | record | The visual effects of a piece of text: a shadow, a glow and outlines behind it, and the emboldening and softness of its face. |
-| [TextGlow](TextGlow.md) | record struct | A glow around text: a soft outline with round corners, drawn behind the outline and the face. |
+| [TextCorners](TextCorners.md) | enum | How the corners of an underlay ([`TextUnderlay`](TextUnderlay.md)) are drawn. |
+| [TextEffects](TextEffects.md) | record | The visual effects of a piece of text: underlays under its face (outlines, shadows, glows, depths), and the face's own gradient, sheen, emboldening and softness. |
 | [TextGradient](TextGradient.md) | record struct | Two colors a text's face is drawn in, one blending into the other down each line. |
 | [TextLayers](TextLayers.md) | enum | The layers of text with [`TextEffects`](TextEffects.md) that a `DrawString` call draws. |
 | [TextLayout](TextLayout.md) | class | Text wrapped to a width: lines broken at spaces, hyphens and line feeds, and between CJK characters with their punctuation rules, aligned, and cut off with an ellipsis past a number of lines. |
 | [TextLayoutLine](TextLayoutLine.md) | record struct | A line of a [`TextLayout`](TextLayout.md): which part of the text it shows, and how wide that is. |
-| [TextOutline](TextOutline.md) | record struct | An outline around text, drawn behind its face. |
-| [TextShadow](TextShadow.md) | record struct | A shadow of text, drawn behind everything else. |
 | [TextSheen](TextSheen.md) | record struct | A band of light across a text's face, upright or leaning: brightest along its middle, fading to nothing at its edges. |
+| [TextUnderlay](TextUnderlay.md) | record struct | A copy of text's glyphs drawn under its face: grown by a width, moved, softened and painted. |
 
 ## DotGame.Toolkit.Graphics
 

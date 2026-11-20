@@ -370,11 +370,11 @@ public sealed class TextLayout
         ArgumentNullException.ThrowIfNull(spriteBatch);
         this.Refresh();
 
-        // Every line's effects go behind every line's glyphs, so one line's shadow or outline
+        // Every line's underlays go behind every line's glyphs, so one line's shadow or outline
         // never covers the line above it
-        if ((effects is not null) && effects.HasBackgroundEffects)
+        if ((effects is not null) && effects.HasUnderlays)
         {
-            this.DrawLines(spriteBatch, position, color, opacity, effects, TextLayers.Effects);
+            this.DrawLines(spriteBatch, position, color, opacity, effects, TextLayers.Underlays);
             this.DrawLines(spriteBatch, position, color, opacity, effects, TextLayers.Face);
         }
         else

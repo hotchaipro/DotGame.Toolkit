@@ -148,33 +148,16 @@ DotGame.Toolkit.Fonts.TextEffects.Embolden.get -> float
 DotGame.Toolkit.Fonts.TextEffects.Embolden.init -> void
 DotGame.Toolkit.Fonts.TextEffects.Equals(DotGame.Toolkit.Fonts.TextEffects? other) -> bool
 DotGame.Toolkit.Fonts.TextEffects.GetExtent() -> DotGame.Toolkit.Thickness
-DotGame.Toolkit.Fonts.TextEffects.Glow.get -> DotGame.Toolkit.Fonts.TextGlow?
-DotGame.Toolkit.Fonts.TextEffects.Glow.init -> void
 DotGame.Toolkit.Fonts.TextEffects.Gradient.get -> DotGame.Toolkit.Fonts.TextGradient?
 DotGame.Toolkit.Fonts.TextEffects.Gradient.init -> void
-DotGame.Toolkit.Fonts.TextEffects.HasBackgroundEffects.get -> bool
-DotGame.Toolkit.Fonts.TextEffects.Outline.get -> DotGame.Toolkit.Fonts.TextOutline?
-DotGame.Toolkit.Fonts.TextEffects.Outline.init -> void
-DotGame.Toolkit.Fonts.TextEffects.Outlines.get -> System.Collections.Generic.IReadOnlyList<DotGame.Toolkit.Fonts.TextOutline>?
-DotGame.Toolkit.Fonts.TextEffects.Outlines.init -> void
-DotGame.Toolkit.Fonts.TextEffects.Shadow.get -> DotGame.Toolkit.Fonts.TextShadow?
-DotGame.Toolkit.Fonts.TextEffects.Shadow.init -> void
+DotGame.Toolkit.Fonts.TextEffects.HasUnderlays.get -> bool
 DotGame.Toolkit.Fonts.TextEffects.Sheen.get -> DotGame.Toolkit.Fonts.TextSheen?
 DotGame.Toolkit.Fonts.TextEffects.Sheen.init -> void
 DotGame.Toolkit.Fonts.TextEffects.Softness.get -> float
 DotGame.Toolkit.Fonts.TextEffects.Softness.init -> void
 DotGame.Toolkit.Fonts.TextEffects.TextEffects() -> void
-DotGame.Toolkit.Fonts.TextGlow
-DotGame.Toolkit.Fonts.TextGlow.Color.get -> DotGame.Framework.Color
-DotGame.Toolkit.Fonts.TextGlow.Color.init -> void
-DotGame.Toolkit.Fonts.TextGlow.Deconstruct(out DotGame.Framework.Color Color, out float Width, out float Softness) -> void
-DotGame.Toolkit.Fonts.TextGlow.Equals(DotGame.Toolkit.Fonts.TextGlow other) -> bool
-DotGame.Toolkit.Fonts.TextGlow.Softness.get -> float
-DotGame.Toolkit.Fonts.TextGlow.Softness.init -> void
-DotGame.Toolkit.Fonts.TextGlow.TextGlow() -> void
-DotGame.Toolkit.Fonts.TextGlow.TextGlow(DotGame.Framework.Color Color, float Width, float Softness) -> void
-DotGame.Toolkit.Fonts.TextGlow.Width.get -> float
-DotGame.Toolkit.Fonts.TextGlow.Width.init -> void
+DotGame.Toolkit.Fonts.TextEffects.Underlays.get -> System.Collections.Generic.IReadOnlyList<DotGame.Toolkit.Fonts.TextUnderlay>?
+DotGame.Toolkit.Fonts.TextEffects.Underlays.init -> void
 DotGame.Toolkit.Fonts.TextGradient
 DotGame.Toolkit.Fonts.TextGradient.Bottom.get -> DotGame.Framework.Color
 DotGame.Toolkit.Fonts.TextGradient.Bottom.init -> void
@@ -185,13 +168,10 @@ DotGame.Toolkit.Fonts.TextGradient.TextGradient(DotGame.Framework.Color Top, Dot
 DotGame.Toolkit.Fonts.TextGradient.Top.get -> DotGame.Framework.Color
 DotGame.Toolkit.Fonts.TextGradient.Top.init -> void
 DotGame.Toolkit.Fonts.TextLayers
-DotGame.Toolkit.Fonts.TextLayers.All = DotGame.Toolkit.Fonts.TextLayers.Effects | DotGame.Toolkit.Fonts.TextLayers.Face -> DotGame.Toolkit.Fonts.TextLayers
-DotGame.Toolkit.Fonts.TextLayers.Effects = DotGame.Toolkit.Fonts.TextLayers.Shadow | DotGame.Toolkit.Fonts.TextLayers.Glow | DotGame.Toolkit.Fonts.TextLayers.Outline -> DotGame.Toolkit.Fonts.TextLayers
-DotGame.Toolkit.Fonts.TextLayers.Face = 8 -> DotGame.Toolkit.Fonts.TextLayers
-DotGame.Toolkit.Fonts.TextLayers.Glow = 2 -> DotGame.Toolkit.Fonts.TextLayers
+DotGame.Toolkit.Fonts.TextLayers.All = DotGame.Toolkit.Fonts.TextLayers.Underlays | DotGame.Toolkit.Fonts.TextLayers.Face -> DotGame.Toolkit.Fonts.TextLayers
+DotGame.Toolkit.Fonts.TextLayers.Face = 2 -> DotGame.Toolkit.Fonts.TextLayers
 DotGame.Toolkit.Fonts.TextLayers.None = 0 -> DotGame.Toolkit.Fonts.TextLayers
-DotGame.Toolkit.Fonts.TextLayers.Outline = 4 -> DotGame.Toolkit.Fonts.TextLayers
-DotGame.Toolkit.Fonts.TextLayers.Shadow = 1 -> DotGame.Toolkit.Fonts.TextLayers
+DotGame.Toolkit.Fonts.TextLayers.Underlays = 1 -> DotGame.Toolkit.Fonts.TextLayers
 DotGame.Toolkit.Fonts.TextLayout
 DotGame.Toolkit.Fonts.TextLayout.Alignment.get -> DotGame.Toolkit.Fonts.TextAlignment
 DotGame.Toolkit.Fonts.TextLayout.Alignment.set -> void
@@ -226,38 +206,6 @@ DotGame.Toolkit.Fonts.TextLayoutLine.TextLayoutLine() -> void
 DotGame.Toolkit.Fonts.TextLayoutLine.TextLayoutLine(int Start, int Length, float Width, bool HasEllipsis) -> void
 DotGame.Toolkit.Fonts.TextLayoutLine.Width.get -> float
 DotGame.Toolkit.Fonts.TextLayoutLine.Width.init -> void
-DotGame.Toolkit.Fonts.TextOutline
-DotGame.Toolkit.Fonts.TextOutline.Color.get -> DotGame.Framework.Color
-DotGame.Toolkit.Fonts.TextOutline.Color.init -> void
-DotGame.Toolkit.Fonts.TextOutline.Corners.get -> DotGame.Toolkit.Fonts.TextCorners
-DotGame.Toolkit.Fonts.TextOutline.Corners.init -> void
-DotGame.Toolkit.Fonts.TextOutline.Deconstruct(out DotGame.Framework.Color Color, out float Width, out DotGame.Toolkit.Fonts.TextCorners Corners, out float MiterLimit, out float Softness) -> void
-DotGame.Toolkit.Fonts.TextOutline.Equals(DotGame.Toolkit.Fonts.TextOutline other) -> bool
-DotGame.Toolkit.Fonts.TextOutline.Gradient.get -> DotGame.Toolkit.Fonts.TextGradient?
-DotGame.Toolkit.Fonts.TextOutline.Gradient.init -> void
-DotGame.Toolkit.Fonts.TextOutline.MiterLimit.get -> float
-DotGame.Toolkit.Fonts.TextOutline.MiterLimit.init -> void
-DotGame.Toolkit.Fonts.TextOutline.Offset.get -> System.Numerics.Vector2
-DotGame.Toolkit.Fonts.TextOutline.Offset.init -> void
-DotGame.Toolkit.Fonts.TextOutline.Softness.get -> float
-DotGame.Toolkit.Fonts.TextOutline.Softness.init -> void
-DotGame.Toolkit.Fonts.TextOutline.TextOutline() -> void
-DotGame.Toolkit.Fonts.TextOutline.TextOutline(DotGame.Framework.Color Color, float Width, DotGame.Toolkit.Fonts.TextCorners Corners = DotGame.Toolkit.Fonts.TextCorners.Sharp, float MiterLimit = 4, float Softness = 0) -> void
-DotGame.Toolkit.Fonts.TextOutline.Width.get -> float
-DotGame.Toolkit.Fonts.TextOutline.Width.init -> void
-DotGame.Toolkit.Fonts.TextShadow
-DotGame.Toolkit.Fonts.TextShadow.Color.get -> DotGame.Framework.Color
-DotGame.Toolkit.Fonts.TextShadow.Color.init -> void
-DotGame.Toolkit.Fonts.TextShadow.Deconstruct(out DotGame.Framework.Color Color, out System.Numerics.Vector2 Offset, out float Spread, out float Softness) -> void
-DotGame.Toolkit.Fonts.TextShadow.Equals(DotGame.Toolkit.Fonts.TextShadow other) -> bool
-DotGame.Toolkit.Fonts.TextShadow.Offset.get -> System.Numerics.Vector2
-DotGame.Toolkit.Fonts.TextShadow.Offset.init -> void
-DotGame.Toolkit.Fonts.TextShadow.Softness.get -> float
-DotGame.Toolkit.Fonts.TextShadow.Softness.init -> void
-DotGame.Toolkit.Fonts.TextShadow.Spread.get -> float
-DotGame.Toolkit.Fonts.TextShadow.Spread.init -> void
-DotGame.Toolkit.Fonts.TextShadow.TextShadow() -> void
-DotGame.Toolkit.Fonts.TextShadow.TextShadow(DotGame.Framework.Color Color, System.Numerics.Vector2 Offset, float Spread = 0, float Softness = 0) -> void
 DotGame.Toolkit.Fonts.TextSheen
 DotGame.Toolkit.Fonts.TextSheen.Across(float progress, float lineWidth, float ascent, float descent) -> DotGame.Toolkit.Fonts.TextSheen
 DotGame.Toolkit.Fonts.TextSheen.Angle.get -> DotGame.Framework.Angle
@@ -276,6 +224,25 @@ DotGame.Toolkit.Fonts.TextSheen.TextSheen() -> void
 DotGame.Toolkit.Fonts.TextSheen.TextSheen(DotGame.Framework.Color Color, float Position, float Width, DotGame.Framework.Angle Angle = default(DotGame.Framework.Angle), float Strength = 1, float Softness = 1) -> void
 DotGame.Toolkit.Fonts.TextSheen.Width.get -> float
 DotGame.Toolkit.Fonts.TextSheen.Width.init -> void
+DotGame.Toolkit.Fonts.TextUnderlay
+DotGame.Toolkit.Fonts.TextUnderlay.Color.get -> DotGame.Framework.Color
+DotGame.Toolkit.Fonts.TextUnderlay.Color.init -> void
+DotGame.Toolkit.Fonts.TextUnderlay.Corners.get -> DotGame.Toolkit.Fonts.TextCorners
+DotGame.Toolkit.Fonts.TextUnderlay.Corners.init -> void
+DotGame.Toolkit.Fonts.TextUnderlay.Deconstruct(out DotGame.Framework.Color Color, out float Width) -> void
+DotGame.Toolkit.Fonts.TextUnderlay.Equals(DotGame.Toolkit.Fonts.TextUnderlay other) -> bool
+DotGame.Toolkit.Fonts.TextUnderlay.Gradient.get -> DotGame.Toolkit.Fonts.TextGradient?
+DotGame.Toolkit.Fonts.TextUnderlay.Gradient.init -> void
+DotGame.Toolkit.Fonts.TextUnderlay.MiterLimit.get -> float
+DotGame.Toolkit.Fonts.TextUnderlay.MiterLimit.init -> void
+DotGame.Toolkit.Fonts.TextUnderlay.Offset.get -> System.Numerics.Vector2
+DotGame.Toolkit.Fonts.TextUnderlay.Offset.init -> void
+DotGame.Toolkit.Fonts.TextUnderlay.Softness.get -> float
+DotGame.Toolkit.Fonts.TextUnderlay.Softness.init -> void
+DotGame.Toolkit.Fonts.TextUnderlay.TextUnderlay() -> void
+DotGame.Toolkit.Fonts.TextUnderlay.TextUnderlay(DotGame.Framework.Color Color, float Width = 0) -> void
+DotGame.Toolkit.Fonts.TextUnderlay.Width.get -> float
+DotGame.Toolkit.Fonts.TextUnderlay.Width.init -> void
 DotGame.Toolkit.GameExtensions
 DotGame.Toolkit.Graphics.Camera
 DotGame.Toolkit.Graphics.Camera.Camera() -> void
@@ -650,12 +617,10 @@ override DotGame.Toolkit.Fonts.CharacterCursor.GetHashCode() -> int
 override DotGame.Toolkit.Fonts.TextEffects.Equals(object? obj) -> bool
 override DotGame.Toolkit.Fonts.TextEffects.GetHashCode() -> int
 override DotGame.Toolkit.Fonts.TextEffects.ToString() -> string!
-override DotGame.Toolkit.Fonts.TextGlow.GetHashCode() -> int
 override DotGame.Toolkit.Fonts.TextGradient.GetHashCode() -> int
 override DotGame.Toolkit.Fonts.TextLayoutLine.GetHashCode() -> int
-override DotGame.Toolkit.Fonts.TextOutline.GetHashCode() -> int
-override DotGame.Toolkit.Fonts.TextShadow.GetHashCode() -> int
 override DotGame.Toolkit.Fonts.TextSheen.GetHashCode() -> int
+override DotGame.Toolkit.Fonts.TextUnderlay.GetHashCode() -> int
 override DotGame.Toolkit.Graphics.HsvColor.GetHashCode() -> int
 override DotGame.Toolkit.Particles.AnimatedSpriteParticleRenderer.<Clone>$() -> DotGame.Toolkit.Particles.AnimatedSpriteParticleRenderer!
 override DotGame.Toolkit.Particles.AnimatedSpriteParticleRenderer.Draw(DotGame.Framework.Graphics.SpriteBatch! spriteBatch, System.ReadOnlySpan<DotGame.Toolkit.Particles.ParticleDrawState> particles) -> void
@@ -767,18 +732,17 @@ static DotGame.Toolkit.Fonts.SpriteBatchTextExtensions.DrawString<TCharacterAttr
 static DotGame.Toolkit.Fonts.TextEffects.None.get -> DotGame.Toolkit.Fonts.TextEffects!
 static DotGame.Toolkit.Fonts.TextEffects.operator !=(DotGame.Toolkit.Fonts.TextEffects? left, DotGame.Toolkit.Fonts.TextEffects? right) -> bool
 static DotGame.Toolkit.Fonts.TextEffects.operator ==(DotGame.Toolkit.Fonts.TextEffects? left, DotGame.Toolkit.Fonts.TextEffects? right) -> bool
-static DotGame.Toolkit.Fonts.TextGlow.operator !=(DotGame.Toolkit.Fonts.TextGlow left, DotGame.Toolkit.Fonts.TextGlow right) -> bool
-static DotGame.Toolkit.Fonts.TextGlow.operator ==(DotGame.Toolkit.Fonts.TextGlow left, DotGame.Toolkit.Fonts.TextGlow right) -> bool
 static DotGame.Toolkit.Fonts.TextGradient.operator !=(DotGame.Toolkit.Fonts.TextGradient left, DotGame.Toolkit.Fonts.TextGradient right) -> bool
 static DotGame.Toolkit.Fonts.TextGradient.operator ==(DotGame.Toolkit.Fonts.TextGradient left, DotGame.Toolkit.Fonts.TextGradient right) -> bool
 static DotGame.Toolkit.Fonts.TextLayoutLine.operator !=(DotGame.Toolkit.Fonts.TextLayoutLine left, DotGame.Toolkit.Fonts.TextLayoutLine right) -> bool
 static DotGame.Toolkit.Fonts.TextLayoutLine.operator ==(DotGame.Toolkit.Fonts.TextLayoutLine left, DotGame.Toolkit.Fonts.TextLayoutLine right) -> bool
-static DotGame.Toolkit.Fonts.TextOutline.operator !=(DotGame.Toolkit.Fonts.TextOutline left, DotGame.Toolkit.Fonts.TextOutline right) -> bool
-static DotGame.Toolkit.Fonts.TextOutline.operator ==(DotGame.Toolkit.Fonts.TextOutline left, DotGame.Toolkit.Fonts.TextOutline right) -> bool
-static DotGame.Toolkit.Fonts.TextShadow.operator !=(DotGame.Toolkit.Fonts.TextShadow left, DotGame.Toolkit.Fonts.TextShadow right) -> bool
-static DotGame.Toolkit.Fonts.TextShadow.operator ==(DotGame.Toolkit.Fonts.TextShadow left, DotGame.Toolkit.Fonts.TextShadow right) -> bool
 static DotGame.Toolkit.Fonts.TextSheen.operator !=(DotGame.Toolkit.Fonts.TextSheen left, DotGame.Toolkit.Fonts.TextSheen right) -> bool
 static DotGame.Toolkit.Fonts.TextSheen.operator ==(DotGame.Toolkit.Fonts.TextSheen left, DotGame.Toolkit.Fonts.TextSheen right) -> bool
+static DotGame.Toolkit.Fonts.TextUnderlay.Glow(DotGame.Framework.Color color, float width, float softness) -> DotGame.Toolkit.Fonts.TextUnderlay
+static DotGame.Toolkit.Fonts.TextUnderlay.operator !=(DotGame.Toolkit.Fonts.TextUnderlay left, DotGame.Toolkit.Fonts.TextUnderlay right) -> bool
+static DotGame.Toolkit.Fonts.TextUnderlay.operator ==(DotGame.Toolkit.Fonts.TextUnderlay left, DotGame.Toolkit.Fonts.TextUnderlay right) -> bool
+static DotGame.Toolkit.Fonts.TextUnderlay.Outline(DotGame.Framework.Color color, float width, DotGame.Toolkit.Fonts.TextCorners corners = DotGame.Toolkit.Fonts.TextCorners.Sharp) -> DotGame.Toolkit.Fonts.TextUnderlay
+static DotGame.Toolkit.Fonts.TextUnderlay.Shadow(DotGame.Framework.Color color, System.Numerics.Vector2 offset, float softness = 0, float spread = 0) -> DotGame.Toolkit.Fonts.TextUnderlay
 static DotGame.Toolkit.GameExtensions.InitializeToolkit(this DotGame.Framework.Game! game) -> void
 static DotGame.Toolkit.Graphics.GraphicsServiceExtensions.CreateTextureFromJpeg(this DotGame.Framework.Graphics.GraphicsService! graphics, System.ReadOnlySpan<byte> jpeg) -> DotGame.Framework.Graphics.Texture!
 static DotGame.Toolkit.Graphics.GraphicsServiceExtensions.CreateTextureFromPng(this DotGame.Framework.Graphics.GraphicsService! graphics, System.ReadOnlySpan<byte> png) -> DotGame.Framework.Graphics.Texture!
@@ -870,18 +834,14 @@ virtual DotGame.Toolkit.Particles.ParticleRenderer.PrintMembers(System.Text.Stri
 ~override DotGame.Toolkit.Audio.SoundSegment.ToString() -> string
 ~override DotGame.Toolkit.Fonts.CharacterCursor.Equals(object obj) -> bool
 ~override DotGame.Toolkit.Fonts.CharacterCursor.ToString() -> string
-~override DotGame.Toolkit.Fonts.TextGlow.Equals(object obj) -> bool
-~override DotGame.Toolkit.Fonts.TextGlow.ToString() -> string
 ~override DotGame.Toolkit.Fonts.TextGradient.Equals(object obj) -> bool
 ~override DotGame.Toolkit.Fonts.TextGradient.ToString() -> string
 ~override DotGame.Toolkit.Fonts.TextLayoutLine.Equals(object obj) -> bool
 ~override DotGame.Toolkit.Fonts.TextLayoutLine.ToString() -> string
-~override DotGame.Toolkit.Fonts.TextOutline.Equals(object obj) -> bool
-~override DotGame.Toolkit.Fonts.TextOutline.ToString() -> string
-~override DotGame.Toolkit.Fonts.TextShadow.Equals(object obj) -> bool
-~override DotGame.Toolkit.Fonts.TextShadow.ToString() -> string
 ~override DotGame.Toolkit.Fonts.TextSheen.Equals(object obj) -> bool
 ~override DotGame.Toolkit.Fonts.TextSheen.ToString() -> string
+~override DotGame.Toolkit.Fonts.TextUnderlay.Equals(object obj) -> bool
+~override DotGame.Toolkit.Fonts.TextUnderlay.ToString() -> string
 ~override DotGame.Toolkit.Graphics.HsvColor.Equals(object obj) -> bool
 ~override DotGame.Toolkit.Graphics.HsvColor.ToString() -> string
 ~override DotGame.Toolkit.Particles.EmitShape.Equals(object obj) -> bool
