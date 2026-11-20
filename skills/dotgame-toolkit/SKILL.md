@@ -82,8 +82,11 @@ Without it, loads fail with "No content loader is registered for ...".
 ```csharp
 private static readonly TextEffects Title = new()
 {
-    Shadow = new TextShadow(Color.Black * 0.5f, Offset: new Vector2(2, 3), Softness: 2),
-    Outline = new TextOutline(Color.Black, Width: 3),
+    Underlays =
+    [
+        TextUnderlay.Outline(Color.Black, 3),
+        TextUnderlay.Shadow(Color.Black * 0.5f, new Vector2(2, 3), softness: 2),
+    ],
 };
 
 protected override void OnDraw()
@@ -97,8 +100,8 @@ protected override void OnDraw()
 - **Size is the scale.** Draw at `n` pixels with `scale: new Vector2(n / font.EmSize)`. `MeasureString` measures at the font's own size, so multiply by the scale. `LineHeight`, `Ascender`, `Descender`, and `CapHeight` place text exactly.
 - **Text needs no setup.** `DrawString` switches to the toolkit's shared text shader and back inside any batch; text in several fonts and effects batches together. It takes a `string`, `StringBuilder`, or span (no garbage for changing text).
 - **Only the included characters draw.** The default charset is ASCII; add a language's characters with `CharsetFile` or a `Fallback` font. No shaping or right-to-left: Arabic, Hebrew, and Indic scripts don't draw correctly.
-- **Effects** (`Shadow`, `Glow`, `Outline`, and the face's `Embolden` and `Softness`) are values: share one `TextEffects`, derive with `with`. Distances are in pixels of the font's `EmSize`. All shadows draw, then glows, outlines, and faces, so an outline never covers a neighbor's face. The draw color applies to the face; effects keep their own colors.
-- **Size `PxRange` for effects:** at least twice the widest effect (outline width; glow width plus half its softness; shadow spread plus half its softness). Wider effects are clipped, and a Debug build traces it once per font.
+- **Effects** are values: share one `TextEffects`, derive with `with`. Everything under the face is a `TextUnderlay` (the glyphs grown by `Width`, moved by `Offset`, softened by `Softness`, painted in `Color` or a top-to-bottom `Gradient`; `Corners`, `MiterLimit`), in `Underlays`, nearest the face first, each measured from the face's edges: `TextUnderlay.Outline(color, width, corners)`, `.Shadow(color, offset, softness, spread)`, `.Glow(color, width, softness)`. Stack them for a banner (a line, a wider band after it, each with a depth: the same underlay moved down, after it). The face has `Gradient`, `Sheen`, `Embolden` and `Softness`. Distances are in pixels of the font's `EmSize`. Every glyph's underlays draw before any face, so an outline never covers a neighbor's face. The draw color applies to the face; underlays keep their own colors. Text drawn in several calls draws each call's `TextLayers.Underlays`, then each call's `TextLayers.Face`.
+- **Size `PxRange` for effects:** at least twice the widest underlay (its width plus half its softness, plus the face's emboldening). Wider ones are clipped, and a Debug build traces it once per font.
 - **Size `PxRange` for the smallest draw size:** text drawn smaller than `4 / PxRange` of the font's size gets hard, jagged edges. The default range gives a 24 px font hard edges below 1.33x, so a font drawn at or below its size needs an explicit `PxRange`: 8 holds to half size, 16 to a quarter. It costs only a few texels of padding per glyph.
 - **Glyph formats:** `Mtsdf` draws every effect (miter limits, round outlines, glows, soft shadows). `Msdf` is about 30% smaller, with only sharp, unlimited outline corners. `Sdf` rounds everything. `Bitmap` draws no effects.
 - **`TextLayout`** wraps, aligns (`TextAlignment`), and truncates with an ellipsis (`MaxWidth`, `MaxLines`, `Scale`); set `Text`, then `layout.Draw(spriteBatch, position, color)`, which allocates nothing.

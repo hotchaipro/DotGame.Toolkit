@@ -234,7 +234,7 @@ public sealed class TextLayoutTests
         var layout = NewLayout();
         layout.Text = "ab\ncd";
         var batch = new RecordingBatch();
-        var effects = new TextEffects { Outline = new TextOutline(Color.Blue, Width: 1) };
+        var effects = new TextEffects { Underlays = [TextUnderlay.Outline(Color.Blue, 1)] };
 
         layout.Draw(batch.Batch, Vector2.Zero, Color.Red, effects: effects);
 

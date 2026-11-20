@@ -12,9 +12,9 @@ using DotGame.Toolkit.Fonts;
 namespace Sample.Pages;
 
 /// <summary>
-/// Text with <see cref="SpriteFont"/>: drawing at any size, effects (outlines, shadows, glows,
-/// emboldening, softness, gradients and a sheen), characters colored, moved and turned one by one,
-/// wrapping, measuring, tracking and rotation.
+/// Text with <see cref="SpriteFont"/>: drawing at any size, effects (underlays: outlines, shadows,
+/// glows and depths, stacked; emboldening, softness, gradients and a sheen), characters colored,
+/// moved and turned one by one, wrapping, measuring, tracking and rotation.
 /// </summary>
 /// <remarks>
 /// Every font, size and effect draws with one shader, which the fonts switch to themselves, so the
@@ -26,26 +26,28 @@ internal sealed class TextPage : SamplePage
         "Text wraps where you measure it. Each line here is drawn on its own, and the colors " +
         "follow the words across the lines, because each line passes its position in the whole text.";
 
-    // Effects are values: set up once and shared, and derived with 'with'
+    // Effects are values: set up once and shared, and derived with 'with'. What's drawn under the
+    // face is a list of underlays, nearest the face first: outlines, shadows, glows and depths
+    private static readonly TextUnderlay Ink = TextUnderlay.Outline(Color.FromRgb(0x28325A), 2.5f);
+
     private static readonly TextEffects Outlined = new()
     {
-        Outline = new TextOutline(Color.FromRgb(0x28325A), Width: 2.5f),
+        Underlays = [Ink],
     };
 
     private static readonly TextEffects Shadowed = new()
     {
-        Shadow = new TextShadow(Color.Black * 0.45f, Offset: new Vector2(2, 3), Softness: 2.5f),
+        Underlays = [TextUnderlay.Shadow(Color.Black * 0.45f, new Vector2(2, 3), softness: 2.5f)],
     };
 
     private static readonly TextEffects Glowing = new()
     {
-        Glow = new TextGlow(Color.FromRgb(0xFFC83C), Width: 3, Softness: 4),
-        Outline = new TextOutline(Color.White, Width: 1),
+        Underlays = [TextUnderlay.Outline(Color.White, 1), TextUnderlay.Glow(Color.FromRgb(0xFFC83C), 3, softness: 4)],
     };
 
-    private static readonly TextEffects TitleText = Outlined with
+    private static readonly TextEffects TitleText = new()
     {
-        Shadow = new TextShadow(Color.Black * 0.4f, Offset: new Vector2(3, 4), Softness: 3),
+        Underlays = [Ink, TextUnderlay.Shadow(Color.Black * 0.4f, new Vector2(3, 4), softness: 3)],
         Embolden = 0.5f,
     };
 
@@ -62,7 +64,25 @@ internal sealed class TextPage : SamplePage
 
     private static readonly TextEffects RoundOutline = new()
     {
-        Outline = new TextOutline(Color.FromRgb(0xC83C50), Width: 3, Corners: TextCorners.Round),
+        Underlays = [TextUnderlay.Outline(Color.FromRgb(0xC83C50), 3, TextCorners.Round)],
+    };
+
+    // Underlays stack, each measured from the face: cream letters in a dark orange line, in a gold
+    // band shaded yellow to orange, with a depth under the line and under the band (each the same
+    // shape moved down). The whole reach, 0.5 + 3.5, fits the font's distance range (PxRange 12).
+    private static readonly TextEffects Banner = new()
+    {
+        Embolden = 0.5f,
+        Underlays =
+        [
+            TextUnderlay.Outline(Color.FromRgb(0xC56000), 1.5f, TextCorners.Round),
+            TextUnderlay.Outline(Color.FromRgb(0x992F00), 1.5f, TextCorners.Round) with { Offset = new Vector2(0, 1.5f) },
+            TextUnderlay.Outline(Color.FromRgb(0xE3A000), 3.5f, TextCorners.Round) with
+            {
+                Gradient = new TextGradient(Color.FromRgb(0xF0CC0A), Color.FromRgb(0xE88000)),
+            },
+            TextUnderlay.Outline(Color.FromRgb(0x913601), 3.5f, TextCorners.Round) with { Offset = new Vector2(0, 1.5f) },
+        ],
     };
 
     private static readonly TextEffects Bold = new() { Embolden = 1 };
@@ -81,6 +101,7 @@ internal sealed class TextPage : SamplePage
         ("Thin", Thin, Color.FromRgb(0x3C465A)),
         ("Soft", Soft, Color.FromRgb(0x3C465A)),
         ("Gradient", Sunset, Color.White),
+        ("Banner", Banner, Color.FromRgb(0xFEFEE6)),
     ];
 
     private readonly List<(int Start, int Length)> _lines = new();

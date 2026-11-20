@@ -36,7 +36,7 @@ internal sealed class CameraPage : SamplePage
     // A white outline, so the labels in the world read over its squares
     private static readonly TextEffects Haloed = new()
     {
-        Outline = new TextOutline(Color.White, Width: 3f),
+        Underlays = [TextUnderlay.Outline(Color.White, 3)],
     };
 
     private static readonly ViewportScaleMode[] Modes =

@@ -55,9 +55,7 @@ public sealed class AllocationTests
 
     private static readonly TextEffects Effects = new()
     {
-        Shadow = new TextShadow(Color.Black, new Vector2(1, 1)),
-        Glow = new TextGlow(Color.Yellow, Width: 1, Softness: 1),
-        Outline = new TextOutline(Color.Blue, Width: 1),
+        Underlays = [TextUnderlay.Outline(Color.Blue, 1), TextUnderlay.Glow(Color.Yellow, 1, softness: 1), TextUnderlay.Shadow(Color.Black, new Vector2(1, 1))],
     };
 
     [Fact]

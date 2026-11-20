@@ -8,17 +8,28 @@
 public sealed record TextEffects
 ```
 
-The visual effects of a piece of text: a shadow, a glow and an outline behind it, and the emboldening and softness of its face. `DrawString` draws them with the text, in one call.
+The visual effects of a piece of text: underlays under its face (outlines, shadows, glows, depths), and the face's own gradient, sheen, emboldening and softness. `DrawString` draws them with the text, in one call.
 
 ## Remarks
 
-Every distance is in pixels of the font's native size ([`SpriteFont.EmSize`](SpriteFont.md#emsize)), so effects scale with the text and keep their proportions at every size. The shadow's offset is in the text's own space, so it rotates with rotated text.
+Every distance is in pixels of the font's native size ([`SpriteFont.EmSize`](SpriteFont.md#emsize)), so effects scale with the text and keep their proportions at every size. An underlay's offset is in the text's own space, so it turns with turned text.
 
-The effects of a string are drawn before its face, across all its glyphs: every glyph's shadow, then every glyph's glow, then every glyph's outline, then every glyph's face. Glyphs overlap (kerned pairs, tight tracking, outlines wider than the gap between glyphs), so drawing each glyph's outline and face together would let one glyph's outline cover its neighbor's face.
+The underlays of a string are drawn before its face, across all its glyphs: every glyph of the farthest underlay, then every glyph of the next, and so on to the nearest, then every glyph's face. Glyphs overlap (kerned pairs, tight tracking, outlines wider than the gap between glyphs), so drawing each glyph's underlays and face together would let one glyph's outline cover its neighbor's face.
 
-An effect reaches only as far from the glyphs' edges as the font's atlas encodes distances: half the distance range it was built with. Each effect's width (or spread) plus half its softness has to fit, and is limited to it when drawn. Build fonts with a distance range of at least twice the widest effect. Effects aren't drawn for bitmap fonts.
+An underlay reaches only as far from the glyphs' edges as the font's atlas encodes distances: half the distance range it was built with. Each underlay's width plus half its softness has to fit, and is limited to it when drawn. Build fonts with a distance range of at least twice the widest underlay. Effects aren't drawn for bitmap fonts.
 
-Effects are values: share one `TextEffects` between many strings, and derive others with `with` (`title with { Outline = null }`).
+Effects are values: share one `TextEffects` between many strings, and derive others with `with` (`title with { Underlays = null }`). Effects with the same underlays are equal, whether or not they share the list.
+
+## Example
+
+```csharp
+// An outline with a soft shadow under it
+var label = new TextEffects
+{
+    Underlays = [TextUnderlay.Outline(Color.Black, 2), TextUnderlay.Shadow(Color.Black * 0.5f, new Vector2(2, 3), softness: 2)],
+};
+
+// Cream letters in a dark orange line, in a gold band, with a depth under each var banner = new TextEffects { Underlays = [ TextUnderlay.Outline(darkOrange, 3, TextCorners.Round), TextUnderlay.Outline(darkerOrange, 3, TextCorners.Round) with { Offset = new Vector2(0, 3) }, TextUnderlay.Outline(gold, 6, TextCorners.Round) with { Gradient = new TextGradient(yellow, orange) }, TextUnderlay.Outline(deepBrown, 6, TextCorners.Round) with { Offset = new Vector2(0, 3) }, ], }; ```
 
 ## Properties
 
@@ -28,17 +39,7 @@ Effects are values: share one `TextEffects` between many strings, and derive oth
 public float Embolden { get; init; }
 ```
 
-Gets how far the face's edges move outward, in pixels of the font's native size: positive is bolder, negative thinner. The other effects are measured from the face's edges.
-
-### Glow
-
-```csharp
-public TextGlow? Glow { get; init; }
-```
-
-Types: [`TextGlow`](TextGlow.md)
-
-Gets the glow drawn behind the outline and the face, or `null` for none.
+Gets how far the face's edges move outward, in pixels of the font's native size: positive is bolder, negative thinner. The underlays are measured from the face's edges.
 
 ### Gradient
 
@@ -50,13 +51,13 @@ Types: [`TextGradient`](TextGradient.md)
 
 Gets the two colors the face is drawn in, top to bottom of each line, or `null` to draw it in the text's color. A character given a color of its own ([`ICharacterAttributes.Color`](ICharacterAttributes.md#color)) keeps that color.
 
-### HasBackgroundEffects
+### HasUnderlays
 
 ```csharp
-public bool HasBackgroundEffects { get; }
+public bool HasUnderlays { get; }
 ```
 
-Gets whether anything is drawn behind the glyphs: a shadow, glow or outline. Text drawn in several calls (line by line) with such effects draws every call's [`TextLayers.Effects`](TextLayers.md#effects) before any call's [`TextLayers.Face`](TextLayers.md#face), so no line's effects cover another's glyphs; without them one pass is enough.
+Gets whether anything is drawn under the face. Text drawn in several calls (line by line) with underlays draws every call's [`TextLayers.Underlays`](TextLayers.md#underlays) before any call's [`TextLayers.Face`](TextLayers.md#face), so no line's underlays cover another's glyphs; without them one pass is enough.
 
 ### None
 
@@ -65,26 +66,6 @@ public static TextEffects None { get; }
 ```
 
 Text with no effects.
-
-### Outline
-
-```csharp
-public TextOutline? Outline { get; init; }
-```
-
-Types: [`TextOutline`](TextOutline.md)
-
-Gets the outline drawn behind the face, or `null` for none.
-
-### Shadow
-
-```csharp
-public TextShadow? Shadow { get; init; }
-```
-
-Types: [`TextShadow`](TextShadow.md)
-
-Gets the shadow drawn behind everything else, or `null` for none.
 
 ### Sheen
 
@@ -104,6 +85,18 @@ public float Softness { get; init; }
 
 Gets how much wider than a screen pixel the face's edge fades, in pixels of the font's native size.
 
+### Underlays
+
+```csharp
+public IReadOnlyList<TextUnderlay>? Underlays { get; init; }
+```
+
+Types: [`TextUnderlay`](TextUnderlay.md)
+
+Gets what's drawn under the face, nearest the face first, or `null` for nothing.
+
+Listed as CSS lists a `text-shadow`'s, and as a layers panel does: each underlay is drawn under the ones before it, so the first is nearest the face and the last farthest from it. Each is measured from the face's edges, so a band 3 wide round an outline 2 wide is an underlay 5 wide after it; moved down by its [`TextUnderlay.Offset`](TextUnderlay.md#offset), an underlay is the depth under the ones before it.
+
 ## Methods
 
 ### GetExtent
@@ -115,3 +108,5 @@ public Thickness GetExtent()
 Types: [`Thickness`](Thickness.md)
 
 Gets how far the effects reach beyond the glyphs on each side, in pixels of the font's native size, for layouts that make room for them. Measuring text ignores effects.
+
+**Returns:** How far they reach on each side.

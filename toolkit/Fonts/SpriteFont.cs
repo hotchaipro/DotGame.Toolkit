@@ -53,7 +53,7 @@ public sealed class SpriteFont : IContent
     private bool _isDisposed;
 
     // The face of text drawn without effects, the common case, set up once
-    private readonly TextLayer _plainFace;
+    private readonly TextPass _plainFace;
 
     // The Debug-build checks that report a font's limits once each
     private bool _reportedClamp;
@@ -128,7 +128,7 @@ public sealed class SpriteFont : IContent
             this.DefaultCharacter = '?';
         }
 
-        this._plainFace = new TextLayer(isFace: true, default, Vector2.Zero, this.GetLayerData(0, 0, FaceMiterLimit));
+        this._plainFace = new TextPass(isFace: true, default, Vector2.Zero, this.GetLayerData(0, 0, TextUnderlay.DefaultMiterLimit));
     }
 
     /// <summary>Whether it has been released.</summary>
@@ -463,13 +463,14 @@ public sealed class SpriteFont : IContent
     /// unlike the pair-specific adjustment of kerning.
     /// </param>
     /// <param name="effects">
-    /// The text's effects, or <c>null</c> for none. Every glyph's shadow is drawn first, then
-    /// every glyph's glow, outline and face, so no glyph's effects cover another's face.
+    /// The text's effects, or <c>null</c> for none. Every glyph of the farthest underlay is drawn
+    /// first, then every glyph of each nearer one, then every glyph's face, so no glyph's underlays
+    /// cover another's face.
     /// </param>
     /// <param name="layers">
     /// Which layers to draw: all of them by default. Text drawn in several calls (lines, or
-    /// runs) keeps its effects behind every face by drawing each call's
-    /// <see cref="TextLayers.Effects"/>, then each call's <see cref="TextLayers.Face"/>.
+    /// runs) keeps its underlays behind every face by drawing each call's
+    /// <see cref="TextLayers.Underlays"/>, then each call's <see cref="TextLayers.Face"/>.
     /// </param>
     /// <param name="text">The text.</param>
     internal void DrawString(
@@ -546,7 +547,7 @@ public sealed class SpriteFont : IContent
     /// The attributes of the individual characters. An attribute that the implementation
     /// does not describe keeps the value passed to this method, so attributes that describe
     /// only (for example) a per-glyph translation still draw the text in
-    /// <see cref="TextDrawArgs.Color"/>. Colors apply to the face; each effect keeps its own color.
+    /// <see cref="TextDrawArgs.Color"/>. Colors apply to the face; each underlay keeps its own color.
     /// </param>
     /// <param name="cursorOffset">
     /// The position of the first character of <paramref name="text"/> within the text that
@@ -610,32 +611,35 @@ public sealed class SpriteFont : IContent
         // NOTE: Once per call, never per glyph. Nothing draws until a sprite needs the change
         using var shader = spriteBatch.UseShader(this._shader);
 
-        Span<TextLayer> drawn = stackalloc TextLayer[TextLayer.MaxCount];
-        var layerCount = this.GetLayers(args.Effects, drawn, args.Layers);
-        for (int i = 0; i < layerCount; i++)
+        // (Exactly as many as the text has, on the stack: one for plain text. Text with more
+        // underlays than fit there, which is unusual, takes an array.)
+        int most = TextPass.GetMaxCount(args.Effects);
+        Span<TextPass> passes = (most <= MaxStackPasses) ? stackalloc TextPass[most] : new TextPass[most];
+        var passCount = this.GetPasses(args.Effects, passes, args.Layers);
+        for (int i = 0; i < passCount; i++)
         {
             var state = new DrawState(cursorOffset);
-            this.DrawSpan(spriteBatch, text, ref characterAttributes, ref state, in drawn[i], in args);
+            this.DrawSpan(spriteBatch, text, ref characterAttributes, ref state, in passes[i], in args);
         }
     }
 
-    // The miter limit of the face and the shadow, which follow the glyphs' corners as an
-    // outline's default does
-    private const float FaceMiterLimit = 4;
+    // The most passes drawn without an array
+    private const int MaxStackPasses = 16;
 
     // A miter limit the shader treats as unlimited, kept within half-float range
     private const float UnlimitedMiterLimit = 1024;
 
     /// <summary>
-    /// Fills <paramref name="layers"/> with the passes that draw text with the specified effects,
-    /// in drawing order, and returns how many there are.
+    /// Fills <paramref name="passes"/> with the passes that draw text with the specified effects,
+    /// in drawing order (the farthest underlay first, the face last), and returns how many there
+    /// are. <paramref name="passes"/> holds at least <see cref="TextPass.GetMaxCount"/>.
     /// </summary>
     /// <param name="include">The layers to draw; the others are left out.</param>
     /// <param name="effects">The effects, or <c>null</c> for none.</param>
-    /// <param name="layers">Where the passes go.</param>
-    internal int GetLayers(
+    /// <param name="passes">Where the passes go.</param>
+    internal int GetPasses(
         TextEffects? effects,
-        Span<TextLayer> layers,
+        Span<TextPass> passes,
         TextLayers include = TextLayers.All)
     {
         bool drawFace = (include & TextLayers.Face) != 0;
@@ -646,14 +650,13 @@ public sealed class SpriteFont : IContent
                 return 0;
             }
 
-            layers[0] = this._plainFace;
+            passes[0] = this._plainFace;
             return 1;
         }
 
         if (this.GlyphFormat == GlyphFormat.Bitmap)
         {
-            if ((effects.Shadow is not null) || (effects.Glow is not null) || (effects.Outline is not null)
-                || (effects.Embolden != 0) || (effects.Softness != 0))
+            if (effects.HasUnderlays || (effects.Embolden != 0) || (effects.Softness != 0))
             {
                 ReportOnce(ref this._reportedBitmapEffects, 0x6e2b91d4,
                     "Effects aren't drawn for bitmap fonts; only the face is.");
@@ -664,36 +667,29 @@ public sealed class SpriteFont : IContent
                 return 0;
             }
 
-            layers[0] = this._plainFace;
+            passes[0] = this._plainFace;
             return 1;
         }
 
         int count = 0;
         var embolden = effects.Embolden;
 
-        if ((effects.Shadow is { } shadow) && ((include & TextLayers.Shadow) != 0))
+        // The farthest first: the list is nearest the face first
+        if ((effects.Underlays is { } underlays) && ((include & TextLayers.Underlays) != 0))
         {
-            layers[count++] = new TextLayer(isFace: false, shadow.Color, shadow.Offset,
-                this.GetLayerData(embolden + shadow.Spread, shadow.Softness, FaceMiterLimit));
-        }
-
-        if ((effects.Glow is { } glow) && ((include & TextLayers.Glow) != 0))
-        {
-            layers[count++] = new TextLayer(isFace: false, glow.Color, Vector2.Zero,
-                this.GetLayerData(embolden + glow.Width, glow.Softness, 1));
-        }
-
-        if ((effects.Outline is { } outline) && ((include & TextLayers.Outline) != 0))
-        {
-            var miterLimit = (outline.Corners == TextCorners.Round) ? 1 : outline.MiterLimit;
-            layers[count++] = new TextLayer(isFace: false, outline.Color, Vector2.Zero,
-                this.GetLayerData(embolden + outline.Width, outline.Softness, miterLimit));
+            for (int i = underlays.Count - 1; i >= 0; i--)
+            {
+                var underlay = underlays[i];
+                var miterLimit = (underlay.Corners == TextCorners.Round) ? 1 : underlay.MiterLimit;
+                passes[count++] = new TextPass(isFace: false, underlay.Color, underlay.Offset,
+                    this.GetLayerData(embolden + underlay.Width, underlay.Softness, miterLimit), underlay.Gradient);
+            }
         }
 
         if (drawFace)
         {
-            layers[count++] = new TextLayer(isFace: true, default, Vector2.Zero,
-                this.GetLayerData(embolden, effects.Softness, FaceMiterLimit));
+            passes[count++] = new TextPass(isFace: true, default, Vector2.Zero,
+                this.GetLayerData(embolden, effects.Softness, TextUnderlay.DefaultMiterLimit));
         }
 
         return count;
@@ -781,7 +777,7 @@ public sealed class SpriteFont : IContent
         ReadOnlySpan<char> text,
         ref TCharacterAttributes characterAttributes,
         ref DrawState state,
-        in TextLayer layer,
+        in TextPass layer,
         in TextDrawArgs args)
         where TCharacterAttributes : ICharacterAttributes
     {
@@ -797,8 +793,8 @@ public sealed class SpriteFont : IContent
         var layerData = layer.Data;
         var effectColor = layer.Color * opacity;
 
-        // The face's two colors, if it has them (an effect has its own color)
-        var gradient = layer.IsFace ? args.Effects?.Gradient : null;
+        // The pass's two colors, if it has them: the face's, or an underlay's own
+        var gradient = layer.IsFace ? args.Effects?.Gradient : layer.Gradient;
 
         // The band of light across the face, if it has one that shows
         var sheen = layer.IsFace ? args.Effects?.Sheen : null;
@@ -850,7 +846,7 @@ public sealed class SpriteFont : IContent
                     {
                         this.DrawSheenGlyph(spriteBatch, glyph, glyphOffset, pivot, translation, turn, state.LineTop + baseline, glyphColor, (ownColor is null) ? gradient : null, light, layerOrigin, in layerData, in args);
                     }
-                    else if ((gradient is { } colors) && (ownColor is null))
+                    else if ((gradient is { } colors) && ((ownColor is null) || !layer.IsFace))
                     {
                         this.DrawGradientGlyph(spriteBatch, glyph, glyphOffset, pivot, translation, turn, state.LineTop + baseline, colors, layerOrigin, in layerData, in args);
                     }

@@ -118,13 +118,18 @@ past `MaxLines` ends in an ellipsis that fits. A font with no ellipsis glyph use
 
 ## Text effects
 
-Outlines, shadows and glows are properties of the text, drawn by the same `DrawString` call:
+Outlines, shadows, glows and depths are underlays: copies of the glyphs drawn under the face by the
+same `DrawString` call, each grown by a width, moved, softened and painted. They're listed nearest the
+face first:
 
 ```csharp
 private static readonly TextEffects Title = new()
 {
-    Shadow = new TextShadow(Color.Black * 0.5f, Offset: new Vector2(2, 3), Softness: 2),
-    Outline = new TextOutline(Color.Black, Width: 3),
+    Underlays =
+    [
+        TextUnderlay.Outline(Color.Black, 3),
+        TextUnderlay.Shadow(Color.Black * 0.5f, new Vector2(2, 3), softness: 2),
+    ],
 };
 
 private void DrawTitle(SpriteBatch spriteBatch)
@@ -133,22 +138,38 @@ private void DrawTitle(SpriteBatch spriteBatch)
 }
 ```
 
-| Effect | Settings |
+| Underlay setting | |
 |---|---|
-| `Shadow` | Color, offset, spread, softness |
-| `Glow` | Color, width, softness; round corners |
-| `Outline` | Color, width, corners (`Sharp` with a miter limit, as SVG's `stroke-miterlimit`, or `Round`), softness |
+| `Color`, or `Gradient` | Its color, or two colors top to bottom of each line in its place |
+| `Width` | How far it reaches beyond the face's edges (an outline's width, a shadow's spread) |
+| `Offset` | Where it's drawn relative to the text (a shadow's offset, a depth's drop) |
+| `Softness` | How much its edge fades (a shadow's blur, a glow's) |
+| `Corners`, `MiterLimit` | `Sharp`, following the glyphs' corners and cut back at the miter limit as SVG's `stroke-miterlimit`, or `Round` |
+
+`TextUnderlay.Outline(color, width, corners)`, `TextUnderlay.Shadow(color, offset, softness, spread)`
+and `TextUnderlay.Glow(color, width, softness)` make the usual ones, and `with` changes any of them. An
+underlay is a CSS `text-shadow` with a spread.
+
+The face has its own settings:
+
+| Face setting | |
+|---|---|
 | `Gradient` | Two colors for the face, one at the top of the capitals and one at the baseline |
 | `Sheen` | A band of light across the face: color, position along the line, width, angle from upright, strength, softness |
-| `Embolden`, `Softness` | The face's own: positive emboldening is bolder, negative thinner |
+| `Embolden`, `Softness` | Positive emboldening is bolder, negative thinner; softness fades the face's edge |
 
 - **Every distance is in pixels of the font's native size** (`EmSize`), so effects scale with the text.
-  The shadow's offset rotates with rotated text.
-- **A string's effects are drawn behind all of its faces:** every glyph's shadow, then glow, then
-  outline, then face. So one glyph's outline can't cover its neighbor's face.
-- **Colors:** the color passed to `DrawString`, and per-character colors, apply to the face. Each effect
+  An underlay's offset rotates with rotated text.
+- **A string's underlays are drawn behind all of its faces:** every glyph of the farthest underlay,
+  then of each nearer one, then every glyph's face. So one glyph's outline can't cover its neighbor's
+  face.
+- **Underlays stack:** each is drawn under the ones before it and measured from the face's edges. A
+  band round an outline is the wider underlay after it; the same shape moved down is the depth under
+  it.
+- **Colors:** the color passed to `DrawString`, and per-character colors, apply to the face. Each underlay
   keeps its own color. A `Gradient` replaces the face's color with two, blended down the height of the
-  capitals, the same for every character of a line; a character with a color of its own keeps that.
+  capitals, the same for every character of a line; a character with a color of its own keeps that. An
+  underlay's `Gradient` is blended the same way, and a character's own color leaves it alone.
 - **A sheen is a glint to animate:** a `TextSheen` is a band of light at a place along the line, lying
   over whatever color the face has. Draw the text each frame with the band a little further along and
   the light crosses the letters: `effects with { Sheen = font.SheenAcross(text, progress, band) }`
@@ -157,9 +178,30 @@ private void DrawTitle(SpriteBatch spriteBatch)
   the middle, toward 0 is a hard-edged bar. Text draws exactly as it would without one while the band is
   off the line.
 - **Effects are values:** share one `TextEffects` between strings, and derive others with `with`
-  (`Title with { Outline = null }`). `GetExtent` reports how far they reach beyond the glyphs, for
-  layouts that make room. Measuring text ignores them.
-- **Cost:** each effect draws the glyphs once more, in the same batch.
+  (`Title with { Underlays = null }`). Effects with the same underlays are equal whether or not they
+  share the list. `GetExtent` reports how far they reach beyond the glyphs, for layouts that make room.
+  Measuring text ignores them.
+- **Cost:** text without effects draws as it always has, one sprite a glyph. Each underlay draws the
+  glyphs once more, in the same batch; a gradient costs up to six triangles a glyph.
+
+A title in cream letters, in a dark line, in a gold band shaded from yellow to orange, with a depth
+under the line and under the band:
+
+```csharp
+private static readonly TextEffects Banner = new()
+{
+    Underlays =
+    [
+        TextUnderlay.Outline(Color.FromRgb(0xC56000), 3, TextCorners.Round),
+        TextUnderlay.Outline(Color.FromRgb(0x992F00), 3, TextCorners.Round) with { Offset = new Vector2(0, 3) },
+        TextUnderlay.Outline(Color.FromRgb(0xE3A000), 6, TextCorners.Round) with
+        {
+            Gradient = new TextGradient(Color.FromRgb(0xF0CC0A), Color.FromRgb(0xE88000)),
+        },
+        TextUnderlay.Outline(Color.FromRgb(0x913601), 6, TextCorners.Round) with { Offset = new Vector2(0, 3) },
+    ],
+};
+```
 
 ## Moving and turning characters
 

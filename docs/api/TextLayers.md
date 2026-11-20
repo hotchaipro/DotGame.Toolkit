@@ -12,16 +12,16 @@ The layers of text with [`TextEffects`](TextEffects.md) that a `DrawString` call
 
 ## Remarks
 
-One call draws every glyph's effects before any glyph's face, so effects never cover a face of the same string. Text that is drawn in several calls (lines laid out and aligned one at a time, or runs in different colors) needs the same order across the calls: draw every call with [`Effects`](#effects), then every call again with [`Face`](#face).
+One call draws every glyph's underlays before any glyph's face, so an underlay never covers a face of the same string. Text that is drawn in several calls (lines laid out and aligned one at a time, or runs in different colors) needs the same order across the calls: draw every call with [`Underlays`](#underlays), then every call again with [`Face`](#face).
 
-Layers that the effects don't have draw nothing, so asking for [`Effects`](#effects) of text with no effects draws nothing at all.
+Layers that the effects don't have draw nothing, so asking for [`Underlays`](#underlays) of text with none draws nothing at all.
 
 ## Example
 
 ```csharp
 foreach (var line in lines)
 {
-    spriteBatch.DrawString(font, line.Text, ..., effects, layers: TextLayers.Effects);
+    spriteBatch.DrawString(font, line.Text, ..., effects, layers: TextLayers.Underlays);
 }
 
 foreach (var line in lines) { spriteBatch.DrawString(font, line.Text, ..., effects, layers: TextLayers.Face); } ```
@@ -31,9 +31,6 @@ foreach (var line in lines) { spriteBatch.DrawString(font, line.Text, ..., effec
 | Value | Summary |
 |---|---|
 | <a name="none"></a>`None = 0` | Nothing. |
-| <a name="shadow"></a>`Shadow = 1` | The shadow ([`TextEffects.Shadow`](TextEffects.md#shadow)). |
-| <a name="glow"></a>`Glow = 2` | The glow ([`TextEffects.Glow`](TextEffects.md#glow)). |
-| <a name="outline"></a>`Outline = 4` | The outline ([`TextEffects.Outline`](TextEffects.md#outline)). |
-| <a name="face"></a>`Face = 8` | The glyphs themselves, with the face's emboldening and softness. |
-| <a name="effects"></a>`Effects = Shadow \| Glow \| Outline` | Every effect behind the face: shadow, glow and outline. |
-| <a name="all"></a>`All = Effects \| Face` | Everything: the effects, then the face. |
+| <a name="underlays"></a>`Underlays = 1` | Everything under the face ([`TextEffects.Underlays`](TextEffects.md#underlays)). |
+| <a name="face"></a>`Face = 2` | The glyphs themselves, with the face's gradient, sheen, emboldening and softness. |
+| <a name="all"></a>`All = Underlays \| Face` | Everything: the underlays, then the face. |

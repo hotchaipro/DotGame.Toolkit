@@ -45,7 +45,7 @@ internal sealed class ToolkitSample : Game
 
     private static readonly TextEffects TitleEffects = new()
     {
-        Shadow = new TextShadow(Color.Black * 0.5f, Offset: new Vector2(1, 2), Softness: 1.5f),
+        Underlays = [TextUnderlay.Shadow(Color.Black * 0.5f, new Vector2(1, 2), softness: 1.5f)],
     };
 
     /// <summary>
